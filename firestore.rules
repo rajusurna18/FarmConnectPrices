@@ -2,8 +2,30 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default Deny: All read and write operations are denied by default.
-    // Explicit authorization rules will be introduced in future feature modules.
+
+    // Users Collection: Authenticated users can read and write only their own document
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Allow initial document creation during registration
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.uid == userId
+                    && request.resource.data.role == "USER"
+                    && request.resource.data.status == "ACTIVE";
+
+      // Allow profile updates, preventing client modification of protected fields
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.uid == resource.data.uid
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.status == resource.data.status
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false;
+    }
+
+    // Default Deny: All other collections remain completely inaccessible until explicit rules are added
     match /{document=**} {
       allow read, write: if false;
     }
