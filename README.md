@@ -13,9 +13,9 @@ FarmConnectPrices is an AI-powered agricultural market intelligence and marketpl
 
 ## Technology Stack
 
-- **Frontend:** React, TypeScript, Vite, Tailwind CSS, React Router, Axios, TanStack Query, ESLint
-- **Backend:** Java 21, Spring Boot (3.3.4), Maven, Spring Web, Spring Validation, Spring Security, Spring Boot Actuator
-- **Platform Preparation:** Firebase Integration placeholders (Authentication, Firestore, Storage, Messaging)
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, React Router, Axios, TanStack Query, ESLint, Firebase Web SDK (v11)
+- **Backend:** Java 21, Spring Boot (3.3.4), Maven, Spring Web, Spring Validation, Spring Security, Spring Boot Actuator, Firebase Admin SDK (v9)
+- **Database & Security:** Cloud Firestore (Default Deny Rules), Firestore Emulator support
 - **AI Infrastructure:** Reserved for Python / FastAPI in future modules
 
 ---
@@ -28,8 +28,10 @@ FarmConnectPrices/
 ├── backend/              # Spring Boot Java 21 Maven application
 ├── ai/                   # Reserved for Python/FastAPI AI services
 ├── docs/                 # Project documentation
-├── scripts/              # Helper scripts
-│
+│   └── firebase/         # Firebase architecture, schemas, and local dev guides
+├── firestore.rules       # Firestore security rules (default-deny policy)
+├── firestore.indexes.json# Firestore index definitions
+├── firebase.json         # Firebase project & emulator configuration
 ├── .gitignore            # Git exclusion rules
 ├── README.md             # Project documentation
 └── LICENSE               # License statement
@@ -43,6 +45,7 @@ FarmConnectPrices/
 - **Node.js Environment:** Node.js v18+ (v24.x recommended)
 - **Package Manager:** npm (v10+ / v11+)
 - **Git Version Control:** Git 2.x
+- **Firebase CLI (Optional for Emulator):** `npm install -g firebase-tools`
 
 ---
 
@@ -59,19 +62,27 @@ VITE_FIREBASE_PROJECT_ID=
 VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
+
+# Firebase Emulator (Optional for local frontend dev)
+VITE_USE_FIREBASE_EMULATOR=false
+VITE_FIREBASE_EMULATOR_HOST=localhost
+VITE_FIREBASE_EMULATOR_PORT=8081
 ```
+
+For Spring Boot backend (`backend/`):
+Environment variables can optionally be set:
+`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_USE_EMULATOR`, `FIRESTORE_EMULATOR_HOST`.
 
 ---
 
-## Firebase Prerequisites (Future Integration)
+## Firebase & Firestore Integration
 
-Firebase services will be activated in future modules:
-- Firebase Authentication
-- Cloud Firestore
-- Firebase Storage
-- Firebase Cloud Messaging
+Module 02 establishes the Firebase Web SDK and Firebase Admin SDK foundation:
+- **Architecture Overview:** [docs/firebase/architecture.md](docs/firebase/architecture.md)
+- **Firestore Schema Blueprint & Principles:** [docs/firebase/firestore-schema.md](docs/firebase/firestore-schema.md)
+- **Local Development & Emulator Guide:** [docs/firebase/local-development.md](docs/firebase/local-development.md)
 
-*Note: Environment placeholders are configured. Do not commit secret keys or service account JSON files.*
+*Note: Security rules (`firestore.rules`) enforce a strict default-deny policy. Do not commit secret service account keys or PEM private key files.*
 
 ---
 
@@ -85,7 +96,7 @@ Navigate to the `backend/` directory:
 cd backend
 ```
 
-- **Run Maven Verify & Test:**
+- **Run Maven Verify & Tests:**
   ```powershell
   .\mvnw.cmd clean verify
   ```
@@ -131,7 +142,7 @@ The frontend server starts at `http://localhost:5173`.
 
 ---
 
-## Health API Verification
+## Health & Firebase Diagnostic API Verification
 
 ### Custom Application Health API
 
@@ -145,6 +156,22 @@ GET http://localhost:8080/api/v1/health
 {
   "status": "UP",
   "service": "farmlink-api"
+}
+```
+
+### Firebase Health Diagnostic API
+
+```http
+GET http://localhost:8080/api/v1/health/firebase
+```
+
+**Expected Response (HTTP 200 OK):**
+
+```json
+{
+  "status": "UP",
+  "service": "farmlink-api",
+  "firebase": "INITIALIZED"
 }
 ```
 

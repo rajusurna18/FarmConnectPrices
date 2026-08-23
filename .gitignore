@@ -23,11 +23,14 @@ target/
 
 # Credentials & Service Accounts
 *service-account*.json
-*firebase*.json
+*firebase-adminsdk*.json
+*-firebase-adminsdk-*.json
+!firebase.json
 *.pem
 *.key
 firebase-debug.log
 firebase-debug.*.log
+.firebase/
 
 # IDE & Editor Files
 .idea/

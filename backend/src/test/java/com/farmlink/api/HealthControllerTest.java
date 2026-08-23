@@ -24,4 +24,13 @@ class HealthControllerTest {
                 .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.service").value("farmlink-api"));
     }
+
+    @Test
+    void firebaseHealthEndpointShouldReturnOkAndFirebaseStatus() throws Exception {
+        mockMvc.perform(get("/api/v1/health/firebase"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.service").value("farmlink-api"))
+                .andExpect(jsonPath("$.firebase").exists());
+    }
 }

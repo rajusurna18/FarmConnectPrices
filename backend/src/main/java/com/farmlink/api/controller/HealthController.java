@@ -21,4 +21,9 @@ public class HealthController {
     public ResponseEntity<HealthResponse> getHealth() {
         return ResponseEntity.ok(healthService.getHealthStatus());
     }
+
+    @GetMapping("/firebase")
+    public ResponseEntity<HealthResponse> getFirebaseHealth() {
+        return ResponseEntity.ok(healthService.getFirebaseHealthStatus());
+    }
 }
