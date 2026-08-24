@@ -1,11 +1,14 @@
-# Role Security & Authorization Model
+# Role Security & Authorization Documentation
 
-## Threat Prevention & Security Model
+## Allowed Onboarding Roles
+`PUT /api/v1/profile/role` accepts **strictly**:
+- `FARMER`
+- `MEDIATOR_BUYER`
+- `CUSTOMER`
 
-1. **Client Identity Non-Trust**: The client never supplies a `uid` parameter in request bodies or query params to establish identity. The Spring Boot backend derives UID strictly from the verified Firebase ID Token stored in `SecurityContextHolder`.
-2. **Privilege Escalation Defense**:
-   - `PUT /api/v1/profile/role` accepts **only** `FARMER` or `BUYER`. Requests attempting to claim `ADMIN`, `MIDDLEMAN`, or `DELIVERY_PARTNER` are rejected with HTTP 400 Bad Request.
-   - `firestore.rules` enforces that clients cannot modify `role`, `status`, `uid`, or `createdAt` fields directly on `users/{userId}` documents.
-3. **Cross-Tenant Access Denial**:
-   - Users can only read and write their own documents (`farmerProfiles/{userId}` and `buyerProfiles/{userId}`) where `request.auth.uid == userId`.
-   - Default deny rule remains active for all unspecified paths.
+## Forbidden Roles
+Requests attempting to claim `ADMIN`, `DELIVERY_PARTNER`, `MIDDLEMAN`, `BUYER`, or invalid roles are rejected with HTTP 400 Bad Request.
+
+## Security Rules Enforcement
+- `users/{userId}`: Ownership check (`request.auth.uid == userId`) prevents client modification of `role`, `status`, `uid`, or `createdAt`.
+- `farmerProfiles/{userId}`, `mediatorBuyerProfiles/{userId}`, `customerProfiles/{userId}`: Strict UID ownership match. Default deny on all other collections.

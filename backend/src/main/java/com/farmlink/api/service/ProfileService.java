@@ -20,9 +20,14 @@ public class ProfileService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProfileService.class);
 
-    private static final String ROLE_USER = "USER";
-    private static final String ROLE_FARMER = "FARMER";
-    private static final String ROLE_BUYER = "BUYER";
+    public static final String ROLE_USER = "USER";
+    public static final String ROLE_FARMER = "FARMER";
+    public static final String ROLE_MEDIATOR_BUYER = "MEDIATOR_BUYER";
+    public static final String ROLE_CUSTOMER = "CUSTOMER";
+
+    public static final String DISPLAY_FARMER = "Farmer";
+    public static final String DISPLAY_MEDIATOR_BUYER = "Mediator / Buyer";
+    public static final String DISPLAY_CUSTOMER = "Customer";
 
     private final Firestore firestore;
 
@@ -38,6 +43,8 @@ public class ProfileService {
         String status = "ACTIVE";
         String phoneNumber = null;
         LocationDto location = new LocationDto();
+        String businessOrganizationName = null;
+        String address = null;
         boolean profileCompleted = false;
 
         if (firestore != null && uid != null) {
@@ -64,11 +71,17 @@ public class ProfileService {
                         if (locMap != null) {
                             location = mapToLocationDto(locMap);
                         }
+                        if (roleDoc.getString("businessOrganizationName") != null) {
+                            businessOrganizationName = roleDoc.getString("businessOrganizationName");
+                        }
+                        if (roleDoc.getString("address") != null) {
+                            address = roleDoc.getString("address");
+                        }
                         Boolean completed = roleDoc.getBoolean("profileCompleted");
                         if (completed != null) {
                             profileCompleted = completed;
                         } else {
-                            profileCompleted = calculateProfileCompleted(phoneNumber, location);
+                            profileCompleted = calculateProfileCompleted(role, phoneNumber, location, businessOrganizationName, address);
                         }
                     }
                 }
@@ -77,7 +90,9 @@ public class ProfileService {
             }
         }
 
-        return new ProfileResponse(uid, displayName, email, emailVerified, role, status, phoneNumber, location, profileCompleted);
+        String roleDisplayName = getRoleDisplayName(role);
+        return new ProfileResponse(uid, displayName, email, emailVerified, role, roleDisplayName, status,
+                phoneNumber, location, businessOrganizationName, address, profileCompleted);
     }
 
     public ProfileResponse updateRole(String uid, String email, boolean emailVerified, String tokenDisplayName, RoleSelectionRequest request) {
@@ -87,8 +102,8 @@ public class ProfileService {
 
         String targetRole = request.getRole().trim().toUpperCase();
 
-        if (!ROLE_FARMER.equals(targetRole) && !ROLE_BUYER.equals(targetRole)) {
-            throw new IllegalArgumentException("Invalid role selected. Only FARMER or BUYER may be selected.");
+        if (!isValidPrimaryRole(targetRole)) {
+            throw new IllegalArgumentException("Invalid role selected. Only FARMER, MEDIATOR_BUYER, or CUSTOMER may be selected.");
         }
 
         String displayName = (tokenDisplayName != null && !tokenDisplayName.trim().isEmpty())
@@ -114,6 +129,11 @@ public class ProfileService {
                         newRoleProfile.put("profileCompleted", false);
                         newRoleProfile.put("phoneNumber", null);
                         newRoleProfile.put("location", createEmptyLocationMap());
+                        if (ROLE_MEDIATOR_BUYER.equals(targetRole)) {
+                            newRoleProfile.put("businessOrganizationName", null);
+                        } else if (ROLE_CUSTOMER.equals(targetRole)) {
+                            newRoleProfile.put("address", null);
+                        }
                         newRoleProfile.put("createdAt", FieldValue.serverTimestamp());
                         newRoleProfile.put("updatedAt", FieldValue.serverTimestamp());
 
@@ -131,7 +151,8 @@ public class ProfileService {
         }
 
         // Return fallback profile response if Firestore is offline / unauthenticated during test execution
-        return new ProfileResponse(uid, displayName, email, emailVerified, targetRole, "ACTIVE", null, new LocationDto(), false);
+        return new ProfileResponse(uid, displayName, email, emailVerified, targetRole, getRoleDisplayName(targetRole),
+                "ACTIVE", null, new LocationDto(), null, null, false);
     }
 
     public ProfileResponse updateProfile(String uid, String email, boolean emailVerified, String tokenDisplayName, UpdateProfileRequest request) {
@@ -144,7 +165,8 @@ public class ProfileService {
                 : ((tokenDisplayName != null && !tokenDisplayName.trim().isEmpty()) ? tokenDisplayName : (email != null ? email.split("@")[0] : "User"));
         String phoneNumber = request.getPhoneNumber();
         LocationDto location = request.getLocation() != null ? request.getLocation() : new LocationDto();
-        boolean isCompleted = calculateProfileCompleted(phoneNumber, location);
+        String businessOrg = request.getBusinessOrganizationName();
+        String addr = request.getAddress();
 
         if (firestore != null && uid != null) {
             try {
@@ -166,11 +188,18 @@ public class ProfileService {
                 // 3. Update role profile if user has a specific role
                 String roleCollection = getRoleCollection(role);
                 if (roleCollection != null) {
+                    boolean isCompleted = calculateProfileCompleted(role, phoneNumber, location, businessOrg, addr);
+
                     Map<String, Object> roleUpdates = new HashMap<>();
                     roleUpdates.put("uid", uid);
                     roleUpdates.put("phoneNumber", phoneNumber);
                     roleUpdates.put("location", locationDtoToMap(location));
                     roleUpdates.put("profileCompleted", isCompleted);
+                    if (ROLE_MEDIATOR_BUYER.equalsIgnoreCase(role)) {
+                        roleUpdates.put("businessOrganizationName", businessOrg);
+                    } else if (ROLE_CUSTOMER.equalsIgnoreCase(role)) {
+                        roleUpdates.put("address", addr);
+                    }
                     roleUpdates.put("updatedAt", FieldValue.serverTimestamp());
 
                     firestore.collection(roleCollection).document(uid).set(roleUpdates, SetOptions.merge()).get();
@@ -183,21 +212,49 @@ public class ProfileService {
         }
 
         // Return fallback profile response if Firestore is offline / unauthenticated during test execution
-        return new ProfileResponse(uid, displayName, email, emailVerified, ROLE_USER, "ACTIVE", phoneNumber, location, isCompleted);
+        boolean fallbackCompleted = calculateProfileCompleted(ROLE_USER, phoneNumber, location, businessOrg, addr);
+        return new ProfileResponse(uid, displayName, email, emailVerified, ROLE_USER, getRoleDisplayName(ROLE_USER),
+                "ACTIVE", phoneNumber, location, businessOrg, addr, fallbackCompleted);
     }
 
-    private String getRoleCollection(String role) {
+    public boolean isValidPrimaryRole(String role) {
+        return ROLE_FARMER.equals(role) || ROLE_MEDIATOR_BUYER.equals(role) || ROLE_CUSTOMER.equals(role);
+    }
+
+    public String getRoleCollection(String role) {
         if (ROLE_FARMER.equalsIgnoreCase(role)) {
             return "farmerProfiles";
-        } else if (ROLE_BUYER.equalsIgnoreCase(role)) {
-            return "buyerProfiles";
+        } else if (ROLE_MEDIATOR_BUYER.equalsIgnoreCase(role)) {
+            return "mediatorBuyerProfiles";
+        } else if (ROLE_CUSTOMER.equalsIgnoreCase(role)) {
+            return "customerProfiles";
         }
         return null;
     }
 
-    public boolean calculateProfileCompleted(String phoneNumber, LocationDto location) {
+    public String getRoleDisplayName(String role) {
+        if (ROLE_FARMER.equalsIgnoreCase(role)) {
+            return DISPLAY_FARMER;
+        } else if (ROLE_MEDIATOR_BUYER.equalsIgnoreCase(role)) {
+            return DISPLAY_MEDIATOR_BUYER;
+        } else if (ROLE_CUSTOMER.equalsIgnoreCase(role)) {
+            return DISPLAY_CUSTOMER;
+        }
+        return "User";
+    }
+
+    public boolean calculateProfileCompleted(String role, String phoneNumber, LocationDto location, String businessOrg, String address) {
         boolean hasPhone = phoneNumber != null && !phoneNumber.trim().isEmpty();
         boolean hasLocation = location != null && location.isComplete();
+
+        if (ROLE_MEDIATOR_BUYER.equalsIgnoreCase(role)) {
+            boolean hasOrg = businessOrg != null && !businessOrg.trim().isEmpty();
+            return hasPhone && hasLocation && hasOrg;
+        } else if (ROLE_CUSTOMER.equalsIgnoreCase(role)) {
+            boolean hasAddr = address != null && !address.trim().isEmpty();
+            return hasPhone && hasLocation && hasAddr;
+        }
+
         return hasPhone && hasLocation;
     }
 

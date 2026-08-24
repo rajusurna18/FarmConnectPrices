@@ -5,7 +5,16 @@ export interface Location {
   village?: string | null;
 }
 
-export type RoleType = 'USER' | 'FARMER' | 'BUYER' | 'MIDDLEMAN' | 'DELIVERY_PARTNER' | 'ADMIN';
+export type PrimaryRole = 'FARMER' | 'MEDIATOR_BUYER' | 'CUSTOMER';
+
+export type RoleType = PrimaryRole | 'USER' | 'ADMIN' | 'DELIVERY_PARTNER' | 'MIDDLEMAN';
+
+export const ROLE_DISPLAY_NAMES: Record<string, string> = {
+  FARMER: 'Farmer',
+  MEDIATOR_BUYER: 'Mediator / Buyer',
+  CUSTOMER: 'Customer',
+  USER: 'User',
+};
 
 export interface Profile {
   uid: string;
@@ -13,9 +22,12 @@ export interface Profile {
   email: string;
   emailVerified: boolean;
   role: RoleType;
+  roleDisplayName?: string;
   status: string;
   phoneNumber?: string | null;
   location?: Location | null;
+  businessOrganizationName?: string | null;
+  address?: string | null;
   profileCompleted: boolean;
 }
 
@@ -23,8 +35,10 @@ export interface UpdateProfilePayload {
   displayName?: string;
   phoneNumber?: string;
   location?: Location;
+  businessOrganizationName?: string;
+  address?: string;
 }
 
 export interface RoleSelectionPayload {
-  role: 'FARMER' | 'BUYER';
+  role: PrimaryRole;
 }

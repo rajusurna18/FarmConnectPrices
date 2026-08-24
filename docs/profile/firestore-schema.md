@@ -1,24 +1,20 @@
-# Firestore Schema — User Profiles & Roles
+# Firestore Collections Schema — Three Primary Profiles
 
-## Collections
-
-### 1. `users/{uid}`
-Houses application-level account information.
+## 1. `users/{uid}`
 ```json
 {
   "uid": "string",
   "displayName": "string",
   "email": "string",
   "emailVerified": boolean,
-  "role": "FARMER" | "BUYER" | "USER" | "MIDDLEMAN" | "DELIVERY_PARTNER" | "ADMIN",
-  "status": "ACTIVE" | "SUSPENDED",
+  "role": "FARMER" | "MEDIATOR_BUYER" | "CUSTOMER" | "USER",
+  "status": "ACTIVE",
   "createdAt": "Timestamp",
   "updatedAt": "Timestamp"
 }
 ```
 
-### 2. `farmerProfiles/{uid}`
-Houses farmer-specific profile foundation.
+## 2. `farmerProfiles/{uid}`
 ```json
 {
   "uid": "string",
@@ -35,8 +31,7 @@ Houses farmer-specific profile foundation.
 }
 ```
 
-### 3. `buyerProfiles/{uid}`
-Houses buyer-specific profile foundation.
+## 3. `mediatorBuyerProfiles/{uid}`
 ```json
 {
   "uid": "string",
@@ -48,6 +43,25 @@ Houses buyer-specific profile foundation.
     "mandal": "string",
     "village": "string"
   },
+  "businessOrganizationName": "string",
+  "createdAt": "Timestamp",
+  "updatedAt": "Timestamp"
+}
+```
+
+## 4. `customerProfiles/{uid}`
+```json
+{
+  "uid": "string",
+  "profileCompleted": boolean,
+  "phoneNumber": "string",
+  "location": {
+    "state": "string",
+    "district": "string",
+    "mandal": "string",
+    "village": "string"
+  },
+  "address": "string",
   "createdAt": "Timestamp",
   "updatedAt": "Timestamp"
 }

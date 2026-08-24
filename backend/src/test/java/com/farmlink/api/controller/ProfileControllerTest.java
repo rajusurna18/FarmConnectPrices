@@ -82,6 +82,19 @@ class ProfileControllerTest {
     }
 
     @Test
+    void updateRoleWithOldBuyerRoleShouldReturnBadRequest() throws Exception {
+        FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken("test-uid-456", "test@example.com", "Test User");
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        RoleSelectionRequest req = new RoleSelectionRequest("BUYER");
+
+        mockMvc.perform(put("/api/v1/profile/role")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void updateRoleWithFarmerRoleShouldSucceed() throws Exception {
         FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken("test-uid-456", "test@example.com", "Test User");
         SecurityContextHolder.getContext().setAuthentication(auth);
@@ -92,12 +105,43 @@ class ProfileControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.role").value("FARMER"));
+                .andExpect(jsonPath("$.role").value("FARMER"))
+                .andExpect(jsonPath("$.roleDisplayName").value("Farmer"));
+    }
+
+    @Test
+    void updateRoleWithMediatorBuyerRoleShouldSucceed() throws Exception {
+        FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken("test-uid-456", "test@example.com", "Test User");
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        RoleSelectionRequest req = new RoleSelectionRequest("MEDIATOR_BUYER");
+
+        mockMvc.perform(put("/api/v1/profile/role")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("MEDIATOR_BUYER"))
+                .andExpect(jsonPath("$.roleDisplayName").value("Mediator / Buyer"));
+    }
+
+    @Test
+    void updateRoleWithCustomerRoleShouldSucceed() throws Exception {
+        FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken("test-uid-456", "test@example.com", "Test User");
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        RoleSelectionRequest req = new RoleSelectionRequest("CUSTOMER");
+
+        mockMvc.perform(put("/api/v1/profile/role")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("CUSTOMER"))
+                .andExpect(jsonPath("$.roleDisplayName").value("Customer"));
     }
 
     @Test
     void updateProfileWithoutTokenShouldReturnUnauthorized() throws Exception {
-        UpdateProfileRequest req = new UpdateProfileRequest("Updated Name", "+919876543210", new LocationDto("TS", "RR", "RNR", "BDV"));
+        UpdateProfileRequest req = new UpdateProfileRequest("Updated Name", "+919876543210", new LocationDto("TS", "RR", "RNR", "BDV"), null, null);
         mockMvc.perform(put("/api/v1/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))

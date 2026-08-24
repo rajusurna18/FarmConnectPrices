@@ -1,203 +1,210 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { Link } from 'react-router-dom';
 import { useProfile } from '../hooks/useProfile';
+import { ROLE_DISPLAY_NAMES } from '../types';
 
 export const ProfilePage: React.FC = () => {
-  const { logout } = useAuth();
-  const { profile, isLoading, isError, refetchProfile } = useProfile();
-  const navigate = useNavigate();
+  const { profile, isLoadingProfile, profileError } = useProfile();
 
-  if (isLoading) {
+  if (isLoadingProfile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">Loading user profile...</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
+        <div className="flex items-center space-x-3 text-emerald-600 dark:text-emerald-400">
+          <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm font-medium">Loading profile details...</span>
         </div>
       </div>
     );
   }
 
-  if (isError || !profile) {
+  if (profileError || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-        <div className="max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-red-200 dark:border-red-900/50 text-center space-y-4">
-          <div className="text-red-500 text-4xl">⚠️</div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Unable to Load Profile</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            There was an error fetching your profile details. Please check your connection and try again.
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-red-200 text-center">
+          <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Failed to load profile</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+            Could not fetch profile information. Please verify your authentication.
           </p>
-          <button
-            onClick={() => refetchProfile()}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
+          <Link
+            to="/login"
+            className="inline-block px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium"
           >
-            Retry Loading
-          </button>
+            Go to Login
+          </Link>
         </div>
       </div>
     );
   }
 
-  const isRoleUnassigned = profile.role === 'USER';
+  const isRoleAssigned = profile.role && profile.role !== 'USER';
+  const roleDisplay = profile.roleDisplayName || ROLE_DISPLAY_NAMES[profile.role] || profile.role;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
-      {/* Top Header Navigation */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link to="/" className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
-            FarmConnectPrices
-          </Link>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white py-10 px-4 sm:px-6 lg:px-8 transition-colors">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              User Profile
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white mt-1">
+              {profile.displayName || 'User Profile'}
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+              UID: <code className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-800 dark:text-gray-200 font-mono">{profile.uid}</code>
+            </p>
+          </div>
+
           <div className="flex items-center space-x-3">
             <Link
+              to="/profile/edit"
+              className="min-h-[40px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium shadow transition-colors flex items-center space-x-2"
+            >
+              <span>Edit Profile</span>
+            </Link>
+            <Link
               to="/dashboard"
-              className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-lg transition-colors"
+              className="min-h-[40px] px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl text-sm font-medium transition-colors"
             >
               Dashboard
             </Link>
-            <button
-              onClick={logout}
-              className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              Sign Out
-            </button>
           </div>
         </div>
-      </header>
 
-      {/* Main Page Container */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6 animate-fade-in">
-        {/* Banner if role is unassigned */}
-        {isRoleUnassigned && (
-          <div className="bg-amber-50 dark:bg-amber-950/50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h3 className="font-bold text-amber-900 dark:text-amber-200 text-sm sm:text-base">
-                Role Assignment Required
+        {/* Role Warning Banner if role is unassigned */}
+        {!isRoleAssigned && (
+          <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-500 rounded-r-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                Action Required: Role Selection Pending
               </h3>
-              <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-300">
-                Please select whether you are a Farmer or a Buyer to complete your account setup.
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                You have not selected an application role yet. Please choose your profile role to unlock features.
               </p>
             </div>
-            <button
-              onClick={() => navigate('/onboarding/role')}
-              className="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium text-sm rounded-lg shadow transition-colors whitespace-nowrap"
+            <Link
+              to="/onboarding/role"
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl whitespace-nowrap shadow transition-colors"
             >
-              Select Role →
-            </button>
+              Select Role Now →
+            </Link>
           </div>
         )}
 
-        {/* Profile Card Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8 space-y-6">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-            {/* Avatar & Identifiers */}
-            <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
-              <div className="relative">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-emerald-500 to-teal-700 text-white rounded-full flex items-center justify-center text-3xl sm:text-4xl font-extrabold shadow-md">
-                  {profile.displayName ? profile.displayName.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <span className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full" title="Active Account"></span>
-              </div>
-              <div className="space-y-1">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
-                  {profile.displayName || 'Anonymous User'}
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                  {profile.email}
-                </p>
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                    Role: {profile.role}
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    profile.profileCompleted
-                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
-                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/80 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-800'
-                  }`}>
-                    {profile.profileCompleted ? '✓ Profile Complete' : '⚠️ Profile Incomplete'}
-                  </span>
-                </div>
-              </div>
-            </div>
+        {/* Profile Card Main Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Identity & Contact Card */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 space-y-4">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
+              Account Identity
+            </h2>
 
-            {/* Edit Button */}
-            <div className="w-full sm:w-auto flex justify-center">
-              <Link
-                to="/profile/edit"
-                className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl shadow transition-all duration-200 motion-reduce:transition-none flex items-center justify-center space-x-2 text-sm"
-              >
-                <span>✏️ Edit Profile</span>
-              </Link>
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="text-xs text-gray-500 dark:text-gray-400 block">Display Name</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200">{profile.displayName || 'N/A'}</span>
+              </div>
+
+              <div>
+                <span className="text-xs text-gray-500 dark:text-gray-400 block">Email Address</span>
+                <div className="flex items-center space-x-2">
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">{profile.email}</span>
+                  {profile.emailVerified ? (
+                    <span className="px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300 rounded-full">
+                      ✓ Verified
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 rounded-full">
+                      Unverified
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs text-gray-500 dark:text-gray-400 block">Application Role</span>
+                <span className="inline-block px-3 py-1 mt-1 text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-lg">
+                  {roleDisplay}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-xs text-gray-500 dark:text-gray-400 block">Phone Number</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                  {profile.phoneNumber || 'Not provided'}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Detailed Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-            {/* Account Details Column */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-100 dark:border-gray-700/50 space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700/60 pb-2">
-                Account Details
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400 block text-xs">User ID (UID)</span>
-                  <span className="font-mono text-xs text-gray-700 dark:text-gray-300 break-all">{profile.uid}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400 block text-xs">Phone Number</span>
-                  <span className="font-semibold text-gray-800 dark:text-gray-200">
-                    {profile.phoneNumber || 'Not provided'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400 block text-xs">Email Verification Status</span>
-                  <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded ${
-                    profile.emailVerified
-                      ? 'text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-950/60'
-                      : 'text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-950/60'
-                  }`}>
-                    {profile.emailVerified ? 'Verified' : 'Pending Verification'}
-                  </span>
+          {/* Location & Foundational Metadata Card */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 space-y-4">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white border-b pb-2 border-gray-100 dark:border-gray-700">
+              Foundational Profile Details
+            </h2>
+
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="text-xs text-gray-500 dark:text-gray-400 block">Profile Completion Status</span>
+                <div className="mt-1">
+                  {profile.profileCompleted ? (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      ✓ Profile Complete
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                      Incomplete • Details Needed
+                    </span>
+                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Location Details Column */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-100 dark:border-gray-700/50 space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700/60 pb-2">
-                Location Metadata
-              </h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              {/* Role Specific Fields */}
+              {profile.role === 'MEDIATOR_BUYER' && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 block text-xs">State</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Business / Organization Name</span>
                   <span className="font-semibold text-gray-800 dark:text-gray-200">
-                    {profile.location?.state || '—'}
+                    {profile.businessOrganizationName || 'Not provided'}
                   </span>
                 </div>
+              )}
+
+              {profile.role === 'CUSTOMER' && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 block text-xs">District</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Delivery Address</span>
                   <span className="font-semibold text-gray-800 dark:text-gray-200">
-                    {profile.location?.district || '—'}
+                    {profile.address || 'Not provided'}
                   </span>
                 </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400 block text-xs">Mandal</span>
-                  <span className="font-semibold text-gray-800 dark:text-gray-200">
-                    {profile.location?.mandal || '—'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400 block text-xs">Village</span>
-                  <span className="font-semibold text-gray-800 dark:text-gray-200">
-                    {profile.location?.village || '—'}
-                  </span>
+              )}
+
+              {/* Location Fields */}
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Primary Location</span>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded-lg">
+                    <span className="text-gray-400 block">State</span>
+                    <span className="font-medium">{profile.location?.state || '—'}</span>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded-lg">
+                    <span className="text-gray-400 block">District</span>
+                    <span className="font-medium">{profile.location?.district || '—'}</span>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded-lg">
+                    <span className="text-gray-400 block">Mandal</span>
+                    <span className="font-medium">{profile.location?.mandal || '—'}</span>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-750 p-2 rounded-lg">
+                    <span className="text-gray-400 block">Village</span>
+                    <span className="font-medium">{profile.location?.village || '—'}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

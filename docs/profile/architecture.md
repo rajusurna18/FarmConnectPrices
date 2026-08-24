@@ -1,20 +1,24 @@
-# Profile & Role Architecture
+# User Profiles & Role Architecture — Three Primary Profiles
 
-## System Overview
-FarmConnectPrices establishes a clear 3-tier separation of user identity, core user account metadata, and role-specific profile document structures.
+## Overview
+FarmConnectPrices separates identity, common account metadata, and role-specific profile documents.
 
 ```
-Firebase Auth Identity (uid, email, emailVerified)
-        │
-        ▼
-   users/{uid} (Core account: uid, displayName, role, status)
-        │
-        ├─────────────────────────┐
-        ▼                         ▼
-farmerProfiles/{uid}      buyerProfiles/{uid}
+                  Firebase Authentication (UID)
+                                │
+                                ▼
+                           users/{uid}
+             (displayName, email, role, status, timestamps)
+                                │
+         ┌──────────────────────┼──────────────────────┐
+         ▼                      ▼                      ▼
+farmerProfiles/{uid}  mediatorBuyerProfiles/{uid}  customerProfiles/{uid}
 ```
 
-## Data Isolation Rationale
-- **`users/{uid}`**: Kept lightweight, containing only fundamental identity metadata necessary for system-wide authentication and authorization.
-- **Role Profiles (`farmerProfiles/{uid}` / `buyerProfiles/{uid}`)**: Extensible isolated documents housing domain-specific attributes (location foundation, phone number, completion flags) without bloating core account data.
-- **Future Extensibility**: Collections for future roles (`middlemanProfiles`, `deliveryProfiles`, `adminProfiles`) can be cleanly plugged into this hierarchy without modifying existing schemas.
+## Primary Application Roles
+1. **`FARMER`** (Display: **Farmer**): Produce sellers and agricultural growers.
+2. **`MEDIATOR_BUYER`** (Display: **Mediator / Buyer**): Commercial buyers, aggregators, traders, and agricultural market mediators.
+3. **`CUSTOMER`** (Display: **Customer**): End consumers purchasing agricultural goods.
+
+## Decommissioned Profiles
+- The legacy `BUYER` role and `buyerProfiles/{uid}` collection have been decommissioned and replaced by `mediatorBuyerProfiles/{uid}` and `customerProfiles/{uid}`.
