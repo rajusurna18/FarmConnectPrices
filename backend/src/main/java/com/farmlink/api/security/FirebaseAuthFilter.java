@@ -30,6 +30,12 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        // Allow OPTIONS preflight requests to pass through without token verification
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -41,8 +47,9 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
                     String uid = decodedToken.getUid();
                     String email = decodedToken.getEmail();
                     String name = decodedToken.getName();
+                    boolean emailVerified = decodedToken.isEmailVerified();
 
-                    FirebaseAuthenticationToken authentication = new FirebaseAuthenticationToken(uid, email, name);
+                    FirebaseAuthenticationToken authentication = new FirebaseAuthenticationToken(uid, email, name, emailVerified);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
                 } catch (Exception e) {

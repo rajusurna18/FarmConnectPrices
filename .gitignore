@@ -23,6 +23,7 @@ target/
 
 # Credentials & Service Accounts
 *service-account*.json
+*serviceAccount*.json
 *firebase-adminsdk*.json
 *-firebase-adminsdk-*.json
 !firebase.json

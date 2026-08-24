@@ -7,7 +7,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "app.firebase")
 public class FirebaseProperties {
 
-    private String projectId;
+    private String projectId = "farmconnectprices";
+    private String credentialsPath;
     private String clientEmail;
     private String privateKey;
     private boolean useEmulator = false;
@@ -19,6 +20,14 @@ public class FirebaseProperties {
 
     public void setProjectId(String projectId) {
         this.projectId = projectId;
+    }
+
+    public String getCredentialsPath() {
+        return credentialsPath;
+    }
+
+    public void setCredentialsPath(String credentialsPath) {
+        this.credentialsPath = credentialsPath;
     }
 
     public String getClientEmail() {
@@ -53,9 +62,6 @@ public class FirebaseProperties {
         this.emulatorHost = emulatorHost;
     }
 
-    /**
-     * Helper to return private key with actual newlines resolved from escaped strings (\n).
-     */
     public String getFormattedPrivateKey() {
         if (privateKey == null) {
             return null;
@@ -63,13 +69,11 @@ public class FirebaseProperties {
         return privateKey.replace("\\n", "\n");
     }
 
-    /**
-     * Checks if credentials (projectId and privateKey or clientEmail) are configured.
-     */
     public boolean isConfigured() {
         return (projectId != null && !projectId.trim().isEmpty()) &&
-                ((privateKey != null && !privateKey.trim().isEmpty()) ||
-                 (clientEmail != null && !clientEmail.trim().isEmpty()) ||
+                ((privateKey != null && !privateKey.trim().isEmpty() && clientEmail != null && !clientEmail.trim().isEmpty()) ||
+                 (credentialsPath != null && !credentialsPath.trim().isEmpty()) ||
+                 (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") != null) ||
                  useEmulator);
     }
 }

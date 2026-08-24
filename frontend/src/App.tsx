@@ -9,6 +9,9 @@ import { RegisterPage } from './features/auth/pages/RegisterPage';
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage';
 import { VerifyEmailPage } from './features/auth/pages/VerifyEmailPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { ProfilePage } from './features/profile/pages/ProfilePage';
+import { EditProfilePage } from './features/profile/pages/EditProfilePage';
+import { RoleSelectionPage } from './features/profile/pages/RoleSelectionPage';
 
 const queryClient = new QueryClient();
 
@@ -28,7 +31,9 @@ export const App: React.FC = () => {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/profile" element={<DashboardPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/edit" element={<EditProfilePage />} />
+              <Route path="/onboarding/role" element={<RoleSelectionPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

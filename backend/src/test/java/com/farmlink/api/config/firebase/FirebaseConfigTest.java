@@ -5,10 +5,15 @@ import com.google.firebase.FirebaseApp;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@TestPropertySource(properties = {
+    "app.firebase.project-id=farmconnectprices",
+    "app.firebase.use-emulator=true"
+})
 class FirebaseConfigTest {
 
     @Autowired
@@ -23,8 +28,8 @@ class FirebaseConfigTest {
     @Test
     void firebasePropertiesShouldLoadDefaults() {
         assertNotNull(firebaseProperties);
-        assertEquals("farmconnectprices-dev", firebaseProperties.getProjectId());
-        assertFalse(firebaseProperties.isUseEmulator());
+        assertEquals("farmconnectprices", firebaseProperties.getProjectId());
+        assertTrue(firebaseProperties.isUseEmulator());
     }
 
     @Test
@@ -35,9 +40,9 @@ class FirebaseConfigTest {
     }
 
     @Test
-    void firebaseAppAndFirestoreBeansShouldBeInitialized() {
+    void firebaseAppAndFirestoreBeansShouldBeInitializedInEmulatorMode() {
         assertNotNull(firebaseApp, "FirebaseApp bean should be initialized");
         assertNotNull(firestore, "Firestore bean should be initialized");
-        assertEquals("farmconnectprices-dev", firebaseApp.getOptions().getProjectId());
+        assertEquals("farmconnectprices", firebaseApp.getOptions().getProjectId());
     }
 }
