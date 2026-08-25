@@ -97,6 +97,11 @@ function AnimatedOrbitGroup({ children }: { children: React.ReactNode }) {
 
 export const IndiaMarketMap: React.FC<IndiaMarketMapProps> = ({ selectedNodeId, onSelectNode }) => {
   const { containerRef, isInView } = useInView3D<HTMLDivElement>('150px');
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReducedMotion) {
+    return null;
+  }
 
   return (
     <div ref={containerRef} className="w-full h-80 sm:h-96 relative">

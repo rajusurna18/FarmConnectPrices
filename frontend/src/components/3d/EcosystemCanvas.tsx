@@ -96,6 +96,11 @@ function ConnectingLines() {
 
 export const EcosystemCanvas: React.FC<{ activeStep?: number }> = ({ activeStep = 4 }) => {
   const { containerRef, isInView } = useInView3D<HTMLDivElement>('150px');
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReducedMotion) {
+    return null;
+  }
   const nodes = [
     { position: [-4.5, 0, 0] as [number, number, number], color: '#34d399', label: 'Farm', symbol: '🌾' },
     { position: [-1.5, 0, 0] as [number, number, number], color: '#3b82f6', label: 'Market Data', symbol: '📊' },
