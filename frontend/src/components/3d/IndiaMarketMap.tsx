@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { INDIA_MARKET_NODES, type MarketMapNode } from '../../features/market/data/spatialNodeData';
 import { WebGLBoundary } from './WebGLFallback';
+import { useInView3D } from './useInView3D';
 
 interface IndiaMarketMapProps {
   selectedNodeId?: string;
@@ -95,25 +96,29 @@ function AnimatedOrbitGroup({ children }: { children: React.ReactNode }) {
 }
 
 export const IndiaMarketMap: React.FC<IndiaMarketMapProps> = ({ selectedNodeId, onSelectNode }) => {
+  const { containerRef, isInView } = useInView3D<HTMLDivElement>('150px');
+
   return (
-    <div className="w-full h-80 sm:h-96 relative">
-      <WebGLBoundary>
-        <Canvas camera={{ position: [0, 0, 4.2], fov: 45 }} gl={{ alpha: true }}>
-          <ambientLight intensity={0.7} />
-          <pointLight position={[5, 5, 5]} intensity={1.2} color="#10b981" />
-          <AnimatedOrbitGroup>
-            <ConnectionPaths />
-            {INDIA_MARKET_NODES.map(node => (
-              <MarketNodePoint
-                key={node.id}
-                node={node}
-                isSelected={selectedNodeId === node.id}
-                onClick={() => onSelectNode && onSelectNode(node)}
-              />
-            ))}
-          </AnimatedOrbitGroup>
-        </Canvas>
-      </WebGLBoundary>
+    <div ref={containerRef} className="w-full h-80 sm:h-96 relative">
+      {isInView && (
+        <WebGLBoundary>
+          <Canvas camera={{ position: [0, 0, 4.2], fov: 45 }} gl={{ alpha: true }} dpr={[1, 1.5]}>
+            <ambientLight intensity={0.7} />
+            <pointLight position={[5, 5, 5]} intensity={1.2} color="#10b981" />
+            <AnimatedOrbitGroup>
+              <ConnectionPaths />
+              {INDIA_MARKET_NODES.map(node => (
+                <MarketNodePoint
+                  key={node.id}
+                  node={node}
+                  isSelected={selectedNodeId === node.id}
+                  onClick={() => onSelectNode && onSelectNode(node)}
+                />
+              ))}
+            </AnimatedOrbitGroup>
+          </Canvas>
+        </WebGLBoundary>
+      )}
     </div>
   );
 };

@@ -30,8 +30,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           status: 'ACTIVE',
         });
       }
-    } catch (error) {
-      console.warn('[AuthContext] Error fetching user document:', error);
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string };
+      const isOfflineError =
+        err?.code === 'unavailable' ||
+        err?.message?.toLowerCase().includes('offline') ||
+        err?.message?.toLowerCase().includes('failed to get document');
+
+      if (isOfflineError) {
+        console.info('[AuthContext] Firestore client is offline. Using local auth profile snapshot.');
+      } else {
+        console.warn('[AuthContext] Error fetching user document:', error);
+      }
+
+      setUserDocument((prev) => prev || {
+        uid: user.uid,
+        displayName: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        emailVerified: user.emailVerified,
+        role: 'USER',
+        status: 'ACTIVE',
+      });
     }
   }, []);
 

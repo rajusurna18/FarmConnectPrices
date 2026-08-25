@@ -2,6 +2,7 @@ import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { WebGLBoundary } from './WebGLFallback';
+import { useInView3D } from './useInView3D';
 
 interface Hero3DElementsProps {
   isMobile?: boolean;
@@ -195,6 +196,7 @@ function ParallaxSceneGroup({ mousePos, isMobile, children }: { mousePos: { x: n
 
 export const Hero3DElements: React.FC<Hero3DElementsProps> = ({ isMobile = false }) => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const { containerRef, isInView } = useInView3D<HTMLDivElement>('200px');
 
   useEffect(() => {
     if (isMobile) return;
@@ -218,24 +220,26 @@ export const Hero3DElements: React.FC<Hero3DElementsProps> = ({ isMobile = false
   const particleCount = isMobile ? 4 : 20;
 
   return (
-    <div className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-hidden opacity-80">
-      <WebGLBoundary fallback={<div className="hidden" />}>
-        <Canvas
-          camera={{ position: [0, 0, isMobile ? 7.0 : 7.2], fov: isMobile ? 50 : 50 }}
-          gl={{ alpha: true, antialias: !isMobile }}
-          dpr={isMobile ? 1 : [1, 1.5]}
-        >
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[6, 6, 6]} intensity={1.2} color="#a7f3d0" />
-          <pointLight position={[-5, -4, -3]} intensity={0.8} color="#f59e0b" />
+    <div ref={containerRef} className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-hidden opacity-80">
+      {isInView && (
+        <WebGLBoundary fallback={<div className="hidden" />}>
+          <Canvas
+            camera={{ position: [0, 0, isMobile ? 7.0 : 7.2], fov: isMobile ? 50 : 50 }}
+            gl={{ alpha: true, antialias: !isMobile }}
+            dpr={isMobile ? 1 : [1, 1.5]}
+          >
+            <ambientLight intensity={0.7} />
+            <directionalLight position={[6, 6, 6]} intensity={1.2} color="#a7f3d0" />
+            <pointLight position={[-5, -4, -3]} intensity={0.8} color="#f59e0b" />
 
-          <ParallaxSceneGroup mousePos={mousePos} isMobile={isMobile}>
-            <AgriculturalIntelligenceSphere isMobile={isMobile} />
-            <FloatingParticles count={particleCount} />
-            {!isMobile && <MarketNetworkConnections />}
-          </ParallaxSceneGroup>
-        </Canvas>
-      </WebGLBoundary>
+            <ParallaxSceneGroup mousePos={mousePos} isMobile={isMobile}>
+              <AgriculturalIntelligenceSphere isMobile={isMobile} />
+              <FloatingParticles count={particleCount} />
+              {!isMobile && <MarketNetworkConnections />}
+            </ParallaxSceneGroup>
+          </Canvas>
+        </WebGLBoundary>
+      )}
     </div>
   );
 };

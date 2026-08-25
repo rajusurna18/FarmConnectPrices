@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { AI_ORBIT_NODES, type AINodePoint } from '../../features/market/data/spatialNodeData';
 import { WebGLBoundary } from './WebGLFallback';
+import { useInView3D } from './useInView3D';
 
 function CentralCoreSphere() {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -110,22 +111,26 @@ function ConnectingBeams() {
 }
 
 export const AIDataSphere: React.FC = () => {
+  const { containerRef, isInView } = useInView3D<HTMLDivElement>('150px');
+
   return (
-    <div className="w-full h-80 sm:h-96 relative">
-      <WebGLBoundary>
-        <Canvas camera={{ position: [0, 1.2, 5], fov: 45 }} gl={{ alpha: true }}>
-          <ambientLight intensity={0.8} />
-          <pointLight position={[5, 5, 5]} intensity={1.5} color="#10b981" />
-          <pointLight position={[-5, -5, -5]} intensity={0.8} color="#f59e0b" />
-          
-          <CentralCoreSphere />
-          <ConnectingBeams />
-          
-          {AI_ORBIT_NODES.map(node => (
-            <OrbitingDataNode key={node.id} node={node} />
-          ))}
-        </Canvas>
-      </WebGLBoundary>
+    <div ref={containerRef} className="w-full h-80 sm:h-96 relative">
+      {isInView && (
+        <WebGLBoundary>
+          <Canvas camera={{ position: [0, 1.2, 5], fov: 45 }} gl={{ alpha: true }} dpr={[1, 1.5]}>
+            <ambientLight intensity={0.8} />
+            <pointLight position={[5, 5, 5]} intensity={1.5} color="#10b981" />
+            <pointLight position={[-5, -5, -5]} intensity={0.8} color="#f59e0b" />
+            
+            <CentralCoreSphere />
+            <ConnectingBeams />
+            
+            {AI_ORBIT_NODES.map(node => (
+              <OrbitingDataNode key={node.id} node={node} />
+            ))}
+          </Canvas>
+        </WebGLBoundary>
+      )}
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { WebGLBoundary } from './WebGLFallback';
+import { useInView3D } from './useInView3D';
 
 interface MarketNetworkVisualProps {
   isMobile?: boolean;
@@ -104,6 +105,7 @@ function MarketNetworkLines() {
 }
 
 export const MarketNetworkVisual: React.FC<MarketNetworkVisualProps> = ({ isMobile = false }) => {
+  const { containerRef, isInView } = useInView3D<HTMLDivElement>('150px');
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (prefersReducedMotion) {
@@ -113,23 +115,25 @@ export const MarketNetworkVisual: React.FC<MarketNetworkVisualProps> = ({ isMobi
   const nodeCount = isMobile ? 4 : 12;
 
   return (
-    <div className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-hidden opacity-75">
-      <WebGLBoundary fallback={<div className="hidden" />}>
-        <Canvas
-          camera={{ position: [0, 0, isMobile ? 6.0 : 6.5], fov: isMobile ? 50 : 45 }}
-          gl={{ alpha: true, antialias: !isMobile }}
-          dpr={isMobile ? 1 : [1, 1.5]}
-        >
-          <ambientLight intensity={0.8} />
-          <directionalLight position={[5, 5, 5]} intensity={1.0} color="#a7f3d0" />
-          <pointLight position={[-4, -3, -2]} intensity={0.6} color="#f59e0b" />
+    <div ref={containerRef} className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-hidden opacity-75">
+      {isInView && (
+        <WebGLBoundary fallback={<div className="hidden" />}>
+          <Canvas
+            camera={{ position: [0, 0, isMobile ? 6.0 : 6.5], fov: isMobile ? 50 : 45 }}
+            gl={{ alpha: true, antialias: !isMobile }}
+            dpr={isMobile ? 1 : [1, 1.5]}
+          >
+            <ambientLight intensity={0.8} />
+            <directionalLight position={[5, 5, 5]} intensity={1.0} color="#a7f3d0" />
+            <pointLight position={[-4, -3, -2]} intensity={0.6} color="#f59e0b" />
 
-          <group>
-            <FloatingMarketNodes count={nodeCount} />
-            {!isMobile && <MarketNetworkLines />}
-          </group>
-        </Canvas>
-      </WebGLBoundary>
+            <group>
+              <FloatingMarketNodes count={nodeCount} />
+              {!isMobile && <MarketNetworkLines />}
+            </group>
+          </Canvas>
+        </WebGLBoundary>
+      )}
     </div>
   );
 };
