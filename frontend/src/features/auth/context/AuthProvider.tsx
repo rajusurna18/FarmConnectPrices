@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from '../../../config/firebase';
-import { fetchDocument, logoutUser } from '../../../services/firebase';
+import { logoutUser } from '../../../services/firebase';
 import type { UserDocument } from '../types';
 import { AuthContext } from './AuthContext';
 
@@ -11,70 +11,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userDocument, setUserDocument] = useState<UserDocument | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const fetchUserData = useCallback(async (user: User | null) => {
+  const syncUserAuthSnapshot = useCallback((user: User | null) => {
     if (!user) {
       setUserDocument(null);
       return;
     }
-    try {
-      const docResult = await fetchDocument<UserDocument>('users', user.uid);
-      if (docResult) {
-        setUserDocument(docResult.data);
-      } else {
-        setUserDocument({
-          uid: user.uid,
-          displayName: user.displayName || user.email?.split('@')[0] || 'User',
-          email: user.email || '',
-          emailVerified: user.emailVerified,
-          role: 'USER',
-          status: 'ACTIVE',
-        });
-      }
-    } catch (error: unknown) {
-      const err = error as { code?: string; message?: string };
-      const isOfflineError =
-        err?.code === 'unavailable' ||
-        err?.message?.toLowerCase().includes('offline') ||
-        err?.message?.toLowerCase().includes('failed to get document');
-
-      if (isOfflineError) {
-        console.info('[AuthContext] Firestore client is offline. Using local auth profile snapshot.');
-      } else {
-        console.warn('[AuthContext] Error fetching user document:', error);
-      }
-
-      setUserDocument((prev) => prev || {
-        uid: user.uid,
-        displayName: user.displayName || user.email?.split('@')[0] || 'User',
-        email: user.email || '',
-        emailVerified: user.emailVerified,
-        role: 'USER',
-        status: 'ACTIVE',
-      });
-    }
+    setUserDocument({
+      uid: user.uid,
+      displayName: user.displayName || user.email?.split('@')[0] || 'User',
+      email: user.email || '',
+      emailVerified: user.emailVerified,
+      role: 'USER',
+      status: 'ACTIVE',
+    });
   }, []);
 
   const refreshUser = useCallback(async () => {
     if (auth.currentUser) {
       await auth.currentUser.reload();
       setCurrentUser(auth.currentUser);
-      await fetchUserData(auth.currentUser);
+      syncUserAuthSnapshot(auth.currentUser);
     }
-  }, [fetchUserData]);
+  }, [syncUserAuthSnapshot]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      if (user) {
-        await fetchUserData(user);
-      } else {
-        setUserDocument(null);
-      }
+      syncUserAuthSnapshot(user);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [fetchUserData]);
+  }, [syncUserAuthSnapshot]);
 
   const handleLogout = async () => {
     await logoutUser();

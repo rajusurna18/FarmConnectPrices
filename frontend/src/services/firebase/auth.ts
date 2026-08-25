@@ -28,17 +28,21 @@ export const registerWithEmail = async (
     await updateProfile(user, { displayName });
   }
 
-  // Create corresponding user document in Firestore users/{uid}
-  await saveDocument('users', user.uid, {
-    uid: user.uid,
-    displayName: displayName || user.email?.split('@')[0] || 'User',
-    email: user.email,
-    emailVerified: user.emailVerified,
-    role: 'USER',
-    status: 'ACTIVE',
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+  // Attempt to create user document in Firestore users/{uid} (Backend API creates/initializes on profile request)
+  try {
+    await saveDocument('users', user.uid, {
+      uid: user.uid,
+      displayName: displayName || user.email?.split('@')[0] || 'User',
+      email: user.email,
+      emailVerified: user.emailVerified,
+      role: 'USER',
+      status: 'ACTIVE',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.info('[Firebase Auth] Direct Firestore client write skipped (managed via Spring Boot backend Profile API):', error);
+  }
 
   // Send verification email
   try {
