@@ -21,7 +21,6 @@ import { ROLE_DISPLAY_NAMES } from '../types';
 import { GlassCard } from '../../../components/ui/GlassCard';
 import { Navbar } from '../../../components/navigation/Navbar';
 import { Footer } from '../../../components/navigation/Footer';
-import { AIDataSphere } from '../../../components/3d/AIDataSphere';
 
 export const EditProfilePage: React.FC = () => {
   const { profile, isLoadingProfile, updateProfile, isUpdatingProfile } = useProfile();
@@ -84,7 +83,14 @@ export const EditProfilePage: React.FC = () => {
       setTimeout(() => navigate('/profile'), 1200);
     } catch (err: unknown) {
       console.error('Failed to update profile:', err);
-      setFeedback({ type: 'error', message: 'Failed to update profile. Please verify fields and try again.' });
+      const resData = (err as { response?: { data?: string | { message?: string } } })?.response?.data;
+      const errorMsg =
+        typeof resData === 'string'
+          ? resData
+          : typeof resData === 'object' && resData?.message
+          ? resData.message
+          : 'Failed to update profile. Please verify fields and try again.';
+      setFeedback({ type: 'error', message: errorMsg });
     }
   };
 
@@ -509,15 +515,22 @@ export const EditProfilePage: React.FC = () => {
                 </div>
               </GlassCard>
 
-              {/* SUBTLE 3D DECORATIVE CANVAS (DESKTOP ONLY / LOW OPACITY) */}
-              <div className="hidden md:block rounded-2xl bg-slate-900/30 border border-emerald-500/20 p-2 overflow-hidden relative shadow-xl">
-                <div className="absolute top-2 left-3 z-10 text-[10px] font-mono text-emerald-400/80">
-                  <span>Agricultural Data Sphere</span>
+              {/* AMBIENT VISUAL STATUS BADGE (LIGHTWEIGHT CSS-ONLY / ZERO WEBGL) */}
+              <GlassCard className="p-5 border-emerald-500/20 shadow-xl relative overflow-hidden hidden md:block">
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Direct Verification Gateway</h4>
+                    <p className="text-[11px] text-slate-400">Authenticated & Role Verified</p>
+                  </div>
                 </div>
-                <div className="pointer-events-none opacity-40">
-                  <AIDataSphere />
-                </div>
-              </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Profile metadata updates are validated and securely saved to your primary identity record.
+                </p>
+              </GlassCard>
 
               {/* ACTION BUTTONS (DESKTOP & MOBILE STICKY FOOTER) */}
               <GlassCard className="p-5 border-slate-800 space-y-3">

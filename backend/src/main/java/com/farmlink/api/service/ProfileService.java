@@ -63,6 +63,20 @@ public class ProfileService {
                 }
 
                 String roleCollection = getRoleCollection(role);
+                if (roleCollection == null) {
+                    // Fallback check across role collections if users doc missing role field
+                    if (firestore.collection("farmerProfiles").document(uid).get().get().exists()) {
+                        role = ROLE_FARMER;
+                        roleCollection = "farmerProfiles";
+                    } else if (firestore.collection("mediatorBuyerProfiles").document(uid).get().get().exists()) {
+                        role = ROLE_MEDIATOR_BUYER;
+                        roleCollection = "mediatorBuyerProfiles";
+                    } else if (firestore.collection("customerProfiles").document(uid).get().get().exists()) {
+                        role = ROLE_CUSTOMER;
+                        roleCollection = "customerProfiles";
+                    }
+                }
+
                 if (roleCollection != null) {
                     DocumentSnapshot roleDoc = firestore.collection(roleCollection).document(uid).get().get();
                     if (roleDoc.exists()) {
@@ -138,19 +152,15 @@ public class ProfileService {
                         newRoleProfile.put("updatedAt", FieldValue.serverTimestamp());
 
                         firestore.collection(targetCollection).document(uid).set(newRoleProfile).get();
-                    } else {
-                        Map<String, Object> roleUpdates = new HashMap<>();
-                        roleUpdates.put("updatedAt", FieldValue.serverTimestamp());
-                        firestore.collection(targetCollection).document(uid).set(roleUpdates, SetOptions.merge()).get();
                     }
                 }
                 return getProfile(uid, email, emailVerified, tokenDisplayName);
             } catch (Exception e) {
-                logger.warn("Error updating role for uid {}: {}", uid, e.getMessage());
+                logger.warn("Could not execute Firestore role write for uid {}: {}", uid, e.getMessage());
             }
         }
 
-        // Return fallback profile response if Firestore is offline / unauthenticated during test execution
+        // Return fallback profile response if Firestore is unauthenticated during unit test execution
         return new ProfileResponse(uid, displayName, email, emailVerified, targetRole, getRoleDisplayName(targetRole),
                 "ACTIVE", null, new LocationDto(), null, null, false);
     }
@@ -177,16 +187,32 @@ public class ProfileService {
                     role = userDoc.getString("role");
                 }
 
-                // 2. Update display name in users collection if provided
-                if (request.getDisplayName() != null && !request.getDisplayName().trim().isEmpty()) {
-                    Map<String, Object> userUpdates = new HashMap<>();
-                    userUpdates.put("displayName", displayName);
-                    userUpdates.put("updatedAt", FieldValue.serverTimestamp());
-                    firestore.collection("users").document(uid).set(userUpdates, SetOptions.merge()).get();
+                String roleCollection = getRoleCollection(role);
+
+                // Fallback check across role collections if users/{uid} is unpopulated
+                if (roleCollection == null) {
+                    if (firestore.collection("farmerProfiles").document(uid).get().get().exists()) {
+                        role = ROLE_FARMER;
+                        roleCollection = "farmerProfiles";
+                    } else if (firestore.collection("mediatorBuyerProfiles").document(uid).get().get().exists()) {
+                        role = ROLE_MEDIATOR_BUYER;
+                        roleCollection = "mediatorBuyerProfiles";
+                    } else if (firestore.collection("customerProfiles").document(uid).get().get().exists()) {
+                        role = ROLE_CUSTOMER;
+                        roleCollection = "customerProfiles";
+                    }
                 }
 
-                // 3. Update role profile if user has a specific role
-                String roleCollection = getRoleCollection(role);
+                // 2. Update display name & role in users collection
+                Map<String, Object> userUpdates = new HashMap<>();
+                userUpdates.put("displayName", displayName);
+                if (roleCollection != null) {
+                    userUpdates.put("role", role);
+                }
+                userUpdates.put("updatedAt", FieldValue.serverTimestamp());
+                firestore.collection("users").document(uid).set(userUpdates, SetOptions.merge()).get();
+
+                // 3. Update role profile document if roleCollection exists
                 if (roleCollection != null) {
                     boolean isCompleted = calculateProfileCompleted(role, phoneNumber, location, businessOrg, addr);
 
@@ -207,11 +233,11 @@ public class ProfileService {
 
                 return getProfile(uid, email, emailVerified, tokenDisplayName);
             } catch (Exception e) {
-                logger.warn("Error updating profile for uid {}: {}", uid, e.getMessage());
+                logger.warn("Could not execute Firestore profile write for uid {}: {}", uid, e.getMessage());
             }
         }
 
-        // Return fallback profile response if Firestore is offline / unauthenticated during test execution
+        // Return updated profile response with request parameters if Firestore is unauthenticated during unit test execution
         boolean fallbackCompleted = calculateProfileCompleted(ROLE_USER, phoneNumber, location, businessOrg, addr);
         return new ProfileResponse(uid, displayName, email, emailVerified, ROLE_USER, getRoleDisplayName(ROLE_USER),
                 "ACTIVE", phoneNumber, location, businessOrg, addr, fallbackCompleted);
