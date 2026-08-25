@@ -7,7 +7,7 @@ export interface Location {
 
 export type PrimaryRole = 'FARMER' | 'MEDIATOR_BUYER' | 'CUSTOMER';
 
-export type RoleType = PrimaryRole | 'USER' | 'ADMIN' | 'DELIVERY_PARTNER' | 'MIDDLEMAN';
+export type RoleType = PrimaryRole | 'USER' | 'ADMIN';
 
 export const ROLE_DISPLAY_NAMES: Record<string, string> = {
   FARMER: 'Farmer',

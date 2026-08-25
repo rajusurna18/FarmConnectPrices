@@ -1,14 +1,32 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Navbar } from '../components/navigation/Navbar';
 import { HeroSection } from '../sections/HeroSection';
-import { EcosystemSection } from '../sections/EcosystemSection';
 import { RolesSection } from '../sections/RolesSection';
 import { MarketIntelligencePreview } from '../sections/MarketIntelligencePreview';
-import { IndiaNetworkSection } from '../sections/IndiaNetworkSection';
-import { AISection } from '../sections/AISection';
 import { RoleExperiencesSection } from '../sections/RoleExperiencesSection';
 import { CTASection } from '../sections/CTASection';
 import { Footer } from '../components/navigation/Footer';
+
+const EcosystemSectionLazy = lazy(() =>
+  import('../sections/EcosystemSection').then((m) => ({ default: m.EcosystemSection }))
+);
+
+const IndiaNetworkSectionLazy = lazy(() =>
+  import('../sections/IndiaNetworkSection').then((m) => ({ default: m.IndiaNetworkSection }))
+);
+
+const AISectionLazy = lazy(() =>
+  import('../sections/AISection').then((m) => ({ default: m.AISection }))
+);
+
+const SectionFallback: React.FC = () => (
+  <div className="w-full py-20 bg-slate-950 flex items-center justify-center border-t border-slate-900 select-none min-h-[350px]">
+    <div className="flex flex-col items-center space-y-3">
+      <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs text-slate-400 font-medium">Loading visualization...</span>
+    </div>
+  </div>
+);
 
 export const HomePage: React.FC = () => {
   return (
@@ -19,11 +37,22 @@ export const HomePage: React.FC = () => {
       {/* Main Landing Sections */}
       <main className="w-full flex-grow">
         <HeroSection />
-        <EcosystemSection />
+
+        <Suspense fallback={<SectionFallback />}>
+          <EcosystemSectionLazy />
+        </Suspense>
+
         <RolesSection />
         <MarketIntelligencePreview />
-        <IndiaNetworkSection />
-        <AISection />
+
+        <Suspense fallback={<SectionFallback />}>
+          <IndiaNetworkSectionLazy />
+        </Suspense>
+
+        <Suspense fallback={<SectionFallback />}>
+          <AISectionLazy />
+        </Suspense>
+
         <RoleExperiencesSection />
         <CTASection />
       </main>
@@ -35,3 +64,4 @@ export const HomePage: React.FC = () => {
 };
 
 export default HomePage;
+

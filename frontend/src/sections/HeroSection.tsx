@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles, ShieldCheck, Sprout, Store, ShoppingBag } from 'lucide-react';
 import { VideoBackground } from '../components/VideoBackground';
-import { Hero3DElements } from '../components/3d/Hero3DElements';
 import { useHealthStatus } from '../hooks/useHealthStatus';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { APP_NAME, APP_TAGLINE } from '../constants/app';
+
+const Hero3DElementsLazy = lazy(() =>
+  import('../components/3d/Hero3DElements').then((m) => ({ default: m.Hero3DElements }))
+);
 
 export const HeroSection: React.FC = () => {
   const { data: healthData, isLoading, isError } = useHealthStatus();
@@ -27,11 +30,13 @@ export const HeroSection: React.FC = () => {
       id="hero"
       className="relative min-h-[92vh] sm:min-h-screen w-full flex items-center justify-center overflow-hidden bg-slate-950 pt-[calc(env(safe-area-inset-top)+5rem)] pb-[calc(env(safe-area-inset-bottom)+2.5rem)] select-none"
     >
-      {/* LAYER 1 & 2: Background Video & Atmospheric Contrast Overlays (z-0, z-10) */}
-      <VideoBackground videoSrc="/videos/farmconnectprices-hero.mp4" />
+      {/* LAYER 1 & 2: Ambient Background & Optional Video Layer (z-0, z-10) */}
+      <VideoBackground />
 
       {/* LAYER 3: 3D Data Environment Layer (z-20 - strictly behind text) */}
-      <Hero3DElements isMobile={isMobile} />
+      <Suspense fallback={<div className="absolute inset-0 z-20 pointer-events-none" />}>
+        <Hero3DElementsLazy isMobile={isMobile} />
+      </Suspense>
 
       {/* LAYER 4: Clean Hero Content Layer (z-40 - foreground text & CTAs) */}
       <div className="relative z-40 max-w-4xl mx-auto px-5 sm:px-6 lg:px-8 w-full text-center flex flex-col items-center justify-between space-y-5 sm:space-y-7">

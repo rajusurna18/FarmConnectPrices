@@ -1,21 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface VideoBackgroundProps {
-  videoSrc: string;
+  videoSrc?: string;
   posterSrc?: string;
 }
 
 export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, posterSrc }) => {
   const [videoError, setVideoError] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      setPrefersReducedMotion(mediaQuery.matches);
+
+      const handleChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, []);
+
+  const effectiveVideoSrc = videoSrc || (typeof import.meta !== 'undefined' ? import.meta.env.VITE_HERO_VIDEO_URL : '');
+  const shouldRenderVideo = Boolean(effectiveVideoSrc) && !videoError && !prefersReducedMotion;
 
   return (
-    <div className="absolute inset-0 w-full h-full min-h-[100svh] overflow-hidden bg-slate-950 z-0">
-      {/* Ambient background glow while loading or if video fails */}
+    <div className="absolute inset-0 w-full h-full min-h-[100svh] overflow-hidden bg-slate-950 z-0 select-none">
+      {/* Ambient background glow & atmospheric depth */}
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/50 via-slate-950 to-slate-950 z-0 pointer-events-none" />
 
-      {/* Primary Video Background with Mobile-Specific Focal Framing */}
-      {!videoError && (
+      {/* Primary Video Background (Rendered only when a valid video URL is explicitly configured) */}
+      {shouldRenderVideo && (
         <video
           autoPlay
           muted
@@ -31,8 +46,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, post
             videoLoaded ? 'opacity-70 sm:opacity-80' : 'opacity-35'
           }`}
         >
-          <source src={videoSrc} type="video/mp4" />
-          Your browser does not support the video tag.
+          <source src={effectiveVideoSrc} type="video/mp4" />
         </video>
       )}
 
@@ -47,5 +61,6 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({ videoSrc, post
     </div>
   );
 };
+
 
 
