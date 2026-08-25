@@ -20,6 +20,8 @@ const CreateFarmPage = lazy(() => import('./features/farms/pages/CreateFarmPage'
 const FarmDetailPage = lazy(() => import('./features/farms/pages/FarmDetailPage').then((m) => ({ default: m.FarmDetailPage })));
 const EditFarmPage = lazy(() => import('./features/farms/pages/EditFarmPage').then((m) => ({ default: m.EditFarmPage })));
 const FarmCropsPage = lazy(() => import('./features/farms/pages/FarmCropsPage').then((m) => ({ default: m.FarmCropsPage })));
+const MarketListPage = lazy(() => import('./features/markets/pages/MarketListPage').then((m) => ({ default: m.MarketListPage })));
+const MarketDetailPage = lazy(() => import('./features/markets/pages/MarketDetailPage').then((m) => ({ default: m.MarketDetailPage })));
 
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
@@ -52,6 +54,8 @@ export const App: React.FC = () => {
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/profile/edit" element={<EditProfilePage />} />
                 <Route path="/onboarding/role" element={<RoleSelectionPage />} />
+                <Route path="/markets" element={<MarketListPage />} />
+                <Route path="/markets/:marketId" element={<MarketDetailPage />} />
 
                 {/* FARMER Role Restricted Routes */}
                 <Route element={<FarmerRoute />}>

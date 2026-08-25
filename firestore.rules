@@ -64,9 +64,22 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Master Reference Markets Collection: Read-only for authenticated users
+    match /markets/{marketId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Master Reference Market Crops Collection: Read-only for authenticated users
+    match /marketCrops/{marketCropId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     // Default Deny: All other collections remain completely inaccessible until explicit rules are added
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+

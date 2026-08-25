@@ -29,11 +29,12 @@ export const Navbar: React.FC = () => {
   };
 
   const navLinks = [
-    { label: 'Home', href: '#hero' },
-    { label: 'Market Prices', href: '#market-prices' },
-    { label: 'AI Insights', href: '#ai-insights' },
-    { label: 'Marketplace', href: '#role-previews' },
-    { label: 'About', href: '#ecosystem' },
+    { label: 'Home', href: '/' },
+    { label: 'Markets', href: '/markets' },
+    { label: 'Market Prices', href: '/#market-prices' },
+    { label: 'AI Insights', href: '/#ai-insights' },
+    { label: 'Marketplace', href: '/#role-previews' },
+    { label: 'About', href: '/#ecosystem' },
   ];
 
   return (
@@ -57,15 +58,25 @@ export const Navbar: React.FC = () => {
 
         {/* Desktop Links */}
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-300">
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="hover:text-emerald-400 transition-colors py-1"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            link.href.startsWith('/') && !link.href.includes('#') ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="hover:text-emerald-400 transition-colors py-1"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="hover:text-emerald-400 transition-colors py-1"
+              >
+                {link.label}
+              </a>
+            )
+          )}
         </nav>
 
         {/* Desktop Auth CTAs */}
