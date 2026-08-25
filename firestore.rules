@@ -40,6 +40,30 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Farms Collection: Authenticated users access only their own farms
+    match /farms/{farmId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerUid;
+    }
+
+    // Farm Crops Collection: Authenticated users access only their own farm-crop relationships
+    match /farmCrops/{farmCropId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerUid;
+    }
+
+    // Master Reference Crops Collection: Read-only for authenticated users
+    match /crops/{cropId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Master Reference Locations Collection: Read-only for authenticated users
+    match /locations/{locationId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     // Default Deny: All other collections remain completely inaccessible until explicit rules are added
     match /{document=**} {
       allow read, write: if false;

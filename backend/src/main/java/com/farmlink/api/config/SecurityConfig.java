@@ -72,7 +72,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                 .requestMatchers("/api/v1/health", "/api/v1/health/firebase", "/actuator/**").permitAll()
-                .requestMatchers("/api/v1/users/**").authenticated()
+                .requestMatchers("/api/v1/users/**", "/api/v1/profile/**", "/api/v1/farms/**", "/api/v1/crops/**", "/api/v1/locations/**").authenticated()
                 .anyRequest().permitAll()
             )
             .addFilterBefore(new FirebaseAuthFilter(firebaseApp), UsernamePasswordAuthenticationFilter.class);

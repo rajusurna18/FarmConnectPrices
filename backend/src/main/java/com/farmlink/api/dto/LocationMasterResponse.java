@@ -1,28 +1,31 @@
 package com.farmlink.api.dto;
 
-public class LocationDto {
+public class LocationMasterResponse {
+    private String id;
     private String state;
     private String district;
     private String mandal;
     private String village;
     private String pincode;
 
-    public LocationDto() {
+    public LocationMasterResponse() {
     }
 
-    public LocationDto(String state, String district, String mandal, String village) {
-        this.state = state;
-        this.district = district;
-        this.mandal = mandal;
-        this.village = village;
-    }
-
-    public LocationDto(String state, String district, String mandal, String village, String pincode) {
+    public LocationMasterResponse(String id, String state, String district, String mandal, String village, String pincode) {
+        this.id = id;
         this.state = state;
         this.district = district;
         this.mandal = mandal;
         this.village = village;
         this.pincode = pincode;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getState() {
@@ -63,16 +66,5 @@ public class LocationDto {
 
     public void setPincode(String pincode) {
         this.pincode = pincode;
-    }
-
-    public boolean isComplete() {
-        return isNotNullOrEmpty(state) &&
-               isNotNullOrEmpty(district) &&
-               isNotNullOrEmpty(mandal) &&
-               isNotNullOrEmpty(village);
-    }
-
-    private boolean isNotNullOrEmpty(String str) {
-        return str != null && !str.trim().isEmpty();
     }
 }
