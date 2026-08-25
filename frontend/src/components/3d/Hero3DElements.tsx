@@ -64,7 +64,7 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
   );
 }
 
-// 2. Primary 3D Agricultural Intelligence Sphere Core
+// 2. Primary 3D Agricultural Intelligence Sphere Core (Positioned safely in background)
 function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
   const outerGroupRef = useRef<THREE.Group>(null);
   const coreMeshRef = useRef<THREE.Mesh>(null);
@@ -74,36 +74,35 @@ function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
     const time = clock.getElapsedTime();
 
     if (outerGroupRef.current) {
-      // Extremely slow, elegant rotation for mobile & desktop
-      outerGroupRef.current.rotation.y = time * (isMobile ? 0.08 : 0.12);
+      outerGroupRef.current.rotation.y = time * (isMobile ? 0.06 : 0.09);
     }
 
     if (coreMeshRef.current) {
-      coreMeshRef.current.rotation.x = time * 0.06;
-      coreMeshRef.current.rotation.z = time * 0.04;
+      coreMeshRef.current.rotation.x = time * 0.05;
+      coreMeshRef.current.rotation.z = time * 0.03;
     }
 
     if (ringMeshRef.current) {
-      ringMeshRef.current.rotation.z = -time * 0.1;
+      ringMeshRef.current.rotation.z = -time * 0.08;
     }
   });
 
-  // Mobile framing: placed upper-middle portion of hero so it doesn't block text
-  const position: [number, number, number] = isMobile ? [0, 1.4, 0] : [0, 0.2, 0];
-  const scaleFactor = isMobile ? 0.48 : 1.0;
+  // Background position framing: Pushed back on Z-axis (-1.2) and elevated so it sits cleanly behind/above content
+  const position: [number, number, number] = isMobile ? [0, 1.6, -1.0] : [0, 0.9, -1.2];
+  const scaleFactor = isMobile ? 0.42 : 0.72;
 
   return (
     <group ref={outerGroupRef} scale={[scaleFactor, scaleFactor, scaleFactor]} position={position}>
       {/* Outer Holographic Grid Shell */}
       <mesh>
         <sphereGeometry args={[1.5, isMobile ? 16 : 24, isMobile ? 16 : 24]} />
-        <meshBasicMaterial color="#10b981" transparent opacity={0.14} wireframe />
+        <meshBasicMaterial color="#10b981" transparent opacity={0.12} wireframe />
       </mesh>
 
       {/* Orbiting Data Torus Ring */}
       <mesh ref={ringMeshRef} rotation={[Math.PI / 3.5, 0, 0]}>
         <torusGeometry args={[1.9, 0.015, 12, isMobile ? 32 : 64]} />
-        <meshStandardMaterial color="#34d399" emissive="#059669" emissiveIntensity={0.8} transparent opacity={0.55} />
+        <meshStandardMaterial color="#34d399" emissive="#059669" emissiveIntensity={0.6} transparent opacity={0.45} />
       </mesh>
 
       {/* Primary Tech Core Sphere */}
@@ -112,7 +111,7 @@ function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
         <meshStandardMaterial
           color="#047857"
           emissive="#10b981"
-          emissiveIntensity={0.5}
+          emissiveIntensity={0.4}
           roughness={0.2}
           metalness={0.8}
           wireframe
@@ -125,10 +124,10 @@ function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
         <meshStandardMaterial
           color="#f59e0b"
           emissive="#d97706"
-          emissiveIntensity={0.9}
+          emissiveIntensity={0.7}
           roughness={0.1}
           transparent
-          opacity={0.85}
+          opacity={0.75}
         />
       </mesh>
     </group>
@@ -167,7 +166,7 @@ function MarketNetworkConnections() {
   useFrame(({ clock }) => {
     if (lineRef.current) {
       const mat = lineRef.current.material as THREE.LineBasicMaterial;
-      mat.opacity = 0.35 + Math.sin(clock.getElapsedTime() * 1.5) * 0.15;
+      mat.opacity = 0.25 + Math.sin(clock.getElapsedTime() * 1.5) * 0.1;
     }
   });
 
@@ -176,7 +175,7 @@ function MarketNetworkConnections() {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <lineBasicMaterial color="#34d399" transparent opacity={0.4} linewidth={1.5} />
+      <lineBasicMaterial color="#34d399" transparent opacity={0.3} linewidth={1.5} />
     </lineSegments>
   );
 }
@@ -187,8 +186,8 @@ function ParallaxSceneGroup({ mousePos, isMobile, children }: { mousePos: { x: n
 
   useFrame(() => {
     if (!groupRef.current || isMobile) return;
-    groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, mousePos.x * 0.12, 0.05);
-    groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -mousePos.y * 0.08, 0.05);
+    groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, mousePos.x * 0.08, 0.04);
+    groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -mousePos.y * 0.05, 0.04);
   });
 
   return <group ref={groupRef}>{children}</group>;
@@ -216,11 +215,10 @@ export const Hero3DElements: React.FC<Hero3DElementsProps> = ({ isMobile = false
     return null;
   }
 
-  // Mobile DPR = 1 for max performance, particle count = 4 (strictly lightweight core)
-  const particleCount = isMobile ? 4 : 28;
+  const particleCount = isMobile ? 4 : 20;
 
   return (
-    <div className="absolute inset-0 w-full h-full pointer-events-none z-[2] overflow-hidden opacity-90">
+    <div className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-hidden opacity-80">
       <WebGLBoundary fallback={<div className="hidden" />}>
         <Canvas
           camera={{ position: [0, 0, isMobile ? 7.0 : 7.2], fov: isMobile ? 50 : 50 }}

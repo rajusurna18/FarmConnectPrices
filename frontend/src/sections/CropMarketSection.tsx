@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { MapPin, ShieldCheck } from 'lucide-react';
+import { MapPin, ShieldCheck, Activity } from 'lucide-react';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { GlassCard } from '../components/ui/GlassCard';
-import { PriceBadge } from '../components/ui/PriceBadge';
 import { Crop3DViewer } from '../components/3d/Crop3DViewer';
 import { MOCK_CROPS, type CropMarketData } from '../features/market/data/mockMarketData';
 
@@ -16,9 +15,9 @@ export const CropMarketSection: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <SectionHeading
-          badgeText="Interactive 3D Preview • Demo Data"
-          title="Explore Agricultural Markets"
-          subtitle="Discover interactive crop pricing models across major regional hubs with real-time trend analytics."
+          badgeText="Market Intelligence Architecture"
+          title="Explore Agricultural Commodities"
+          subtitle="Discover commodity classifications, regional Mandi hubs, and quality grading standards across India."
         />
 
         {/* Crops Grid */}
@@ -34,7 +33,7 @@ export const CropMarketSection: React.FC = () => {
                 onMouseEnter={() => setHoveredCropId(crop.id)}
                 onMouseLeave={() => setHoveredCropId(null)}
                 glowColor={`${crop.color}25`}
-                className={`p-6 transition-all duration-300 ${
+                className={`p-6 transition-all duration-300 cursor-pointer ${
                   isSelected ? 'ring-2 ring-emerald-500/80 bg-slate-900/90' : ''
                 }`}
               >
@@ -47,19 +46,22 @@ export const CropMarketSection: React.FC = () => {
                     <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                       {crop.category}
                     </span>
-                    <PriceBadge percentage={crop.trendPercentage} isUp={crop.isTrendingUp} size="sm" />
+                    <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+                      <Activity className="w-3 h-3" /> Tracked
+                    </span>
                   </div>
 
                   <h3 className="text-lg font-bold text-white leading-snug">{crop.name}</h3>
 
-                  <div className="flex items-baseline space-x-1.5 pt-1">
-                    <span className="text-2xl font-extrabold text-white">₹{crop.pricePerQuintal.toLocaleString()}</span>
-                    <span className="text-xs text-slate-400 font-medium">/ {crop.unit}</span>
-                  </div>
-
                   <div className="flex items-center text-xs text-slate-400 pt-1">
                     <MapPin className="w-3.5 h-3.5 text-emerald-400 mr-1 shrink-0" />
                     <span>{crop.marketLocation}</span>
+                  </div>
+
+                  <div className="pt-2">
+                    <span className="text-[11px] font-medium text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800 block text-center">
+                      Live Feed Connecting Soon
+                    </span>
                   </div>
                 </div>
               </GlassCard>
@@ -94,25 +96,27 @@ export const CropMarketSection: React.FC = () => {
 
                     <div className="flex flex-wrap items-center gap-4 pt-2 text-xs sm:text-sm">
                       <div className="bg-slate-800/80 px-3 py-2 rounded-xl border border-slate-700">
-                        <span className="text-slate-400 block text-xs">Primary Market</span>
+                        <span className="text-slate-400 block text-xs">Primary Market Hub</span>
                         <span className="font-bold text-white">{selectedCrop.marketLocation}, {selectedCrop.state}</span>
                       </div>
                       <div className="bg-slate-800/80 px-3 py-2 rounded-xl border border-slate-700">
-                        <span className="text-slate-400 block text-xs">Demand Status</span>
-                        <span className="font-bold text-emerald-400">{selectedCrop.demandLevel} Demand</span>
+                        <span className="text-slate-400 block text-xs">Market Readiness</span>
+                        <span className="font-bold text-emerald-400">API Integration Ready</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="bg-slate-950/80 p-6 rounded-2xl border border-slate-800 flex flex-col items-center justify-center text-center space-y-3">
-                    <span className="text-xs font-medium text-slate-400">Current Market Rate</span>
-                    <div className="text-3xl sm:text-4xl font-extrabold text-white">
-                      ₹{selectedCrop.pricePerQuintal.toLocaleString()}
+                    <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Market Intelligence Feed</span>
+                    <div className="text-xl font-bold text-white">
+                      Live Mandi Rates
                     </div>
-                    <PriceBadge percentage={selectedCrop.trendPercentage} isUp={selectedCrop.isTrendingUp} size="lg" />
-                    <p className="text-xs text-slate-500 pt-1">
-                      Updated 15 mins ago • Demo Data
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Real-time market price integration will link direct Mandi pricing data in upcoming releases.
                     </p>
+                    <span className="text-[11px] font-semibold text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
+                      API Pipeline Standing By
+                    </span>
                   </div>
                 </div>
               </GlassCard>
@@ -124,3 +128,4 @@ export const CropMarketSection: React.FC = () => {
     </section>
   );
 };
+
