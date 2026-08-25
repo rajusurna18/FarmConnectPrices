@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { MOCK_AI_NODES, AIDataPoint } from '../../features/market/data/mockMarketData';
+import { MOCK_AI_NODES, type AIDataPoint } from '../../features/market/data/mockMarketData';
 import { WebGLBoundary } from './WebGLFallback';
 
 function CentralCoreSphere() {

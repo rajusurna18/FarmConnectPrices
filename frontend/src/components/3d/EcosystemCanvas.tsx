@@ -72,19 +72,24 @@ function DataPulseStream() {
 }
 
 function ConnectingLines() {
-  const points = [
-    new THREE.Vector3(-4.5, 0, 0),
-    new THREE.Vector3(-1.5, 0, 0),
-    new THREE.Vector3(1.5, 0, 0),
-    new THREE.Vector3(4.5, 0, 0)
-  ];
-
-  const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+  const linePositions = useRef<Float32Array>(
+    new Float32Array([
+      -4.5, 0, 0,
+      -1.5, 0, 0,
+      -1.5, 0, 0,
+      1.5, 0, 0,
+      1.5, 0, 0,
+      4.5, 0, 0
+    ])
+  );
 
   return (
-    <line geometry={lineGeo}>
+    <lineSegments>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[linePositions.current, 3]} />
+      </bufferGeometry>
       <lineBasicMaterial color="#10b981" transparent opacity={0.4} linewidth={3} />
-    </line>
+    </lineSegments>
   );
 }
 
