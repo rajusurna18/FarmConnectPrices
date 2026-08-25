@@ -10,17 +10,16 @@ interface Hero3DElementsProps {
 // 1. Floating Agricultural & Data Particles
 function FloatingParticles({ count = 30 }: { count?: number }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const lightRef = useRef<THREE.PointLight>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   const particles = useMemo(() => {
     const temp = [];
     for (let i = 0; i < count; i++) {
-      const x = (Math.random() - 0.5) * 14;
-      const y = (Math.random() - 0.5) * 9;
-      const z = (Math.random() - 0.5) * 7;
-      const scale = 0.03 + Math.random() * 0.06;
-      const speed = 0.15 + Math.random() * 0.35;
+      const x = (Math.random() - 0.5) * (count < 10 ? 6 : 14);
+      const y = (Math.random() - 0.5) * (count < 10 ? 5 : 9);
+      const z = (Math.random() - 0.5) * (count < 10 ? 3 : 7);
+      const scale = 0.03 + Math.random() * 0.05;
+      const speed = 0.12 + Math.random() * 0.25;
       const factor = Math.random() * Math.PI * 2;
       temp.push({ x, y, z, scale, speed, factor });
     }
@@ -34,29 +33,23 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
     particles.forEach((particle, i) => {
       const { x, y, z, scale, speed, factor } = particle;
       dummy.position.set(
-        x + Math.sin(time * speed + factor) * 0.25,
-        y + Math.cos(time * speed * 0.8 + factor) * 0.25,
-        z + Math.sin(time * speed * 0.5 + factor) * 0.15
+        x + Math.sin(time * speed + factor) * 0.2,
+        y + Math.cos(time * speed * 0.8 + factor) * 0.2,
+        z + Math.sin(time * speed * 0.5 + factor) * 0.1
       );
-      dummy.rotation.set(time * 0.15, time * 0.2, 0);
-      dummy.scale.setScalar(scale * (1 + Math.sin(time * 1.8 + factor) * 0.15));
+      dummy.rotation.set(time * 0.1, time * 0.15, 0);
+      dummy.scale.setScalar(scale * (1 + Math.sin(time * 1.5 + factor) * 0.12));
       dummy.updateMatrix();
       meshRef.current!.setMatrixAt(i, dummy.matrix);
     });
 
     meshRef.current.instanceMatrix.needsUpdate = true;
-
-    if (lightRef.current) {
-      lightRef.current.position.x = Math.sin(time * 0.4) * 4;
-      lightRef.current.position.y = Math.cos(time * 0.3) * 3;
-    }
   });
 
   return (
     <group>
-      <pointLight ref={lightRef} distance={10} intensity={1.5} color="#10b981" />
       <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
-        <octahedronGeometry args={[0.4, 0]} />
+        <octahedronGeometry args={[0.35, 0]} />
         <meshStandardMaterial
           color="#34d399"
           emissive="#059669"
@@ -71,7 +64,7 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
   );
 }
 
-// 2. Primary 3D Agricultural Intelligence Sphere
+// 2. Primary 3D Agricultural Intelligence Sphere Core
 function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
   const outerGroupRef = useRef<THREE.Group>(null);
   const coreMeshRef = useRef<THREE.Mesh>(null);
@@ -81,38 +74,41 @@ function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
     const time = clock.getElapsedTime();
 
     if (outerGroupRef.current) {
-      outerGroupRef.current.rotation.y = time * 0.12; // Slow, elegant rotation
+      // Extremely slow, elegant rotation for mobile & desktop
+      outerGroupRef.current.rotation.y = time * (isMobile ? 0.08 : 0.12);
     }
 
     if (coreMeshRef.current) {
-      coreMeshRef.current.rotation.x = time * 0.08;
-      coreMeshRef.current.rotation.z = time * 0.05;
+      coreMeshRef.current.rotation.x = time * 0.06;
+      coreMeshRef.current.rotation.z = time * 0.04;
     }
 
     if (ringMeshRef.current) {
-      ringMeshRef.current.rotation.z = -time * 0.15;
+      ringMeshRef.current.rotation.z = -time * 0.1;
     }
   });
 
-  const scaleFactor = isMobile ? 0.65 : 1.0;
+  // Mobile framing: placed upper-middle portion of hero so it doesn't block text
+  const position: [number, number, number] = isMobile ? [0, 1.4, 0] : [0, 0.2, 0];
+  const scaleFactor = isMobile ? 0.48 : 1.0;
 
   return (
-    <group ref={outerGroupRef} scale={[scaleFactor, scaleFactor, scaleFactor]} position={[0, 0.2, 0]}>
-      {/* Outer Holographic Shell */}
+    <group ref={outerGroupRef} scale={[scaleFactor, scaleFactor, scaleFactor]} position={position}>
+      {/* Outer Holographic Grid Shell */}
       <mesh>
-        <sphereGeometry args={[1.6, 24, 24]} />
-        <meshBasicMaterial color="#10b981" transparent opacity={0.12} wireframe />
+        <sphereGeometry args={[1.5, isMobile ? 16 : 24, isMobile ? 16 : 24]} />
+        <meshBasicMaterial color="#10b981" transparent opacity={0.14} wireframe />
       </mesh>
 
-      {/* Orbiting Data Ring */}
-      <mesh ref={ringMeshRef} rotation={[Math.PI / 3, 0, 0]}>
-        <torusGeometry args={[2.1, 0.015, 16, 64]} />
-        <meshStandardMaterial color="#34d399" emissive="#059669" emissiveIntensity={0.8} transparent opacity={0.5} />
+      {/* Orbiting Data Torus Ring */}
+      <mesh ref={ringMeshRef} rotation={[Math.PI / 3.5, 0, 0]}>
+        <torusGeometry args={[1.9, 0.015, 12, isMobile ? 32 : 64]} />
+        <meshStandardMaterial color="#34d399" emissive="#059669" emissiveIntensity={0.8} transparent opacity={0.55} />
       </mesh>
 
       {/* Primary Tech Core Sphere */}
       <mesh ref={coreMeshRef}>
-        <icosahedronGeometry args={[1.1, 1]} />
+        <icosahedronGeometry args={[1.05, 1]} />
         <meshStandardMaterial
           color="#047857"
           emissive="#10b981"
@@ -125,7 +121,7 @@ function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
 
       {/* Inner Glowing Kernel */}
       <mesh>
-        <sphereGeometry args={[0.55, 16, 16]} />
+        <sphereGeometry args={[0.5, 16, 16]} />
         <meshStandardMaterial
           color="#f59e0b"
           emissive="#d97706"
@@ -139,22 +135,21 @@ function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
   );
 }
 
-// 3. Subtle India & Market Network Nodes
+// 3. Subtle India & Market Network Nodes (Desktop Only)
 function MarketNetworkConnections() {
   const lineRef = useRef<THREE.LineSegments>(null);
 
   const { positions } = useMemo(() => {
     const points: number[] = [];
-    // Abstract India market node positions in 3D space
     const nodes = [
-      new THREE.Vector3(-3.2, 1.4, -1.0),  // Delhi
-      new THREE.Vector3(-1.8, 0.6, -0.5),  // Nagpur
-      new THREE.Vector3(-0.6, -0.2, 0.2),  // Nizamabad
-      new THREE.Vector3(0.0, -0.6, 0.4),   // Hyderabad
-      new THREE.Vector3(0.8, -0.4, 0.1),   // Warangal
-      new THREE.Vector3(1.6, -0.8, 0.3),   // Vijayawada
-      new THREE.Vector3(-2.8, -0.2, 0.0),  // Mumbai
-      new THREE.Vector3(-1.0, -1.8, 0.5)   // Bengaluru
+      new THREE.Vector3(-3.2, 1.4, -1.0),
+      new THREE.Vector3(-1.8, 0.6, -0.5),
+      new THREE.Vector3(-0.6, -0.2, 0.2),
+      new THREE.Vector3(0.0, -0.6, 0.4),
+      new THREE.Vector3(0.8, -0.4, 0.1),
+      new THREE.Vector3(1.6, -0.8, 0.3),
+      new THREE.Vector3(-2.8, -0.2, 0.0),
+      new THREE.Vector3(-1.0, -1.8, 0.5)
     ];
 
     const connections = [
@@ -186,13 +181,12 @@ function MarketNetworkConnections() {
   );
 }
 
-// 4. Parallax Group with Mouse Parallax (Desktop)
+// 4. Parallax Group with Mouse Parallax (Desktop Only)
 function ParallaxSceneGroup({ mousePos, isMobile, children }: { mousePos: { x: number; y: number }; isMobile: boolean; children: React.ReactNode }) {
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame(() => {
     if (!groupRef.current || isMobile) return;
-    // Smooth lerp to target rotation
     groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, mousePos.x * 0.12, 0.05);
     groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -mousePos.y * 0.08, 0.05);
   });
@@ -203,7 +197,6 @@ function ParallaxSceneGroup({ mousePos, isMobile, children }: { mousePos: { x: n
 export const Hero3DElements: React.FC<Hero3DElementsProps> = ({ isMobile = false }) => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  // Handle Desktop Mouse Movement Parallax
   useEffect(() => {
     if (isMobile) return;
 
@@ -217,23 +210,22 @@ export const Hero3DElements: React.FC<Hero3DElementsProps> = ({ isMobile = false
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [isMobile]);
 
-  // Respect prefers-reduced-motion
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (prefersReducedMotion) {
     return null;
   }
 
-  // Mobile adaptive particle count
-  const particleCount = isMobile ? 12 : 30;
+  // Mobile DPR = 1 for max performance, particle count = 4 (strictly lightweight core)
+  const particleCount = isMobile ? 4 : 28;
 
   return (
     <div className="absolute inset-0 w-full h-full pointer-events-none z-[2] overflow-hidden opacity-90">
       <WebGLBoundary fallback={<div className="hidden" />}>
         <Canvas
-          camera={{ position: [0, 0, isMobile ? 8.5 : 7.2], fov: isMobile ? 55 : 50 }}
-          gl={{ alpha: true, antialias: true }}
-          dpr={[1, isMobile ? 1.2 : 1.5]}
+          camera={{ position: [0, 0, isMobile ? 7.0 : 7.2], fov: isMobile ? 50 : 50 }}
+          gl={{ alpha: true, antialias: !isMobile }}
+          dpr={isMobile ? 1 : [1, 1.5]}
         >
           <ambientLight intensity={0.7} />
           <directionalLight position={[6, 6, 6]} intensity={1.2} color="#a7f3d0" />
@@ -249,4 +241,5 @@ export const Hero3DElements: React.FC<Hero3DElementsProps> = ({ isMobile = false
     </div>
   );
 };
+
 

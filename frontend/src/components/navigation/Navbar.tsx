@@ -117,15 +117,15 @@ export const Navbar: React.FC = () => {
         <div className="md:hidden flex items-center">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-200 hover:text-white focus:outline-none"
-            aria-label="Toggle menu"
+            className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-slate-900/85 border border-slate-800 text-slate-200 hover:text-white flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Glass Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -133,15 +133,15 @@ export const Navbar: React.FC = () => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
-            className="md:hidden bg-slate-950/95 backdrop-blur-2xl border-b border-slate-800 px-4 pt-4 pb-6 space-y-4"
+            className="md:hidden bg-slate-950/95 backdrop-blur-2xl border-b border-emerald-500/20 px-5 pt-3 pb-6 space-y-4 shadow-2xl"
           >
-            <div className="flex flex-col space-y-3">
+            <div className="flex flex-col space-y-2">
               {navLinks.map((link) => (
                 <a
                   key={link.label}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 text-base font-medium text-slate-200 hover:text-emerald-400 hover:bg-slate-900/60 rounded-xl transition-all"
+                  className="px-4 py-3 min-h-[48px] text-base font-medium text-slate-200 hover:text-emerald-400 hover:bg-slate-900/70 rounded-xl transition-all flex items-center"
                 >
                   {link.label}
                 </a>
@@ -154,7 +154,7 @@ export const Navbar: React.FC = () => {
                   <Link
                     to="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-center flex items-center justify-center space-x-2"
+                    className="w-full min-h-[48px] py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-center flex items-center justify-center space-x-2"
                   >
                     <LayoutDashboard className="w-5 h-5" />
                     <span>Go to Dashboard</span>
@@ -162,14 +162,14 @@ export const Navbar: React.FC = () => {
                   <Link
                     to="/profile"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-3 bg-slate-900 border border-slate-700 text-slate-200 font-medium rounded-xl text-center flex items-center justify-center space-x-2"
+                    className="w-full min-h-[48px] py-3 bg-slate-900 border border-slate-700 text-slate-200 font-medium rounded-xl text-center flex items-center justify-center space-x-2"
                   >
                     <User className="w-5 h-5" />
                     <span>View Profile</span>
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full py-2.5 text-rose-400 hover:bg-rose-500/10 rounded-xl font-medium text-center flex items-center justify-center space-x-1.5"
+                    className="w-full min-h-[48px] py-3 text-rose-400 hover:bg-rose-500/10 rounded-xl font-medium text-center flex items-center justify-center space-x-1.5"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Sign Out</span>
@@ -180,14 +180,14 @@ export const Navbar: React.FC = () => {
                   <Link
                     to="/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-center shadow-lg shadow-emerald-950/50"
+                    className="w-full min-h-[48px] py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-center shadow-lg shadow-emerald-950/50 flex items-center justify-center"
                   >
                     Get Started
                   </Link>
                   <Link
                     to="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-3 bg-slate-900 border border-slate-700 text-slate-200 font-medium rounded-xl text-center"
+                    className="w-full min-h-[48px] py-3 bg-slate-900 border border-slate-700 text-slate-200 font-medium rounded-xl text-center flex items-center justify-center"
                   >
                     Sign In
                   </Link>

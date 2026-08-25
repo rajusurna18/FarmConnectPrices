@@ -10,23 +10,28 @@ export const HeroMarketCards: React.FC<HeroMarketCardsProps> = ({ isMobile = fal
   // Mobile layout simplifies cards to 1 key visual pill or compact stack
   if (isMobile) {
     return (
-      <div className="w-full flex items-center justify-center px-4 py-2 pointer-events-none z-[3]">
+      <div className="w-full flex items-center justify-center px-4 pointer-events-none z-[3]">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.25 }}
-          className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-slate-900/85 border border-emerald-500/30 backdrop-blur-xl shadow-lg text-xs"
+          transition={{ duration: 0.6, delay: 0.85 }}
+          className="w-full max-w-[320px] px-3.5 py-2.5 rounded-2xl bg-slate-900/85 border border-emerald-500/30 backdrop-blur-xl shadow-xl flex items-center justify-between text-xs"
         >
-          <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+          <div className="flex items-center gap-2.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Tomato ₹2,850 / Qtl</span>
+            <div className="text-left">
+              <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="w-2.5 h-2.5" /> Market Signal • Demo
+              </div>
+              <div className="text-xs font-bold text-slate-100 mt-0.5">Tomato ₹2,850 / Qtl</div>
+            </div>
           </div>
-          <span className="text-slate-600">|</span>
-          <span className="text-emerald-300 font-semibold flex items-center gap-0.5 text-[11px]">
-            <TrendingUp className="w-3 h-3 text-emerald-400" /> +8.4%
-          </span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400 text-[11px] font-medium">Hyd Market</span>
+          <div className="text-right">
+            <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 inline-flex items-center gap-0.5">
+              <TrendingUp className="w-3 h-3 text-emerald-400" /> +8.4%
+            </span>
+            <div className="text-[10px] text-slate-400 mt-0.5">Hyderabad</div>
+          </div>
         </motion.div>
       </div>
     );
