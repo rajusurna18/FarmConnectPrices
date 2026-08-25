@@ -3,9 +3,8 @@ import { Navbar } from '../components/navigation/Navbar';
 import { HeroSection } from '../sections/HeroSection';
 import { EcosystemSection } from '../sections/EcosystemSection';
 import { RolesSection } from '../sections/RolesSection';
-import { CropMarketSection } from '../sections/CropMarketSection';
+import { MarketIntelligencePreview } from '../sections/MarketIntelligencePreview';
 import { IndiaNetworkSection } from '../sections/IndiaNetworkSection';
-import { MarketAnalyticsSection } from '../sections/MarketAnalyticsSection';
 import { AISection } from '../sections/AISection';
 import { RoleExperiencesSection } from '../sections/RoleExperiencesSection';
 import { CTASection } from '../sections/CTASection';
@@ -22,9 +21,8 @@ export const HomePage: React.FC = () => {
         <HeroSection />
         <EcosystemSection />
         <RolesSection />
-        <CropMarketSection />
+        <MarketIntelligencePreview />
         <IndiaNetworkSection />
-        <MarketAnalyticsSection />
         <AISection />
         <RoleExperiencesSection />
         <CTASection />

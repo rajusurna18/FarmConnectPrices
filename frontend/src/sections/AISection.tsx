@@ -3,14 +3,20 @@ import { Sparkles, BrainCircuit } from 'lucide-react';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { GlassCard } from '../components/ui/GlassCard';
 import { AIDataSphere } from '../components/3d/AIDataSphere';
-import { MOCK_AI_NODES } from '../features/market/data/mockMarketData';
 
 export const AISection: React.FC = () => {
   const steps = [
-    { label: 'DATA', icon: '📡', text: 'Real-time multi-mandi feeds & satellite harvest insights' },
-    { label: 'ANALYSIS', icon: '⚙️', text: 'Algorithmic price variance & seasonal pattern recognition' },
-    { label: 'PREDICTION', icon: '🔮', text: 'AI price trajectory forecasting for upcoming harvest cycles' },
-    { label: 'DECISION', icon: '🎯', text: 'Actionable sell/buy recommendations tailored for each role' },
+    { label: 'DATA INGESTION', icon: '📡', text: 'Multi-mandi wholesale APMC feeds & crop arrival telemetry' },
+    { label: 'PATTERN ANALYSIS', icon: '⚙️', text: 'Algorithmic price variance & multi-year seasonal trends' },
+    { label: 'PREDICTIVE CORE', icon: '🔮', text: 'AI price trajectory forecasting for upcoming harvest cycles' },
+    { label: 'DECISION SUPPORT', icon: '🎯', text: 'Actionable sell/buy recommendations tailored for each role' },
+  ];
+
+  const aiCapabilities = [
+    { label: 'Wholesale Mandi Link', category: 'Data Pipeline', status: 'Architecture Active', desc: 'Direct APMC pricing feed integration' },
+    { label: 'Demand Forecasting', category: 'Predictive', status: 'Model Ready', desc: 'Urban consumer & retail demand trajectories' },
+    { label: 'Supply Logistics Flow', category: 'Logistics', status: 'Telemetry Ready', desc: 'Inter-state volume arrival tracking' },
+    { label: 'Seasonal Pattern Analysis', category: 'Analytics', status: 'Engine Ready', desc: 'Multi-year harvest cycle modeling' },
   ];
 
   return (
@@ -29,7 +35,7 @@ export const AISection: React.FC = () => {
           <div className="lg:col-span-4 space-y-4">
             <h3 className="text-2xl font-bold text-white mb-2 flex items-center">
               <BrainCircuit className="w-6 h-6 text-emerald-400 mr-2" />
-              Smarter Decision Story
+              Intelligence Pipeline
             </h3>
 
             <div className="space-y-3">
@@ -62,18 +68,18 @@ export const AISection: React.FC = () => {
           {/* Right Orbit Nodes Details */}
           <div className="lg:col-span-3 space-y-3">
             <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-              Orbiting Intelligence Feeds
+              Core AI Modules
             </h4>
 
-            {MOCK_AI_NODES.slice(0, 4).map((node) => (
-              <GlassCard key={node.id} className="p-3.5 border-slate-800">
+            {aiCapabilities.map((node) => (
+              <GlassCard key={node.label} className="p-3.5 border-slate-800">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white">{node.label}</span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                     {node.status}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">{node.value}</p>
+                <p className="text-xs text-slate-400 mt-1">{node.desc}</p>
               </GlassCard>
             ))}
           </div>
@@ -84,3 +90,4 @@ export const AISection: React.FC = () => {
     </section>
   );
 };
+

@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { MOCK_AI_NODES, type AIDataPoint } from '../../features/market/data/mockMarketData';
+import { AI_ORBIT_NODES, type AINodePoint } from '../../features/market/data/spatialNodeData';
 import { WebGLBoundary } from './WebGLFallback';
 
 function CentralCoreSphere() {
@@ -44,7 +44,7 @@ function CentralCoreSphere() {
   );
 }
 
-function OrbitingDataNode({ node }: { node: AIDataPoint }) {
+function OrbitingDataNode({ node }: { node: AINodePoint }) {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
 
@@ -87,7 +87,7 @@ function ConnectingBeams() {
   });
 
   const points: number[] = [];
-  MOCK_AI_NODES.forEach(node => {
+  AI_ORBIT_NODES.forEach(node => {
     // Ray lines from center to outer orbit
     points.push(0, 0, 0);
     points.push(
@@ -121,7 +121,7 @@ export const AIDataSphere: React.FC = () => {
           <CentralCoreSphere />
           <ConnectingBeams />
           
-          {MOCK_AI_NODES.map(node => (
+          {AI_ORBIT_NODES.map(node => (
             <OrbitingDataNode key={node.id} node={node} />
           ))}
         </Canvas>

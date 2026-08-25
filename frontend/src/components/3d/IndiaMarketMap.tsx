@@ -1,15 +1,15 @@
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { MOCK_INDIA_MARKETS, type MarketNode } from '../../features/market/data/mockMarketData';
+import { INDIA_MARKET_NODES, type MarketMapNode } from '../../features/market/data/spatialNodeData';
 import { WebGLBoundary } from './WebGLFallback';
 
 interface IndiaMarketMapProps {
   selectedNodeId?: string;
-  onSelectNode?: (node: MarketNode) => void;
+  onSelectNode?: (node: MarketMapNode) => void;
 }
 
-function MarketNodePoint({ node, isSelected, onClick }: { node: MarketNode; isSelected: boolean; onClick: () => void }) {
+function MarketNodePoint({ node, isSelected, onClick }: { node: MarketMapNode; isSelected: boolean; onClick: () => void }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
 
@@ -24,7 +24,7 @@ function MarketNodePoint({ node, isSelected, onClick }: { node: MarketNode; isSe
     }
   });
 
-  const nodeColor = node.status === 'Major Hub' ? '#10b981' : node.status === 'High Demand' ? '#f59e0b' : '#3b82f6';
+  const nodeColor = node.status === 'Major Hub' ? '#10b981' : node.status === 'Regional Node' ? '#f59e0b' : '#3b82f6';
 
   return (
     <group position={node.position} onClick={onClick}>
@@ -53,9 +53,9 @@ function ConnectionPaths() {
 
   if (!linePositions.current) {
     const points: number[] = [];
-    const nodeMap = new Map(MOCK_INDIA_MARKETS.map(n => [n.id, n.position]));
+    const nodeMap = new Map(INDIA_MARKET_NODES.map(n => [n.id, n.position]));
 
-    MOCK_INDIA_MARKETS.forEach(node => {
+    INDIA_MARKET_NODES.forEach(node => {
       node.connectedNodes.forEach(targetId => {
         const targetPos = nodeMap.get(targetId);
         if (targetPos) {
@@ -103,7 +103,7 @@ export const IndiaMarketMap: React.FC<IndiaMarketMapProps> = ({ selectedNodeId, 
           <pointLight position={[5, 5, 5]} intensity={1.2} color="#10b981" />
           <AnimatedOrbitGroup>
             <ConnectionPaths />
-            {MOCK_INDIA_MARKETS.map(node => (
+            {INDIA_MARKET_NODES.map(node => (
               <MarketNodePoint
                 key={node.id}
                 node={node}

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { GlassCard } from '../components/ui/GlassCard';
-import { MOCK_ROLE_CARDS } from '../features/market/data/mockMarketData';
+import { PRIMARY_ROLE_CARDS } from '../features/market/data/roleData';
 import { useAuth } from '../features/auth/hooks/useAuth';
 
 export const RolesSection: React.FC = () => {
@@ -22,8 +22,8 @@ export const RolesSection: React.FC = () => {
 
         {/* 3 Role Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {MOCK_ROLE_CARDS.map((card, idx) => {
-            const isUserRole = userDocument?.role === card.roleKey;
+          {PRIMARY_ROLE_CARDS.map((card, idx) => {
+            const isUserRole = (userDocument?.role as string) === card.roleKey;
 
             return (
               <motion.div
