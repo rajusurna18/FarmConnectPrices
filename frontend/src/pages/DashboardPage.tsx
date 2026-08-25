@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { LayoutDashboard, User, ShieldCheck, Cpu, RefreshCw } from 'lucide-react';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { apiClient } from '../services/api';
+import { GlassCard } from '../components/ui/GlassCard';
+import { Navbar } from '../components/navigation/Navbar';
 
 interface BackendUserMeResponse {
   uid: string;
@@ -12,7 +15,7 @@ interface BackendUserMeResponse {
 }
 
 export const DashboardPage: React.FC = () => {
-  const { currentUser, userDocument, logout } = useAuth();
+  const { currentUser, userDocument } = useAuth();
   const [apiResponse, setApiResponse] = useState<BackendUserMeResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [loadingApi, setLoadingApi] = useState(false);
@@ -33,106 +36,122 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-            FarmConnectPrices
-          </Link>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-              {currentUser?.displayName || currentUser?.email}
-            </span>
-            <button
-              onClick={logout}
-              className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+    <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans flex flex-col justify-between">
+      <Navbar />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 space-y-8 w-full">
+        {/* Welcome Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-2">
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Platform Portal</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white">Authenticated Dashboard</h1>
+            <p className="text-sm text-slate-400 mt-1">
+              Welcome back, <strong className="text-emerald-400">{userDocument?.displayName || currentUser?.displayName || currentUser?.email}</strong>. Your account identity and role parameters are active.
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <Link
+              to="/profile"
+              className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-slate-900 border border-slate-700 text-slate-200 hover:text-white flex items-center space-x-1.5"
             >
-              Sign Out
-            </button>
+              <User className="w-4 h-4" />
+              <span>View Profile</span>
+            </Link>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Authenticated Dashboard</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Welcome to the FarmConnectPrices protected foundation. Basic user authentication is active.
-          </p>
-        </div>
+        {/* User Identity Card */}
+        <GlassCard className="p-6 sm:p-8 border-slate-800">
+          <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-3 mb-6 flex items-center">
+            <ShieldCheck className="w-5 h-5 text-emerald-400 mr-2" />
+            User Identity & Role Verification
+          </h2>
 
-        {/* User Profile Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-6">
-          <h2 className="text-xl font-bold border-b border-gray-200 dark:border-gray-700 pb-3">User Profile Identity</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
+            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80">
+              <span className="text-xs text-slate-400 font-medium block">Display Name</span>
+              <span className="font-bold text-base text-white">{userDocument?.displayName || currentUser?.displayName || 'N/A'}</span>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
-            <div>
-              <span className="text-gray-500 dark:text-gray-400 font-medium block">Display Name</span>
-              <span className="font-semibold text-base">{userDocument?.displayName || currentUser?.displayName || 'N/A'}</span>
+            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80">
+              <span className="text-xs text-slate-400 font-medium block">Email Address</span>
+              <span className="font-semibold text-sm text-white truncate block">{currentUser?.email}</span>
             </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400 font-medium block">Email Address</span>
-              <span className="font-semibold text-base">{currentUser?.email}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400 font-medium block">Firebase UID</span>
-              <span className="font-mono text-xs text-gray-700 dark:text-gray-300">{currentUser?.uid}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400 font-medium block">System Role</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+
+            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80">
+              <span className="text-xs text-slate-400 font-medium block">Assigned Role</span>
+              <span className="inline-flex items-center mt-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                 {userDocument?.role || 'USER'}
               </span>
             </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400 font-medium block">Account Status</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+
+            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80">
+              <span className="text-xs text-slate-400 font-medium block">Account Status</span>
+              <span className="inline-flex items-center mt-1 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">
                 {userDocument?.status || 'ACTIVE'}
               </span>
             </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400 font-medium block">Email Verified</span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+
+            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80">
+              <span className="text-xs text-slate-400 font-medium block">Email Verification</span>
+              <span className={`inline-flex items-center mt-1 px-3 py-1 rounded-full text-xs font-bold ${
                 currentUser?.emailVerified
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
-                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
               }`}>
                 {currentUser?.emailVerified ? 'VERIFIED' : 'UNVERIFIED'}
               </span>
             </div>
-          </div>
-        </div>
 
-        {/* Spring Boot API Integration Test */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-4">
-          <h2 className="text-xl font-bold">Protected Backend API Test</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Click below to send a request to <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">GET /api/v1/users/me</code> with the Firebase ID token in the <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">Authorization: Bearer</code> header.
+            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80">
+              <span className="text-xs text-slate-400 font-medium block">Firebase UID</span>
+              <span className="font-mono text-xs text-slate-400 truncate block mt-1">{currentUser?.uid}</span>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Backend API Diagnostics Card */}
+        <GlassCard className="p-6 sm:p-8 border-slate-800">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <h2 className="text-xl font-bold text-white flex items-center">
+              <Cpu className="w-5 h-5 text-emerald-400 mr-2" />
+              Protected Backend API Test
+            </h2>
+            <span className="text-xs font-mono text-slate-400">Spring Boot 21</span>
+          </div>
+
+          <p className="text-xs sm:text-sm text-slate-400 mb-4">
+            Click below to execute a protected request to <code className="font-mono bg-slate-900 px-2 py-1 rounded text-emerald-400">GET /api/v1/users/me</code> with the Firebase ID token in the <code className="font-mono bg-slate-900 px-2 py-1 rounded text-emerald-400">Authorization: Bearer</code> header.
           </p>
 
           <button
             onClick={fetchBackendUserMe}
             disabled={loadingApi}
-            className="bg-emerald-600 text-white font-medium px-4 py-2 rounded-md hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-emerald-950/50 transition-all flex items-center space-x-2 disabled:opacity-50"
           >
-            {loadingApi ? 'Calling API...' : 'Fetch /api/v1/users/me'}
+            <RefreshCw className={`w-4 h-4 ${loadingApi ? 'animate-spin' : ''}`} />
+            <span>{loadingApi ? 'Calling API...' : 'Fetch /api/v1/users/me'}</span>
           </button>
 
           {apiError && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg text-sm">
+            <div className="mt-4 p-4 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-2xl text-xs">
               {apiError}
             </div>
           )}
 
           {apiResponse && (
-            <div className="mt-4 p-4 bg-gray-900 text-emerald-400 rounded-lg font-mono text-xs overflow-x-auto">
+            <div className="mt-4 p-4 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-emerald-400 overflow-x-auto">
               <pre>{JSON.stringify(apiResponse, null, 2)}</pre>
             </div>
           )}
-        </div>
+        </GlassCard>
       </main>
     </div>
   );
 };
+
+export default DashboardPage;
