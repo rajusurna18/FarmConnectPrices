@@ -15,11 +15,11 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
   const particles = useMemo(() => {
     const temp = [];
     for (let i = 0; i < count; i++) {
-      const x = (Math.random() - 0.5) * (count < 10 ? 5 : 14);
-      const y = (Math.random() - 0.5) * (count < 10 ? 4 : 9);
-      const z = (Math.random() - 0.5) * (count < 10 ? 2 : 7);
-      const scale = 0.02 + Math.random() * 0.04;
-      const speed = 0.08 + Math.random() * 0.18;
+      const x = (Math.random() - 0.5) * (count < 10 ? 6 : 14);
+      const y = (Math.random() - 0.5) * (count < 10 ? 5 : 9);
+      const z = (Math.random() - 0.5) * (count < 10 ? 3 : 7);
+      const scale = 0.03 + Math.random() * 0.05;
+      const speed = 0.12 + Math.random() * 0.25;
       const factor = Math.random() * Math.PI * 2;
       temp.push({ x, y, z, scale, speed, factor });
     }
@@ -33,12 +33,12 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
     particles.forEach((particle, i) => {
       const { x, y, z, scale, speed, factor } = particle;
       dummy.position.set(
-        x + Math.sin(time * speed + factor) * 0.15,
-        y + Math.cos(time * speed * 0.8 + factor) * 0.15,
-        z + Math.sin(time * speed * 0.5 + factor) * 0.08
+        x + Math.sin(time * speed + factor) * 0.2,
+        y + Math.cos(time * speed * 0.8 + factor) * 0.2,
+        z + Math.sin(time * speed * 0.5 + factor) * 0.1
       );
-      dummy.rotation.set(time * 0.08, time * 0.1, 0);
-      dummy.scale.setScalar(scale * (1 + Math.sin(time * 1.2 + factor) * 0.1));
+      dummy.rotation.set(time * 0.1, time * 0.15, 0);
+      dummy.scale.setScalar(scale * (1 + Math.sin(time * 1.5 + factor) * 0.12));
       dummy.updateMatrix();
       meshRef.current!.setMatrixAt(i, dummy.matrix);
     });
@@ -49,22 +49,22 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
   return (
     <group>
       <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
-        <octahedronGeometry args={[0.3, 0]} />
+        <octahedronGeometry args={[0.35, 0]} />
         <meshStandardMaterial
           color="#34d399"
           emissive="#059669"
-          emissiveIntensity={0.5}
-          roughness={0.4}
-          metalness={0.6}
+          emissiveIntensity={0.6}
+          roughness={0.3}
+          metalness={0.7}
           transparent
-          opacity={0.65}
+          opacity={0.75}
         />
       </instancedMesh>
     </group>
   );
 }
 
-// 2. Primary 3D Agricultural Intelligence Sphere Core (Safely in background)
+// 2. Primary 3D Agricultural Intelligence Sphere Core (Positioned safely in background)
 function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
   const outerGroupRef = useRef<THREE.Group>(null);
   const coreMeshRef = useRef<THREE.Mesh>(null);
@@ -74,35 +74,35 @@ function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
     const time = clock.getElapsedTime();
 
     if (outerGroupRef.current) {
-      outerGroupRef.current.rotation.y = time * (isMobile ? 0.04 : 0.09);
+      outerGroupRef.current.rotation.y = time * (isMobile ? 0.06 : 0.09);
     }
 
     if (coreMeshRef.current) {
-      coreMeshRef.current.rotation.x = time * 0.04;
-      coreMeshRef.current.rotation.z = time * 0.02;
+      coreMeshRef.current.rotation.x = time * 0.05;
+      coreMeshRef.current.rotation.z = time * 0.03;
     }
 
     if (ringMeshRef.current) {
-      ringMeshRef.current.rotation.z = -time * 0.06;
+      ringMeshRef.current.rotation.z = -time * 0.08;
     }
   });
 
-  // Background position framing: On mobile, pushed far back (z = -1.5) and scaled down to prevent overlapping text/video
-  const position: [number, number, number] = isMobile ? [0, 1.8, -1.5] : [0, 0.9, -1.2];
-  const scaleFactor = isMobile ? 0.28 : 0.72;
+  // Background position framing: Pushed back on Z-axis (-1.2) and elevated so it sits cleanly behind/above content
+  const position: [number, number, number] = isMobile ? [0, 1.6, -1.0] : [0, 0.9, -1.2];
+  const scaleFactor = isMobile ? 0.42 : 0.72;
 
   return (
     <group ref={outerGroupRef} scale={[scaleFactor, scaleFactor, scaleFactor]} position={position}>
       {/* Outer Holographic Grid Shell */}
       <mesh>
-        <sphereGeometry args={[1.5, isMobile ? 12 : 24, isMobile ? 12 : 24]} />
-        <meshBasicMaterial color="#10b981" transparent opacity={isMobile ? 0.08 : 0.12} wireframe />
+        <sphereGeometry args={[1.5, isMobile ? 16 : 24, isMobile ? 16 : 24]} />
+        <meshBasicMaterial color="#10b981" transparent opacity={0.12} wireframe />
       </mesh>
 
       {/* Orbiting Data Torus Ring */}
       <mesh ref={ringMeshRef} rotation={[Math.PI / 3.5, 0, 0]}>
-        <torusGeometry args={[1.9, 0.015, 10, isMobile ? 24 : 64]} />
-        <meshStandardMaterial color="#34d399" emissive="#059669" emissiveIntensity={0.5} transparent opacity={isMobile ? 0.3 : 0.45} />
+        <torusGeometry args={[1.9, 0.015, 12, isMobile ? 32 : 64]} />
+        <meshStandardMaterial color="#34d399" emissive="#059669" emissiveIntensity={0.6} transparent opacity={0.45} />
       </mesh>
 
       {/* Primary Tech Core Sphere */}
@@ -111,23 +111,23 @@ function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
         <meshStandardMaterial
           color="#047857"
           emissive="#10b981"
-          emissiveIntensity={0.35}
-          roughness={0.3}
-          metalness={0.7}
+          emissiveIntensity={0.4}
+          roughness={0.2}
+          metalness={0.8}
           wireframe
         />
       </mesh>
 
       {/* Inner Glowing Kernel */}
       <mesh>
-        <sphereGeometry args={[0.5, 12, 12]} />
+        <sphereGeometry args={[0.5, 16, 16]} />
         <meshStandardMaterial
           color="#f59e0b"
           emissive="#d97706"
-          emissiveIntensity={0.6}
-          roughness={0.2}
+          emissiveIntensity={0.7}
+          roughness={0.1}
           transparent
-          opacity={isMobile ? 0.5 : 0.75}
+          opacity={0.75}
         />
       </mesh>
     </group>
@@ -215,13 +215,13 @@ export const Hero3DElements: React.FC<Hero3DElementsProps> = ({ isMobile = false
     return null;
   }
 
-  const particleCount = isMobile ? 3 : 20;
+  const particleCount = isMobile ? 4 : 20;
 
   return (
-    <div className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-hidden opacity-75">
+    <div className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-hidden opacity-80">
       <WebGLBoundary fallback={<div className="hidden" />}>
         <Canvas
-          camera={{ position: [0, 0, isMobile ? 7.2 : 7.2], fov: isMobile ? 52 : 50 }}
+          camera={{ position: [0, 0, isMobile ? 7.0 : 7.2], fov: isMobile ? 50 : 50 }}
           gl={{ alpha: true, antialias: !isMobile }}
           dpr={isMobile ? 1 : [1, 1.5]}
         >
@@ -239,3 +239,5 @@ export const Hero3DElements: React.FC<Hero3DElementsProps> = ({ isMobile = false
     </div>
   );
 };
+
+
