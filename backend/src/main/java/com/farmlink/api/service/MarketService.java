@@ -106,39 +106,63 @@ public class MarketService {
         int maxResults = (limit != null && limit > 0 && limit <= 100) ? limit : 50;
 
         for (MarketResponse m : fullList) {
-            if (state != null && !state.trim().isEmpty() && !state.equalsIgnoreCase(m.getLocation().getState())) {
+            if (m == null) {
                 continue;
             }
-            if (district != null && !district.trim().isEmpty() && !district.equalsIgnoreCase(m.getLocation().getDistrict())) {
-                continue;
+
+            LocationDto loc = m.getLocation() != null ? m.getLocation() : new LocationDto();
+            String mState = loc.getState();
+            String mDistrict = loc.getDistrict();
+            String mMandal = loc.getMandal();
+            String mType = m.getType();
+            String mStatus = m.getStatus();
+
+            if (state != null && !state.trim().isEmpty()) {
+                if (mState == null || !mState.equalsIgnoreCase(state.trim())) {
+                    continue;
+                }
             }
-            if (mandal != null && !mandal.trim().isEmpty() && !mandal.equalsIgnoreCase(m.getLocation().getMandal())) {
-                continue;
+            if (district != null && !district.trim().isEmpty()) {
+                if (mDistrict == null || !mDistrict.equalsIgnoreCase(district.trim())) {
+                    continue;
+                }
             }
-            if (type != null && !type.trim().isEmpty() && !type.equalsIgnoreCase(m.getType())) {
-                continue;
+            if (mandal != null && !mandal.trim().isEmpty()) {
+                if (mMandal == null || !mMandal.equalsIgnoreCase(mandal.trim())) {
+                    continue;
+                }
             }
-            if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase(m.getStatus())) {
-                continue;
+            if (type != null && !type.trim().isEmpty()) {
+                if (mType == null || !mType.equalsIgnoreCase(type.trim())) {
+                    continue;
+                }
             }
+            if (status != null && !status.trim().isEmpty()) {
+                if (mStatus == null || !mStatus.equalsIgnoreCase(status.trim())) {
+                    continue;
+                }
+            }
+
+            List<MarketCropResponse> crops = getMarketCrops(m.getId());
             if (cropId != null && !cropId.trim().isEmpty()) {
-                List<MarketCropResponse> crops = getMarketCrops(m.getId());
-                boolean supportsCrop = crops.stream().anyMatch(c -> c.getCropId().equalsIgnoreCase(cropId.trim()));
+                boolean supportsCrop = crops != null && crops.stream().anyMatch(c ->
+                        c != null && c.getCropId() != null && c.getCropId().equalsIgnoreCase(cropId.trim())
+                );
                 if (!supportsCrop) {
                     continue;
                 }
             }
 
-            int cropCount = getMarketCrops(m.getId()).size();
+            int cropCount = crops != null ? crops.size() : 0;
             summaries.add(new MarketSummaryResponse(
                     m.getId(),
-                    m.getName(),
-                    m.getCode(),
-                    m.getType(),
-                    m.getLocation().getState(),
-                    m.getLocation().getDistrict(),
-                    m.getLocation().getMandal(),
-                    m.getStatus(),
+                    m.getName() != null ? m.getName() : "Unnamed Market",
+                    m.getCode() != null ? m.getCode() : m.getId(),
+                    mType != null ? mType : TYPE_OTHER,
+                    mState,
+                    mDistrict,
+                    mMandal,
+                    mStatus != null ? mStatus : STATUS_ACTIVE,
                     cropCount
             ));
 
@@ -159,7 +183,10 @@ public class MarketService {
             try {
                 DocumentSnapshot doc = firestore.collection("markets").document(marketId).get().get();
                 if (doc.exists()) {
-                    return mapDocToMarketResponse(doc);
+                    MarketResponse response = mapDocToMarketResponse(doc);
+                    if (response != null) {
+                        return response;
+                    }
                 }
             } catch (Exception e) {
                 logger.warn("Error fetching market ID {} from Firestore: {}", marketId, e.getMessage());
@@ -190,20 +217,25 @@ public class MarketService {
 
                 if (snapshot != null && !snapshot.isEmpty()) {
                     for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        if (doc == null) continue;
                         String id = doc.getId();
                         String cropId = doc.getString("cropId");
+                        if (cropId == null || cropId.trim().isEmpty()) continue;
+
                         String status = doc.getString("status") != null ? doc.getString("status") : STATUS_ACTIVE;
                         String createdAt = doc.get("createdAt") != null ? doc.get("createdAt").toString() : Instant.now().toString();
                         String updatedAt = doc.get("updatedAt") != null ? doc.get("updatedAt").toString() : Instant.now().toString();
 
                         CropResponse crop = cropMasterService.getCropById(cropId);
-                        String cropName = crop != null ? crop.getName() : cropId;
-                        String cropCategory = crop != null ? crop.getCategory() : "OTHER";
-                        String cropScientific = crop != null ? crop.getScientificName() : "";
+                        String cropName = crop != null && crop.getName() != null ? crop.getName() : cropId;
+                        String cropCategory = crop != null && crop.getCategory() != null ? crop.getCategory() : "OTHER";
+                        String cropScientific = crop != null && crop.getScientificName() != null ? crop.getScientificName() : "";
 
                         marketCrops.add(new MarketCropResponse(id, marketId, cropId, cropName, cropCategory, cropScientific, status, createdAt, updatedAt));
                     }
-                    return marketCrops;
+                    if (!marketCrops.isEmpty()) {
+                        return marketCrops;
+                    }
                 }
             } catch (Exception e) {
                 logger.warn("Error fetching marketCrops for marketId {} from Firestore: {}", marketId, e.getMessage());
@@ -244,9 +276,18 @@ public class MarketService {
                 QuerySnapshot snapshot = firestore.collection("markets").get().get();
                 if (snapshot != null && !snapshot.isEmpty()) {
                     for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                        list.add(mapDocToMarketResponse(doc));
+                        try {
+                            MarketResponse m = mapDocToMarketResponse(doc);
+                            if (m != null) {
+                                list.add(m);
+                            }
+                        } catch (Exception e) {
+                            logger.warn("Skipping malformed market document ID {}: {}", doc.getId(), e.getMessage());
+                        }
                     }
-                    return list;
+                    if (!list.isEmpty()) {
+                        return list;
+                    }
                 }
             } catch (Exception e) {
                 logger.warn("Could not fetch markets from Firestore: {}", e.getMessage());
@@ -256,26 +297,45 @@ public class MarketService {
     }
 
     private MarketResponse mapDocToMarketResponse(DocumentSnapshot doc) {
+        if (doc == null) return null;
         String id = doc.getId();
         String name = doc.getString("name");
         String code = doc.getString("code");
         String type = doc.getString("type");
-        Double lat = doc.getDouble("latitude");
-        Double lng = doc.getDouble("longitude");
+        Double lat = getDoubleValue(doc, "latitude");
+        Double lng = getDoubleValue(doc, "longitude");
         String status = doc.getString("status") != null ? doc.getString("status") : STATUS_ACTIVE;
 
-        Map<String, Object> locMap = (Map<String, Object>) doc.get("location");
-        LocationDto loc = locMap != null ? new LocationDto(
-                (String) locMap.get("state"),
-                (String) locMap.get("district"),
-                (String) locMap.get("mandal"),
-                (String) locMap.get("village"),
-                (String) locMap.get("pincode")
-        ) : new LocationDto();
+        LocationDto loc;
+        Object locObj = doc.get("location");
+        if (locObj instanceof Map<?, ?> locMap) {
+            loc = new LocationDto(
+                    locMap.get("state") != null ? locMap.get("state").toString() : null,
+                    locMap.get("district") != null ? locMap.get("district").toString() : null,
+                    locMap.get("mandal") != null ? locMap.get("mandal").toString() : null,
+                    locMap.get("village") != null ? locMap.get("village").toString() : null,
+                    locMap.get("pincode") != null ? locMap.get("pincode").toString() : null
+            );
+        } else {
+            loc = new LocationDto();
+        }
 
         String createdAt = doc.get("createdAt") != null ? doc.get("createdAt").toString() : Instant.now().toString();
         String updatedAt = doc.get("updatedAt") != null ? doc.get("updatedAt").toString() : Instant.now().toString();
 
         return new MarketResponse(id, name, code, type, loc, lat, lng, status, createdAt, updatedAt);
+    }
+
+    private Double getDoubleValue(DocumentSnapshot doc, String field) {
+        Object val = doc.get(field);
+        if (val instanceof Number num) {
+            return num.doubleValue();
+        }
+        if (val instanceof String str) {
+            try {
+                return Double.parseDouble(str);
+            } catch (NumberFormatException ignored) {}
+        }
+        return null;
     }
 }
