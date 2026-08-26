@@ -12,6 +12,9 @@ public class MarketComparisonItemDto {
     private double modalPrice;
     private String currency;
     private String unit;
+    private String sourceUnit;
+    private boolean conversionApplied;
+    private double conversionFactor = 1.0;
     private String priceDate;
     private String sourceName;
     private String qualityStatus;
@@ -20,9 +23,17 @@ public class MarketComparisonItemDto {
     }
 
     public MarketComparisonItemDto(String marketId, String marketName, String state, String district,
-                                 String mandal, double minPrice, double maxPrice, double modalPrice,
-                                 String currency, String unit, String priceDate, String sourceName,
-                                 String qualityStatus) {
+                                  String mandal, double minPrice, double maxPrice, double modalPrice,
+                                  String currency, String unit, String priceDate, String sourceName,
+                                  String qualityStatus) {
+        this(marketId, marketName, state, district, mandal, minPrice, maxPrice, modalPrice, currency, unit, unit, false, 1.0, priceDate, sourceName, qualityStatus);
+    }
+
+    public MarketComparisonItemDto(String marketId, String marketName, String state, String district,
+                                  String mandal, double minPrice, double maxPrice, double modalPrice,
+                                  String currency, String unit, String sourceUnit, boolean conversionApplied,
+                                  double conversionFactor, String priceDate, String sourceName,
+                                  String qualityStatus) {
         this.marketId = marketId;
         this.marketName = marketName;
         this.state = state;
@@ -33,112 +44,59 @@ public class MarketComparisonItemDto {
         this.modalPrice = modalPrice;
         this.currency = currency;
         this.unit = unit;
+        this.sourceUnit = sourceUnit != null ? sourceUnit : unit;
+        this.conversionApplied = conversionApplied;
+        this.conversionFactor = conversionFactor;
         this.priceDate = priceDate;
         this.sourceName = sourceName;
         this.qualityStatus = qualityStatus;
     }
 
-    public String getMarketId() {
-        return marketId;
-    }
+    public String getMarketId() { return marketId; }
+    public void setMarketId(String marketId) { this.marketId = marketId; }
 
-    public void setMarketId(String marketId) {
-        this.marketId = marketId;
-    }
+    public String getMarketName() { return marketName; }
+    public void setMarketName(String marketName) { this.marketName = marketName; }
 
-    public String getMarketName() {
-        return marketName;
-    }
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
 
-    public void setMarketName(String marketName) {
-        this.marketName = marketName;
-    }
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
 
-    public String getState() {
-        return state;
-    }
+    public String getMandal() { return mandal; }
+    public void setMandal(String mandal) { this.mandal = mandal; }
 
-    public void setState(String state) {
-        this.state = state;
-    }
+    public double getMinPrice() { return minPrice; }
+    public void setMinPrice(double minPrice) { this.minPrice = minPrice; }
 
-    public String getDistrict() {
-        return district;
-    }
+    public double getMaxPrice() { return maxPrice; }
+    public void setMaxPrice(double maxPrice) { this.maxPrice = maxPrice; }
 
-    public void setDistrict(String district) {
-        this.district = district;
-    }
+    public double getModalPrice() { return modalPrice; }
+    public void setModalPrice(double modalPrice) { this.modalPrice = modalPrice; }
 
-    public String getMandal() {
-        return mandal;
-    }
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
 
-    public void setMandal(String mandal) {
-        this.mandal = mandal;
-    }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
 
-    public double getMinPrice() {
-        return minPrice;
-    }
+    public String getSourceUnit() { return sourceUnit; }
+    public void setSourceUnit(String sourceUnit) { this.sourceUnit = sourceUnit; }
 
-    public void setMinPrice(double minPrice) {
-        this.minPrice = minPrice;
-    }
+    public boolean isConversionApplied() { return conversionApplied; }
+    public void setConversionApplied(boolean conversionApplied) { this.conversionApplied = conversionApplied; }
 
-    public double getMaxPrice() {
-        return maxPrice;
-    }
+    public double getConversionFactor() { return conversionFactor; }
+    public void setConversionFactor(double conversionFactor) { this.conversionFactor = conversionFactor; }
 
-    public void setMaxPrice(double maxPrice) {
-        this.maxPrice = maxPrice;
-    }
+    public String getPriceDate() { return priceDate; }
+    public void setPriceDate(String priceDate) { this.priceDate = priceDate; }
 
-    public double getModalPrice() {
-        return modalPrice;
-    }
+    public String getSourceName() { return sourceName; }
+    public void setSourceName(String sourceName) { this.sourceName = sourceName; }
 
-    public void setModalPrice(double modalPrice) {
-        this.modalPrice = modalPrice;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public String getUnit() {
-        return unit;
-    }
-
-    public void setUnit(String unit) {
-        this.unit = unit;
-    }
-
-    public String getPriceDate() {
-        return priceDate;
-    }
-
-    public void setPriceDate(String priceDate) {
-        this.priceDate = priceDate;
-    }
-
-    public String getSourceName() {
-        return sourceName;
-    }
-
-    public void setSourceName(String sourceName) {
-        this.sourceName = sourceName;
-    }
-
-    public String getQualityStatus() {
-        return qualityStatus;
-    }
-
-    public void setQualityStatus(String qualityStatus) {
-        this.qualityStatus = qualityStatus;
-    }
+    public String getQualityStatus() { return qualityStatus; }
+    public void setQualityStatus(String qualityStatus) { this.qualityStatus = qualityStatus; }
 }

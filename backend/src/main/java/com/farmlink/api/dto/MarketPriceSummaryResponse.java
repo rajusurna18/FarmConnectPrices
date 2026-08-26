@@ -12,6 +12,9 @@ public class MarketPriceSummaryResponse {
     private double modalPrice;
     private String currency;
     private String unit;
+    private String sourceUnit;
+    private boolean conversionApplied;
+    private double conversionFactor = 1.0;
     private String sourceType;
     private String sourceName;
     private String qualityStatus;
@@ -36,6 +39,29 @@ public class MarketPriceSummaryResponse {
             String qualityStatus,
             String status
     ) {
+        this(id, marketId, marketName, cropId, cropName, priceDate, minPrice, maxPrice, modalPrice, currency, unit, unit, false, 1.0, sourceType, sourceName, qualityStatus, status);
+    }
+
+    public MarketPriceSummaryResponse(
+            String id,
+            String marketId,
+            String marketName,
+            String cropId,
+            String cropName,
+            String priceDate,
+            double minPrice,
+            double maxPrice,
+            double modalPrice,
+            String currency,
+            String unit,
+            String sourceUnit,
+            boolean conversionApplied,
+            double conversionFactor,
+            String sourceType,
+            String sourceName,
+            String qualityStatus,
+            String status
+    ) {
         this.id = id;
         this.marketId = marketId;
         this.marketName = marketName;
@@ -47,129 +73,66 @@ public class MarketPriceSummaryResponse {
         this.modalPrice = modalPrice;
         this.currency = currency;
         this.unit = unit;
+        this.sourceUnit = sourceUnit != null ? sourceUnit : unit;
+        this.conversionApplied = conversionApplied;
+        this.conversionFactor = conversionFactor;
         this.sourceType = sourceType;
         this.sourceName = sourceName;
         this.qualityStatus = qualityStatus;
         this.status = status;
     }
 
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public String getMarketId() { return marketId; }
+    public void setMarketId(String marketId) { this.marketId = marketId; }
 
-    public String getMarketId() {
-        return marketId;
-    }
+    public String getMarketName() { return marketName; }
+    public void setMarketName(String marketName) { this.marketName = marketName; }
 
-    public void setMarketId(String marketId) {
-        this.marketId = marketId;
-    }
+    public String getCropId() { return cropId; }
+    public void setCropId(String cropId) { this.cropId = cropId; }
 
-    public String getMarketName() {
-        return marketName;
-    }
+    public String getCropName() { return cropName; }
+    public void setCropName(String cropName) { this.cropName = cropName; }
 
-    public void setMarketName(String marketName) {
-        this.marketName = marketName;
-    }
+    public String getPriceDate() { return priceDate; }
+    public void setPriceDate(String priceDate) { this.priceDate = priceDate; }
 
-    public String getCropId() {
-        return cropId;
-    }
+    public double getMinPrice() { return minPrice; }
+    public void setMinPrice(double minPrice) { this.minPrice = minPrice; }
 
-    public void setCropId(String cropId) {
-        this.cropId = cropId;
-    }
+    public double getMaxPrice() { return maxPrice; }
+    public void setMaxPrice(double maxPrice) { this.maxPrice = maxPrice; }
 
-    public String getCropName() {
-        return cropName;
-    }
+    public double getModalPrice() { return modalPrice; }
+    public void setModalPrice(double modalPrice) { this.modalPrice = modalPrice; }
 
-    public void setCropName(String cropName) {
-        this.cropName = cropName;
-    }
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
 
-    public String getPriceDate() {
-        return priceDate;
-    }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
 
-    public void setPriceDate(String priceDate) {
-        this.priceDate = priceDate;
-    }
+    public String getSourceUnit() { return sourceUnit; }
+    public void setSourceUnit(String sourceUnit) { this.sourceUnit = sourceUnit; }
 
-    public double getMinPrice() {
-        return minPrice;
-    }
+    public boolean isConversionApplied() { return conversionApplied; }
+    public void setConversionApplied(boolean conversionApplied) { this.conversionApplied = conversionApplied; }
 
-    public void setMinPrice(double minPrice) {
-        this.minPrice = minPrice;
-    }
+    public double getConversionFactor() { return conversionFactor; }
+    public void setConversionFactor(double conversionFactor) { this.conversionFactor = conversionFactor; }
 
-    public double getMaxPrice() {
-        return maxPrice;
-    }
+    public String getSourceType() { return sourceType; }
+    public void setSourceType(String sourceType) { this.sourceType = sourceType; }
 
-    public void setMaxPrice(double maxPrice) {
-        this.maxPrice = maxPrice;
-    }
+    public String getSourceName() { return sourceName; }
+    public void setSourceName(String sourceName) { this.sourceName = sourceName; }
 
-    public double getModalPrice() {
-        return modalPrice;
-    }
+    public String getQualityStatus() { return qualityStatus; }
+    public void setQualityStatus(String qualityStatus) { this.qualityStatus = qualityStatus; }
 
-    public void setModalPrice(double modalPrice) {
-        this.modalPrice = modalPrice;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public String getUnit() {
-        return unit;
-    }
-
-    public void setUnit(String unit) {
-        this.unit = unit;
-    }
-
-    public String getSourceType() {
-        return sourceType;
-    }
-
-    public void setSourceType(String sourceType) {
-        this.sourceType = sourceType;
-    }
-
-    public String getSourceName() {
-        return sourceName;
-    }
-
-    public void setSourceName(String sourceName) {
-        this.sourceName = sourceName;
-    }
-
-    public String getQualityStatus() {
-        return qualityStatus;
-    }
-
-    public void setQualityStatus(String qualityStatus) {
-        this.qualityStatus = qualityStatus;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

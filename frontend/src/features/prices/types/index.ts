@@ -20,6 +20,9 @@ export interface MarketPriceSummary {
   modalPrice: number;
   currency: string;
   unit: string;
+  sourceUnit?: string;
+  conversionApplied?: boolean;
+  conversionFactor?: number;
   sourceType: PriceSourceType;
   sourceName: string;
   qualityStatus: PriceQualityStatus;
@@ -53,6 +56,9 @@ export interface MarketPriceDetail {
   modalPrice: number;
   currency: string;
   unit: string;
+  sourceUnit?: string;
+  conversionApplied?: boolean;
+  conversionFactor?: number;
   source: MarketPriceSource;
   qualityStatus: PriceQualityStatus;
   status: PriceStatus;

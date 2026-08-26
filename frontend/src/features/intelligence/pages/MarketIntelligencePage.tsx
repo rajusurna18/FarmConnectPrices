@@ -57,7 +57,7 @@ export const MarketIntelligencePage: React.FC = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Compare reported crop prices across agricultural markets, analyze price spreads, and view verified historical trends with strict unit consistency.
+              Compare reported crop prices across agricultural markets, analyze price spreads, and view normalized unit-converted trends with strict source transparency.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-medium text-emerald-400">
@@ -137,7 +137,7 @@ export const MarketIntelligencePage: React.FC = () => {
           {/* Unit Filter */}
           <div>
             <label htmlFor="intel-unit-select" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-              Unit
+              Display Unit
             </label>
             <select
               id="intel-unit-select"
@@ -287,8 +287,13 @@ export const MarketIntelligencePage: React.FC = () => {
                         <td className="px-4 py-3.5 font-bold text-white">{m.marketName}</td>
                         <td className="px-4 py-3.5 text-slate-400">{m.district ? `${m.district}, ` : ''}{m.state}</td>
                         <td className="px-4 py-3.5 font-mono text-slate-300">₹{m.minPrice.toLocaleString()}</td>
-                        <td className="px-4 py-3.5 font-mono font-bold text-emerald-400 text-sm">
-                          ₹{m.modalPrice.toLocaleString()}
+                        <td className="px-4 py-3.5 font-mono">
+                          <span className="font-bold text-emerald-400 text-sm block">₹{m.modalPrice.toLocaleString()}</span>
+                          {m.conversionApplied && (
+                            <span className="text-[10px] text-amber-400 font-mono block pt-0.5">
+                              Converted from ₹{((m.modalPrice / (m.conversionFactor || 1))).toLocaleString()} / {m.sourceUnit || 'QUINTAL'}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3.5 font-mono text-slate-300">₹{m.maxPrice.toLocaleString()}</td>
                         <td className="px-4 py-3.5 text-slate-400">{m.priceDate}</td>
@@ -312,7 +317,7 @@ export const MarketIntelligencePage: React.FC = () => {
           <section className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-white">Historical Price Trend Analysis</h3>
+                <h3 className="text-lg font-bold text-white">Historical Price Trend Analysis ({trend.unit})</h3>
                 <p className="text-xs text-slate-400">Deterministic observation timeline for {trend.cropName}</p>
               </div>
               <span className="text-xs font-mono font-semibold px-3 py-1 rounded-full bg-slate-800 text-slate-300">

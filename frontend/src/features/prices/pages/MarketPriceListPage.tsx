@@ -10,6 +10,7 @@ import {
   Calendar,
   Store,
   Database,
+  Info,
 } from 'lucide-react';
 import { Navbar } from '../../../components/navigation/Navbar';
 import { Footer } from '../../../components/navigation/Footer';
@@ -20,7 +21,9 @@ import { QualityStatusBadge } from '../components/QualityStatusBadge';
 import type { MarketPriceFilterState } from '../types';
 
 export const MarketPriceListPage: React.FC = () => {
-  const [filters, setFilters] = useState<MarketPriceFilterState>({});
+  const [filters, setFilters] = useState<MarketPriceFilterState>({
+    unit: 'QUINTAL'
+  });
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   const { data: prices, isLoading, isError, refetch } = useMarketPrices(filters);
@@ -62,16 +65,16 @@ export const MarketPriceListPage: React.FC = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Explore authentic wholesale mandi rates, price ranges, and verification parameters across regional agricultural trade networks.
+              Explore authentic wholesale mandi rates, price ranges, and normalized unit conversions (KG, QUINTAL, TONNE) with original AGMARKNET observation preservation.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-medium">
-              <span className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center space-x-1.5">
+              <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center space-x-1.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Development Reference Seed Data</span>
+                <span>AGMARKNET Official Source Observation</span>
               </span>
               <span className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 font-mono">
-                Currency: INR (₹) • Unit: QUINTAL
+                Currency: INR (₹) • Display Unit: {filters.unit || 'QUINTAL'}
               </span>
             </div>
           </div>
@@ -86,6 +89,7 @@ export const MarketPriceListPage: React.FC = () => {
               <span className="text-xs font-semibold text-slate-200 uppercase tracking-wider">Filter Market Prices</span>
             </div>
             <button
+              type="button"
               onClick={() => setIsDrawerOpen(true)}
               className="min-h-[44px] px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center space-x-1.5 shadow-md shadow-emerald-950/50"
             >
@@ -115,9 +119,10 @@ export const MarketPriceListPage: React.FC = () => {
               {prices && <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">{prices.length}</span>}
             </h2>
 
-            {(filters.state || filters.district || filters.marketId || filters.cropId || filters.qualityStatus || filters.priceDate) && (
+            {(filters.state || filters.district || filters.marketId || filters.cropId || filters.qualityStatus || filters.priceDate || filters.unit !== 'QUINTAL') && (
               <button
-                onClick={() => setFilters({})}
+                type="button"
+                onClick={() => setFilters({ unit: 'QUINTAL' })}
                 className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center space-x-1"
               >
                 <RefreshCw className="w-3 h-3" />
@@ -144,6 +149,7 @@ export const MarketPriceListPage: React.FC = () => {
             <div className="p-8 rounded-2xl bg-rose-950/30 border border-rose-800/40 text-center space-y-3">
               <p className="text-sm text-rose-300">Failed to load market price data from backend API.</p>
               <button
+                type="button"
                 onClick={() => refetch()}
                 className="px-4 py-2 min-h-[44px] rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-semibold"
               >
@@ -161,7 +167,8 @@ export const MarketPriceListPage: React.FC = () => {
                 Try clearing active commodity, market, or date filters to explore available price observations.
               </p>
               <button
-                onClick={() => setFilters({})}
+                type="button"
+                onClick={() => setFilters({ unit: 'QUINTAL' })}
                 className="mt-2 px-5 py-2.5 min-h-[48px] rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs inline-flex items-center space-x-1.5"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -219,6 +226,14 @@ export const MarketPriceListPage: React.FC = () => {
                           ₹{p.minPrice.toLocaleString()} ─ ₹{p.maxPrice.toLocaleString()}
                         </span>
                       </div>
+
+                      {/* Source Conversion Transparency Note */}
+                      {p.conversionApplied && (
+                        <div className="text-[10px] text-amber-400 font-mono bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg flex items-center space-x-1.5 mt-2">
+                          <Info className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                          <span>Converted from AGMARKNET ₹{((p.modalPrice / (p.conversionFactor || 1))).toLocaleString()} / {p.sourceUnit || 'QUINTAL'}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Source Metadata */}
@@ -253,7 +268,7 @@ export const MarketPriceListPage: React.FC = () => {
         onClose={() => setIsDrawerOpen(false)}
         filters={filters}
         onApply={(f) => setFilters(f)}
-        onReset={() => setFilters({})}
+        onReset={() => setFilters({ unit: 'QUINTAL' })}
         availableStates={statesList}
         availableDistricts={districtsList}
         availableCrops={cropsList}

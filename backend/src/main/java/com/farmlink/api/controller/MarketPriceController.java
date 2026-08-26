@@ -50,7 +50,8 @@ public class MarketPriceController {
     @GetMapping("/latest")
     public ResponseEntity<?> getLatestMarketPrice(
             @RequestParam String marketId,
-            @RequestParam String cropId
+            @RequestParam String cropId,
+            @RequestParam(required = false) String unit
     ) {
         FirebaseAuthenticationToken token = getAuthenticatedToken();
         if (token == null) {
@@ -59,6 +60,9 @@ public class MarketPriceController {
 
         try {
             MarketPriceResponse price = marketPriceService.getLatestMarketPrice(marketId, cropId);
+            if (unit != null && !unit.trim().isEmpty()) {
+                price = marketPriceService.applyConversion(price, unit.trim());
+            }
             return ResponseEntity.ok(price);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -72,7 +76,8 @@ public class MarketPriceController {
             @RequestParam String marketId,
             @RequestParam String cropId,
             @RequestParam(required = false) String fromDate,
-            @RequestParam(required = false) String toDate
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String unit
     ) {
         FirebaseAuthenticationToken token = getAuthenticatedToken();
         if (token == null) {
@@ -81,6 +86,10 @@ public class MarketPriceController {
 
         try {
             List<MarketPriceResponse> history = marketPriceService.getMarketPriceHistory(marketId, cropId, fromDate, toDate);
+            if (unit != null && !unit.trim().isEmpty()) {
+                String targetUnit = unit.trim();
+                history = history.stream().map(p -> marketPriceService.applyConversion(p, targetUnit)).toList();
+            }
             return ResponseEntity.ok(history);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -90,7 +99,10 @@ public class MarketPriceController {
     }
 
     @GetMapping("/{priceId}")
-    public ResponseEntity<?> getMarketPriceById(@PathVariable String priceId) {
+    public ResponseEntity<?> getMarketPriceById(
+            @PathVariable String priceId,
+            @RequestParam(required = false) String unit
+    ) {
         FirebaseAuthenticationToken token = getAuthenticatedToken();
         if (token == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
@@ -98,6 +110,9 @@ public class MarketPriceController {
 
         try {
             MarketPriceResponse price = marketPriceService.getMarketPriceById(priceId);
+            if (unit != null && !unit.trim().isEmpty()) {
+                price = marketPriceService.applyConversion(price, unit.trim());
+            }
             return ResponseEntity.ok(price);
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

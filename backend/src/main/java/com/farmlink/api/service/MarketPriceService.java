@@ -25,10 +25,12 @@ public class MarketPriceService {
     public static final String CURRENCY_INR = "INR";
     public static final String UNIT_QUINTAL = "QUINTAL";
     public static final String UNIT_KG = "KG";
+    public static final String UNIT_TONNE = "TONNE";
 
     private final Firestore firestore;
     private final MarketService marketService;
     private final CropMasterService cropMasterService;
+    private final PriceUnitConversionService conversionService;
 
     // Reference Development Seed Data (Clearly marked DEVELOPMENT DATA, never fake government data)
     public static final List<MarketPriceResponse> DEFAULT_PRICES;
@@ -50,7 +52,7 @@ public class MarketPriceService {
                 "2026-08-26",
                 "2026-08-26T06:00:00Z",
                 18500.0, 22500.0, 20500.0,
-                CURRENCY_INR, UNIT_QUINTAL,
+                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
                 seedSource,
                 QUALITY_VERIFIED, STATUS_ACTIVE,
                 "2026-08-26T06:00:00Z", "2026-08-26T06:00:00Z"
@@ -64,7 +66,7 @@ public class MarketPriceService {
                 "2026-08-25",
                 "2026-08-25T06:00:00Z",
                 18200.0, 22100.0, 20200.0,
-                CURRENCY_INR, UNIT_QUINTAL,
+                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
                 seedSource,
                 QUALITY_VERIFIED, STATUS_ACTIVE,
                 "2026-08-25T06:00:00Z", "2026-08-25T06:00:00Z"
@@ -78,7 +80,7 @@ public class MarketPriceService {
                 "2026-08-26",
                 "2026-08-26T07:30:00Z",
                 2180.0, 2450.0, 2320.0,
-                CURRENCY_INR, UNIT_QUINTAL,
+                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
                 seedSource,
                 QUALITY_VERIFIED, STATUS_ACTIVE,
                 "2026-08-26T07:30:00Z", "2026-08-26T07:30:00Z"
@@ -92,7 +94,7 @@ public class MarketPriceService {
                 "2026-08-26",
                 "2026-08-26T08:00:00Z",
                 1400.0, 1900.0, 1650.0,
-                CURRENCY_INR, UNIT_QUINTAL,
+                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
                 seedSource,
                 QUALITY_UNVERIFIED, STATUS_ACTIVE,
                 "2026-08-26T08:00:00Z", "2026-08-26T08:00:00Z"
@@ -106,7 +108,7 @@ public class MarketPriceService {
                 "2026-08-26",
                 "2026-08-26T09:15:00Z",
                 2400.0, 3100.0, 2750.0,
-                CURRENCY_INR, UNIT_QUINTAL,
+                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
                 seedSource,
                 QUALITY_VERIFIED, STATUS_ACTIVE,
                 "2026-08-26T09:15:00Z", "2026-08-26T09:15:00Z"
@@ -118,11 +120,13 @@ public class MarketPriceService {
     public MarketPriceService(
             Firestore firestore,
             MarketService marketService,
-            CropMasterService cropMasterService
+            CropMasterService cropMasterService,
+            PriceUnitConversionService conversionService
     ) {
         this.firestore = firestore;
         this.marketService = marketService;
         this.cropMasterService = cropMasterService;
+        this.conversionService = conversionService;
     }
 
     public static boolean validatePriceRecord(double minPrice, double maxPrice, double modalPrice) {
@@ -175,8 +179,17 @@ public class MarketPriceService {
             if (toDate != null && !toDate.trim().isEmpty() && p.getPriceDate().compareTo(toDate.trim()) > 0) {
                 return false;
             }
-            if (unit != null && !unit.trim().isEmpty() && !p.getUnit().equalsIgnoreCase(unit.trim())) {
-                return false;
+            // Unit filtering: keep observation if source unit and target unit are mutually convertible
+            if (unit != null && !unit.trim().isEmpty()) {
+                String targetUnit = unit.trim();
+                String sourceUnit = p.getSourceUnit() != null ? p.getSourceUnit() : p.getUnit();
+                boolean targetSupported = conversionService.isSupportedUnit(targetUnit);
+                boolean sourceSupported = conversionService.isSupportedUnit(sourceUnit);
+                if (!targetSupported || !sourceSupported) {
+                    if (!sourceUnit.equalsIgnoreCase(targetUnit)) {
+                        return false;
+                    }
+                }
             }
             if (state != null && !state.trim().isEmpty() && p.getMarket().getState() != null && !p.getMarket().getState().equalsIgnoreCase(state.trim())) {
                 return false;
@@ -188,14 +201,19 @@ public class MarketPriceService {
             return true;
         }).collect(Collectors.toList());
 
+        // Apply conversion
+        List<MarketPriceResponse> converted = filtered.stream()
+                .map(p -> applyConversion(p, unit))
+                .collect(Collectors.toList());
+
         // Deterministic Sorting: priceDate descending, observedAt descending
-        filtered.sort((a, b) -> {
+        converted.sort((a, b) -> {
             int cmpDate = b.getPriceDate().compareTo(a.getPriceDate());
             if (cmpDate != 0) return cmpDate;
             return b.getObservedAt().compareTo(a.getObservedAt());
         });
 
-        return filtered.stream()
+        return converted.stream()
                 .limit(maxResults)
                 .map(this::mapToSummary)
                 .collect(Collectors.toList());
@@ -303,6 +321,38 @@ public class MarketPriceService {
         throw new NoSuchElementException("Market price record not found with ID: " + priceId);
     }
 
+    public MarketPriceResponse applyConversion(MarketPriceResponse p, String targetUnit) {
+        if (targetUnit == null || targetUnit.trim().isEmpty()) {
+            return p;
+        }
+        String srcUnit = p.getSourceUnit() != null ? p.getSourceUnit() : p.getUnit();
+        PriceUnitConversionService.ConvertedPriceResult result = conversionService.convert(
+                p.getMinPrice(), p.getModalPrice(), p.getMaxPrice(),
+                srcUnit,
+                targetUnit
+        );
+        return new MarketPriceResponse(
+                p.getId(),
+                p.getMarket(),
+                p.getCrop(),
+                p.getPriceDate(),
+                p.getObservedAt(),
+                result.getMinPrice(),
+                result.getMaxPrice(),
+                result.getModalPrice(),
+                p.getCurrency(),
+                result.getDisplayUnit(),
+                result.getSourceUnit(),
+                result.isConversionApplied(),
+                result.getConversionFactor(),
+                p.getSource(),
+                p.getQualityStatus(),
+                p.getStatus(),
+                p.getCreatedAt(),
+                p.getUpdatedAt()
+        );
+    }
+
     // ==========================================
     // PRIVATE HELPERS
     // ==========================================
@@ -343,6 +393,7 @@ public class MarketPriceService {
 
         String currency = doc.getString("currency") != null ? doc.getString("currency") : CURRENCY_INR;
         String unit = doc.getString("unit") != null ? doc.getString("unit") : UNIT_QUINTAL;
+        String sourceUnit = doc.getString("sourceUnit") != null ? doc.getString("sourceUnit") : unit;
         String qualityStatus = doc.getString("qualityStatus") != null ? doc.getString("qualityStatus") : QUALITY_UNVERIFIED;
         String status = doc.getString("status") != null ? doc.getString("status") : STATUS_ACTIVE;
 
@@ -371,7 +422,7 @@ public class MarketPriceService {
                 minPrice != null ? minPrice : 0.0,
                 maxPrice != null ? maxPrice : 0.0,
                 modalPrice != null ? modalPrice : 0.0,
-                currency, unit, source, qualityStatus, status,
+                currency, unit, sourceUnit, false, 1.0, source, qualityStatus, status,
                 createdAt, updatedAt
         );
     }
@@ -389,6 +440,9 @@ public class MarketPriceService {
                 p.getModalPrice(),
                 p.getCurrency(),
                 p.getUnit(),
+                p.getSourceUnit(),
+                p.isConversionApplied(),
+                p.getConversionFactor(),
                 p.getSource() != null ? p.getSource().getType() : "OTHER",
                 p.getSource() != null ? p.getSource().getName() : "Unknown",
                 p.getQualityStatus(),

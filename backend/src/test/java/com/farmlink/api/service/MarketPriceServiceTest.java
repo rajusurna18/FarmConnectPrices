@@ -20,6 +20,7 @@ class MarketPriceServiceTest {
     private Firestore firestore;
     private MarketService marketService;
     private CropMasterService cropMasterService;
+    private PriceUnitConversionService conversionService;
     private MarketPriceService marketPriceService;
 
     @BeforeEach
@@ -27,8 +28,9 @@ class MarketPriceServiceTest {
         firestore = mock(Firestore.class);
         marketService = mock(MarketService.class);
         cropMasterService = mock(CropMasterService.class);
+        conversionService = new PriceUnitConversionService();
 
-        marketPriceService = new MarketPriceService(firestore, marketService, cropMasterService);
+        marketPriceService = new MarketPriceService(firestore, marketService, cropMasterService, conversionService);
     }
 
     @Test
@@ -55,6 +57,36 @@ class MarketPriceServiceTest {
         assertEquals("mkt-guntur-mandi", prices.get(0).getMarketId());
         assertEquals("crop-chilli", prices.get(0).getCropId());
         assertNotEquals("REJECTED", prices.get(0).getQualityStatus());
+    }
+
+    @Test
+    void getMarketPrices_convertsPricesToKg() {
+        List<MarketPriceSummaryResponse> prices = marketPriceService.getMarketPrices(
+                "mkt-guntur-mandi", "crop-chilli", null, null, null, null, "KG", null, null, 10
+        );
+
+        assertNotNull(prices);
+        assertFalse(prices.isEmpty());
+        MarketPriceSummaryResponse p = prices.get(0);
+        assertEquals("KG", p.getUnit());
+        assertEquals("QUINTAL", p.getSourceUnit());
+        assertTrue(p.isConversionApplied());
+        assertEquals(205.0, p.getModalPrice()); // 20500 / 100 = 205
+    }
+
+    @Test
+    void getMarketPrices_convertsPricesToTonne() {
+        List<MarketPriceSummaryResponse> prices = marketPriceService.getMarketPrices(
+                "mkt-guntur-mandi", "crop-chilli", null, null, null, null, "TONNE", null, null, 10
+        );
+
+        assertNotNull(prices);
+        assertFalse(prices.isEmpty());
+        MarketPriceSummaryResponse p = prices.get(0);
+        assertEquals("TONNE", p.getUnit());
+        assertEquals("QUINTAL", p.getSourceUnit());
+        assertTrue(p.isConversionApplied());
+        assertEquals(205000.0, p.getModalPrice()); // 20500 * 10 = 205000
     }
 
     @Test

@@ -11,6 +11,9 @@ public class MarketPriceResponse {
     private double modalPrice;
     private String currency;
     private String unit;
+    private String sourceUnit;
+    private boolean conversionApplied;
+    private double conversionFactor = 1.0;
     private MarketPriceSourceDto source;
     private String qualityStatus;
     private String status;
@@ -36,6 +39,29 @@ public class MarketPriceResponse {
             String createdAt,
             String updatedAt
     ) {
+        this(id, market, crop, priceDate, observedAt, minPrice, maxPrice, modalPrice, currency, unit, unit, false, 1.0, source, qualityStatus, status, createdAt, updatedAt);
+    }
+
+    public MarketPriceResponse(
+            String id,
+            MarketSummaryResponse market,
+            CropResponse crop,
+            String priceDate,
+            String observedAt,
+            double minPrice,
+            double maxPrice,
+            double modalPrice,
+            String currency,
+            String unit,
+            String sourceUnit,
+            boolean conversionApplied,
+            double conversionFactor,
+            MarketPriceSourceDto source,
+            String qualityStatus,
+            String status,
+            String createdAt,
+            String updatedAt
+    ) {
         this.id = id;
         this.market = market;
         this.crop = crop;
@@ -46,6 +72,9 @@ public class MarketPriceResponse {
         this.modalPrice = modalPrice;
         this.currency = currency;
         this.unit = unit;
+        this.sourceUnit = sourceUnit != null ? sourceUnit : unit;
+        this.conversionApplied = conversionApplied;
+        this.conversionFactor = conversionFactor;
         this.source = source;
         this.qualityStatus = qualityStatus;
         this.status = status;
@@ -53,123 +82,57 @@ public class MarketPriceResponse {
         this.updatedAt = updatedAt;
     }
 
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public MarketSummaryResponse getMarket() { return market; }
+    public void setMarket(MarketSummaryResponse market) { this.market = market; }
 
-    public MarketSummaryResponse getMarket() {
-        return market;
-    }
+    public CropResponse getCrop() { return crop; }
+    public void setCrop(CropResponse crop) { this.crop = crop; }
 
-    public void setMarket(MarketSummaryResponse market) {
-        this.market = market;
-    }
+    public String getPriceDate() { return priceDate; }
+    public void setPriceDate(String priceDate) { this.priceDate = priceDate; }
 
-    public CropResponse getCrop() {
-        return crop;
-    }
+    public String getObservedAt() { return observedAt; }
+    public void setObservedAt(String observedAt) { this.observedAt = observedAt; }
 
-    public void setCrop(CropResponse crop) {
-        this.crop = crop;
-    }
+    public double getMinPrice() { return minPrice; }
+    public void setMinPrice(double minPrice) { this.minPrice = minPrice; }
 
-    public String getPriceDate() {
-        return priceDate;
-    }
+    public double getMaxPrice() { return maxPrice; }
+    public void setMaxPrice(double maxPrice) { this.maxPrice = maxPrice; }
 
-    public void setPriceDate(String priceDate) {
-        this.priceDate = priceDate;
-    }
+    public double getModalPrice() { return modalPrice; }
+    public void setModalPrice(double modalPrice) { this.modalPrice = modalPrice; }
 
-    public String getObservedAt() {
-        return observedAt;
-    }
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
 
-    public void setObservedAt(String observedAt) {
-        this.observedAt = observedAt;
-    }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
 
-    public double getMinPrice() {
-        return minPrice;
-    }
+    public String getSourceUnit() { return sourceUnit; }
+    public void setSourceUnit(String sourceUnit) { this.sourceUnit = sourceUnit; }
 
-    public void setMinPrice(double minPrice) {
-        this.minPrice = minPrice;
-    }
+    public boolean isConversionApplied() { return conversionApplied; }
+    public void setConversionApplied(boolean conversionApplied) { this.conversionApplied = conversionApplied; }
 
-    public double getMaxPrice() {
-        return maxPrice;
-    }
+    public double getConversionFactor() { return conversionFactor; }
+    public void setConversionFactor(double conversionFactor) { this.conversionFactor = conversionFactor; }
 
-    public void setMaxPrice(double maxPrice) {
-        this.maxPrice = maxPrice;
-    }
+    public MarketPriceSourceDto getSource() { return source; }
+    public void setSource(MarketPriceSourceDto source) { this.source = source; }
 
-    public double getModalPrice() {
-        return modalPrice;
-    }
+    public String getQualityStatus() { return qualityStatus; }
+    public void setQualityStatus(String qualityStatus) { this.qualityStatus = qualityStatus; }
 
-    public void setModalPrice(double modalPrice) {
-        this.modalPrice = modalPrice;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public String getCurrency() {
-        return currency;
-    }
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public String getUnit() {
-        return unit;
-    }
-
-    public void setUnit(String unit) {
-        this.unit = unit;
-    }
-
-    public MarketPriceSourceDto getSource() {
-        return source;
-    }
-
-    public void setSource(MarketPriceSourceDto source) {
-        this.source = source;
-    }
-
-    public String getQualityStatus() {
-        return qualityStatus;
-    }
-
-    public void setQualityStatus(String qualityStatus) {
-        this.qualityStatus = qualityStatus;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public String getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(String updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public String getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
 }

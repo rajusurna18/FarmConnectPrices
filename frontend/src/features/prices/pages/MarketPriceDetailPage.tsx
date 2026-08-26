@@ -60,6 +60,7 @@ export const MarketPriceDetailPage: React.FC = () => {
             </p>
             <div className="flex items-center justify-center space-x-3 pt-2">
               <button
+                type="button"
                 onClick={() => refetch()}
                 className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-semibold rounded-xl flex items-center space-x-1.5 min-h-[44px]"
               >
@@ -132,6 +133,16 @@ export const MarketPriceDetailPage: React.FC = () => {
               </span>
             </div>
           </div>
+
+          {/* Source Conversion Banner */}
+          {price.conversionApplied && (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center space-x-2 font-mono">
+              <Info className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>
+                Unit Conversion Applied: Converted from AGMARKNET source rate of ₹{((price.modalPrice / (price.conversionFactor || 1))).toLocaleString()} / {price.sourceUnit || 'QUINTAL'} to display unit {price.unit}.
+              </span>
+            </div>
+          )}
 
           {/* Development seed notice */}
           {price.source?.name?.includes('Development') && (

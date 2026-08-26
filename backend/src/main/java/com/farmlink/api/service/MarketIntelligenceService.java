@@ -42,8 +42,6 @@ public class MarketIntelligenceService {
             crop = new CropResponse(targetCropId, targetCropId, "GENERAL", "", "ACTIVE");
         }
 
-        // Fetch verified observations with correct method signature:
-        // getMarketPrices(marketId, cropId, priceDate, fromDate, toDate, qualityStatus, unit, state, district, limit)
         List<MarketPriceSummaryResponse> summaries = marketPriceService.getMarketPrices(
                 null,           // marketId
                 targetCropId,   // cropId
@@ -89,6 +87,9 @@ public class MarketIntelligenceService {
                     s.getModalPrice(),
                     s.getCurrency(),
                     s.getUnit(),
+                    s.getSourceUnit(),
+                    s.isConversionApplied(),
+                    s.getConversionFactor(),
                     s.getPriceDate() != null ? s.getPriceDate() : "",
                     s.getSourceName() != null ? s.getSourceName() : "AGMARKNET",
                     s.getQualityStatus() != null ? s.getQualityStatus() : MarketPriceService.QUALITY_VERIFIED

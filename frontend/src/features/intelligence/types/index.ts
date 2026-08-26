@@ -9,6 +9,9 @@ export interface MarketComparisonItem {
   modalPrice: number;
   currency: string;
   unit: string;
+  sourceUnit?: string;
+  conversionApplied?: boolean;
+  conversionFactor?: number;
   priceDate: string;
   sourceName: string;
   qualityStatus: string;

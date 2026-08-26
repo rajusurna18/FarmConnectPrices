@@ -27,11 +27,15 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
   };
 
   return (
-    <div className="hidden lg:grid grid-cols-6 gap-3 bg-slate-900/80 p-4 rounded-2xl border border-slate-800 backdrop-blur-md text-xs">
+    <div className="hidden lg:grid grid-cols-7 gap-3 bg-slate-900/80 p-4 rounded-2xl border border-slate-800 backdrop-blur-md text-xs">
       {/* State */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">State</label>
+        <label htmlFor="filter-state" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          State
+        </label>
         <select
+          id="filter-state"
+          name="state"
           value={filters.state || ''}
           onChange={(e) => handleChange('state', e.target.value)}
           className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -47,8 +51,12 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
 
       {/* District */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">District</label>
+        <label htmlFor="filter-district" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          District
+        </label>
         <select
+          id="filter-district"
+          name="district"
           value={filters.district || ''}
           onChange={(e) => handleChange('district', e.target.value)}
           className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -64,8 +72,12 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
 
       {/* Market */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Market</label>
+        <label htmlFor="filter-market" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          Market
+        </label>
         <select
+          id="filter-market"
+          name="marketId"
           value={filters.marketId || ''}
           onChange={(e) => handleChange('marketId', e.target.value)}
           className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500 truncate"
@@ -81,8 +93,12 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
 
       {/* Crop */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Commodity / Crop</label>
+        <label htmlFor="filter-crop" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          Commodity
+        </label>
         <select
+          id="filter-crop"
+          name="cropId"
           value={filters.cropId || ''}
           onChange={(e) => handleChange('cropId', e.target.value)}
           className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500 truncate"
@@ -96,10 +112,32 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
         </select>
       </div>
 
+      {/* Unit Selector */}
+      <div>
+        <label htmlFor="filter-unit" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          Display Unit
+        </label>
+        <select
+          id="filter-unit"
+          name="unit"
+          value={filters.unit || 'QUINTAL'}
+          onChange={(e) => handleChange('unit', e.target.value)}
+          className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+        >
+          <option value="QUINTAL">₹ / QUINTAL</option>
+          <option value="KG">₹ / KG</option>
+          <option value="TONNE">₹ / TONNE</option>
+        </select>
+      </div>
+
       {/* Quality Status */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Data Quality</label>
+        <label htmlFor="filter-quality" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          Data Quality
+        </label>
         <select
+          id="filter-quality"
+          name="qualityStatus"
           value={filters.qualityStatus || ''}
           onChange={(e) => handleChange('qualityStatus', e.target.value as PriceQualityStatus)}
           className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -112,8 +150,12 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
 
       {/* Date */}
       <div>
-        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Business Date</label>
+        <label htmlFor="filter-date" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          Business Date
+        </label>
         <input
+          id="filter-date"
+          name="priceDate"
           type="date"
           value={filters.priceDate || ''}
           onChange={(e) => handleChange('priceDate', e.target.value)}
