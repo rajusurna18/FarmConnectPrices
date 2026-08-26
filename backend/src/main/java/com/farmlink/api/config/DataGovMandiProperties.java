@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class DataGovMandiProperties {
 
     private String baseUrl = "https://api.data.gov.in/resource";
-    private String resourceId = "9ef84268-d588-465a-a308-a864a43d0070";
+    private String resourceId = "35985678-0d79-46b4-9ed6-6f13308a1d24";
     private String apiKey = "";
 
     public String getBaseUrl() {

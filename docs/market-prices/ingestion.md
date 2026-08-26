@@ -1,7 +1,7 @@
-# Ingestion Pipeline & Quality Architecture
+# Ingestion Pipeline & Location Cascading Architecture
 
 ## Ingestion Workflow
-1. **Fetch**: `DataGovMandiClient` fetches records from `api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070`.
+1. **Fetch**: `DataGovMandiClient` fetches records from `api.data.gov.in/resource/35985678-0d79-46b4-9ed6-6f13308a1d24`.
 2. **Mapping**: `MandiMappingService` maps normalized `(state, district, market)` to existing Module 06 Markets and `commodity` to Module 05 Crops. Unmapped records are safely skipped without mutating market/crop masters.
 3. **Validation**: Price values are checked for numerical validity:
    - `minPrice >= 0`
@@ -15,10 +15,12 @@
    "source": {
      "type": "GOVERNMENT",
      "name": "data.gov.in / AGMARKNET",
-     "reference": "9ef84268-d588-465a-a308-a864a43d0070"
+     "reference": "35985678-0d79-46b4-9ed6-6f13308a1d24"
    }
    ```
 
-## Scheduled & Manual Triggers
-- **Scheduled Ingestion**: `DataGovIngestionScheduler` runs on cron (`${market-price.ingestion.cron:0 30 18 * * *}`) when `${market-price.ingestion.enabled}` is set to `true`.
-- **Manual Trigger**: `POST /api/v1/internal/market-prices/ingest` (requires admin authentication header/token).
+## Location Cascading Rules
+- `GET /api/v1/locations/states`: List available States.
+- `GET /api/v1/locations/districts?state=...`: List available Districts for selected State.
+- `GET /api/v1/locations/areas?state=...&district=...`: List optional sub-areas for District (returns `[]` if no sub-area data exists).
+- **District Fallback**: If a selected sub-area has no specific market, the UI gracefully falls back to district markets with notice.

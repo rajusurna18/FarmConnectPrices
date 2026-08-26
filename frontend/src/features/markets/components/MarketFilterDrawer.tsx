@@ -12,7 +12,10 @@ interface MarketFilterDrawerProps {
   onReset: () => void;
   availableStates: string[];
   availableDistricts: string[];
+  availableAreas?: string[];
   availableCrops: Array<{ id: string; name: string }>;
+  onStateChange?: (state?: string) => void;
+  onDistrictChange?: (district?: string) => void;
 }
 
 export const MarketFilterDrawer: React.FC<MarketFilterDrawerProps> = ({
@@ -23,13 +26,31 @@ export const MarketFilterDrawer: React.FC<MarketFilterDrawerProps> = ({
   onReset,
   availableStates,
   availableDistricts,
+  availableAreas = [],
   availableCrops,
+  onStateChange,
+  onDistrictChange,
 }) => {
   const [localFilters, setLocalFilters] = React.useState<MarketFilterState>(filters);
 
   React.useEffect(() => {
     setLocalFilters(filters);
   }, [filters, isOpen]);
+
+  const handleStateSelect = (st: string) => {
+    const val = st || undefined;
+    setLocalFilters({ state: val });
+    if (onStateChange) onStateChange(val);
+  };
+
+  const handleDistrictSelect = (dist: string) => {
+    const val = dist || undefined;
+    setLocalFilters((prev) => ({
+      state: prev.state,
+      district: val,
+    }));
+    if (onDistrictChange) onDistrictChange(val);
+  };
 
   const handleApply = () => {
     onApply(localFilters);
@@ -88,7 +109,7 @@ export const MarketFilterDrawer: React.FC<MarketFilterDrawerProps> = ({
                   </label>
                   <select
                     value={localFilters.state || ''}
-                    onChange={(e) => setLocalFilters((prev) => ({ ...prev, state: e.target.value || undefined }))}
+                    onChange={(e) => handleStateSelect(e.target.value)}
                     className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
                   >
                     <option value="">All States</option>
@@ -107,8 +128,9 @@ export const MarketFilterDrawer: React.FC<MarketFilterDrawerProps> = ({
                   </label>
                   <select
                     value={localFilters.district || ''}
-                    onChange={(e) => setLocalFilters((prev) => ({ ...prev, district: e.target.value || undefined }))}
-                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                    onChange={(e) => handleDistrictSelect(e.target.value)}
+                    disabled={!localFilters.state}
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                   >
                     <option value="">All Districts</option>
                     {availableDistricts.map((dist) => (
@@ -118,6 +140,28 @@ export const MarketFilterDrawer: React.FC<MarketFilterDrawerProps> = ({
                     ))}
                   </select>
                 </div>
+
+                {/* Optional Mandal / Area Filter (Shown ONLY if reliable area data exists) */}
+                {availableAreas && availableAreas.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                      Mandal / Area (Optional)
+                    </label>
+                    <select
+                      value={localFilters.mandal || ''}
+                      onChange={(e) => setLocalFilters((prev) => ({ ...prev, mandal: e.target.value || undefined }))}
+                      disabled={!localFilters.district}
+                      className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                    >
+                      <option value="">All Areas</option>
+                      {availableAreas.map((area) => (
+                        <option key={area} value={area}>
+                          {area}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Market Type Filter */}
                 <div>

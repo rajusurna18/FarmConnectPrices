@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Store, Filter, MapPin, ArrowRight, ShieldCheck, RefreshCw, Layers } from 'lucide-react';
+import { Store, Filter, MapPin, ArrowRight, ShieldCheck, RefreshCw, Layers, Info } from 'lucide-react';
 import { Navbar } from '../../../components/navigation/Navbar';
 import { Footer } from '../../../components/navigation/Footer';
 import { useMarkets } from '../hooks/useMarkets';
+import { useLocationCascade } from '../hooks/useLocationCascade';
 import { MarketFilterDrawer } from '../components/MarketFilterDrawer';
 import { MARKET_TYPE_LABELS } from '../types';
 import type { MarketFilterState } from '../types';
@@ -26,9 +27,31 @@ export const MarketListPage: React.FC = () => {
 
   const { data: markets, isLoading, isError, refetch } = useMarkets(filters);
 
-  // Available options derived from dataset
-  const statesList = ['Telangana', 'Andhra Pradesh', 'Karnataka', 'Maharashtra'];
-  const districtsList = ['Guntur', 'Warangal', 'Hyderabad', 'Khammam', 'Nizamabad', 'Kurnool', 'Bengaluru Rural', 'Nagpur'];
+  // Dynamic location cascading via TanStack Query
+  const { states, districts, areas } = useLocationCascade(filters.state, filters.district);
+
+  // Check for district fallback condition
+  const isMandalFiltered = Boolean(filters.mandal);
+  const hasNoMandalResults = isMandalFiltered && (!markets || markets.length === 0);
+
+  const handleStateChange = (stateVal?: string) => {
+    setFilters({
+      state: stateVal || undefined,
+      district: undefined,
+      mandal: undefined,
+      type: filters.type,
+      cropId: filters.cropId,
+    });
+  };
+
+  const handleDistrictChange = (districtVal?: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      district: districtVal || undefined,
+      mandal: undefined,
+    }));
+  };
+
   const cropsList = [
     { id: 'crop-paddy', name: 'Rice / Paddy' },
     { id: 'crop-chilli', name: 'Red Chilli' },
@@ -63,17 +86,14 @@ export const MarketListPage: React.FC = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Discover official agricultural trading yards, mandis, and wholesale centers across the FarmConnectPrices network.
+              Discover official agricultural trading yards, mandis, and wholesale centers with location-cascading discovery.
             </p>
 
-            {/* Platform Banner Notice */}
-            <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-amber-400/90 font-medium">
-              <span className="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center space-x-1.5">
+            {/* Platform Source Notice */}
+            <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-emerald-400/90 font-medium">
+              <span className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center space-x-1.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Development & Reference Seed Data</span>
-              </span>
-              <span className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                Market prices will be available in Module 07.
+                <span>AGMARKNET Source Dataset 35985678-0d79-46b4-9ed6-6f13308a1d24</span>
               </span>
             </div>
           </div>
@@ -92,24 +112,24 @@ export const MarketListPage: React.FC = () => {
               className="min-h-[44px] px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center space-x-1.5 shadow-md shadow-emerald-950/50"
             >
               <span>Filters</span>
-              {(filters.state || filters.district || filters.type || filters.cropId) && (
+              {(filters.state || filters.district || filters.mandal || filters.type || filters.cropId) && (
                 <span className="w-2 h-2 rounded-full bg-amber-400" />
               )}
             </button>
           </div>
 
-          {/* Desktop Inline Filter Bar */}
-          <div className="hidden md:grid grid-cols-4 gap-4 bg-slate-900/80 p-4 rounded-2xl border border-slate-800 backdrop-blur-md">
+          {/* Desktop Inline Filter Bar with Cascading Support */}
+          <div className="hidden md:grid grid-cols-5 gap-3 bg-slate-900/80 p-4 rounded-2xl border border-slate-800 backdrop-blur-md">
             {/* State Filter */}
             <div>
               <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">State</label>
               <select
                 value={filters.state || ''}
-                onChange={(e) => setFilters((prev) => ({ ...prev, state: e.target.value || undefined }))}
+                onChange={(e) => handleStateChange(e.target.value)}
                 className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
               >
                 <option value="">All States</option>
-                {statesList.map((st) => (
+                {states.map((st) => (
                   <option key={st} value={st}>
                     {st}
                   </option>
@@ -122,16 +142,41 @@ export const MarketListPage: React.FC = () => {
               <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">District</label>
               <select
                 value={filters.district || ''}
-                onChange={(e) => setFilters((prev) => ({ ...prev, district: e.target.value || undefined }))}
-                className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+                onChange={(e) => handleDistrictChange(e.target.value)}
+                disabled={!filters.state}
+                className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 disabled:opacity-50"
               >
                 <option value="">All Districts</option>
-                {districtsList.map((dist) => (
+                {districts.map((dist) => (
                   <option key={dist} value={dist}>
                     {dist}
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Mandal / Area Filter (Conditional render) */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mandal / Area</label>
+              {areas && areas.length > 0 ? (
+                <select
+                  value={filters.mandal || ''}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, mandal: e.target.value || undefined }))}
+                  disabled={!filters.district}
+                  className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                >
+                  <option value="">All Areas</option>
+                  {areas.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-slate-950/50 border border-slate-800/60 text-slate-500 text-xs flex items-center">
+                  <span>Unavailable</span>
+                </div>
+              )}
             </div>
 
             {/* Market Type Filter */}
@@ -177,7 +222,7 @@ export const MarketListPage: React.FC = () => {
               <span>Discovered Markets</span>
               {markets && <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">{markets.length}</span>}
             </h2>
-            {(filters.state || filters.district || filters.type || filters.cropId) && (
+            {(filters.state || filters.district || filters.mandal || filters.type || filters.cropId) && (
               <button
                 onClick={() => setFilters({})}
                 className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center space-x-1"
@@ -187,6 +232,14 @@ export const MarketListPage: React.FC = () => {
               </button>
             )}
           </div>
+
+          {/* Mandal Availability Fallback Alert */}
+          {hasNoMandalResults && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center space-x-3">
+              <Info className="w-4 h-4 flex-shrink-0 text-amber-400" />
+              <span>Mandal/Area-specific market data unavailable for the selected sub-area. Showing markets for the selected district.</span>
+            </div>
+          )}
 
           {/* Loading State Skeleton */}
           {isLoading && (
@@ -263,7 +316,7 @@ export const MarketListPage: React.FC = () => {
                     {/* Location Info */}
                     <div className="flex items-center text-xs text-slate-300 pt-1">
                       <MapPin className="w-3.5 h-3.5 text-amber-400 mr-1.5 flex-shrink-0" />
-                      <span>{m.mandal}, {m.district} • {m.state}</span>
+                      <span>{m.mandal ? `${m.mandal}, ` : ''}{m.district} • {m.state}</span>
                     </div>
 
                     {/* Supported Crops Preview */}
@@ -295,9 +348,12 @@ export const MarketListPage: React.FC = () => {
         filters={filters}
         onApply={(f) => setFilters(f)}
         onReset={() => setFilters({})}
-        availableStates={statesList}
-        availableDistricts={districtsList}
+        availableStates={states}
+        availableDistricts={districts}
+        availableAreas={areas}
         availableCrops={cropsList}
+        onStateChange={handleStateChange}
+        onDistrictChange={handleDistrictChange}
       />
 
       {/* Footer */}

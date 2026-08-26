@@ -28,7 +28,7 @@ public class DataGovIngestionService {
 
     public static final String SOURCE_TYPE_GOVT = "GOVERNMENT";
     public static final String SOURCE_NAME_GOVT = "data.gov.in / AGMARKNET";
-    public static final String SOURCE_REF_GOVT = "9ef84268-d588-465a-a308-a864a43d0070";
+    public static final String SOURCE_REF_GOVT = "35985678-0d79-46b4-9ed6-6f13308a1d24";
 
     public DataGovIngestionService(
             DataGovMandiClient client,

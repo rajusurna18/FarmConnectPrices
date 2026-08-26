@@ -58,6 +58,7 @@ export interface MarketCrop {
 export interface MarketFilterState {
   state?: string;
   district?: string;
+  mandal?: string;
   type?: string;
   cropId?: string;
 }
