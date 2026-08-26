@@ -15,15 +15,18 @@ public class MarketIntelligenceService {
     private final MarketPriceService marketPriceService;
     private final MarketService marketService;
     private final CropMasterService cropMasterService;
+    private final PriceUnitConversionService conversionService;
 
     public MarketIntelligenceService(
             MarketPriceService marketPriceService,
             MarketService marketService,
-            CropMasterService cropMasterService
+            CropMasterService cropMasterService,
+            PriceUnitConversionService conversionService
     ) {
         this.marketPriceService = marketPriceService;
         this.marketService = marketService;
         this.cropMasterService = cropMasterService;
+        this.conversionService = conversionService;
     }
 
     public MarketComparisonResponse compareMarkets(
@@ -59,15 +62,33 @@ public class MarketIntelligenceService {
             summaries = Collections.emptyList();
         }
 
-        // Ensure strict Unit and Currency Consistency
-        List<MarketPriceSummaryResponse> compatible = summaries.stream()
-                .filter(s -> s.getUnit() != null && s.getUnit().equalsIgnoreCase(targetUnit))
-                .filter(s -> s.getCurrency() != null && s.getCurrency().equalsIgnoreCase(MarketPriceService.CURRENCY_INR))
-                .toList();
+        // Normalize each summary to targetUnit using conversionService
+        List<MarketPriceSummaryResponse> normalized = new ArrayList<>();
+        for (MarketPriceSummaryResponse s : summaries) {
+            if (s.getCurrency() != null && !s.getCurrency().equalsIgnoreCase(MarketPriceService.CURRENCY_INR)) {
+                continue;
+            }
+            String srcUnit = s.getSourceUnit() != null ? s.getSourceUnit() : s.getUnit();
+            PriceUnitConversionService.ConvertedPriceResult conv = conversionService.convert(
+                    s.getMinPrice(), s.getModalPrice(), s.getMaxPrice(), srcUnit, targetUnit
+            );
+            if (conversionService.isSupportedUnit(targetUnit) && !conversionService.isSupportedUnit(srcUnit) && !srcUnit.equalsIgnoreCase(targetUnit)) {
+                continue;
+            }
+
+            s.setMinPrice(conv.getMinPrice());
+            s.setModalPrice(conv.getModalPrice());
+            s.setMaxPrice(conv.getMaxPrice());
+            s.setUnit(conv.getDisplayUnit());
+            s.setSourceUnit(conv.getSourceUnit());
+            s.setConversionApplied(conv.isConversionApplied());
+            s.setConversionFactor(conv.getConversionFactor());
+            normalized.add(s);
+        }
 
         // Group by MarketId to keep latest observation per market
         Map<String, MarketPriceSummaryResponse> latestPerMarket = new LinkedHashMap<>();
-        for (MarketPriceSummaryResponse s : compatible) {
+        for (MarketPriceSummaryResponse s : normalized) {
             if (s.getMarketId() != null && !latestPerMarket.containsKey(s.getMarketId())) {
                 latestPerMarket.put(s.getMarketId(), s);
             }
@@ -151,13 +172,32 @@ public class MarketIntelligenceService {
             summaries = Collections.emptyList();
         }
 
-        List<MarketPriceSummaryResponse> compatible = summaries.stream()
-                .filter(s -> s.getUnit() != null && s.getUnit().equalsIgnoreCase(targetUnit))
-                .filter(s -> s.getPriceDate() != null)
-                .sorted(Comparator.comparing(MarketPriceSummaryResponse::getPriceDate))
-                .toList();
+        List<MarketPriceSummaryResponse> normalized = new ArrayList<>();
+        for (MarketPriceSummaryResponse s : summaries) {
+            if (s.getPriceDate() == null) continue;
+            if (s.getCurrency() != null && !s.getCurrency().equalsIgnoreCase(MarketPriceService.CURRENCY_INR)) continue;
 
-        int count = compatible.size();
+            String srcUnit = s.getSourceUnit() != null ? s.getSourceUnit() : s.getUnit();
+            PriceUnitConversionService.ConvertedPriceResult conv = conversionService.convert(
+                    s.getMinPrice(), s.getModalPrice(), s.getMaxPrice(), srcUnit, targetUnit
+            );
+            if (conversionService.isSupportedUnit(targetUnit) && !conversionService.isSupportedUnit(srcUnit) && !srcUnit.equalsIgnoreCase(targetUnit)) {
+                continue;
+            }
+
+            s.setMinPrice(conv.getMinPrice());
+            s.setModalPrice(conv.getModalPrice());
+            s.setMaxPrice(conv.getMaxPrice());
+            s.setUnit(conv.getDisplayUnit());
+            s.setSourceUnit(conv.getSourceUnit());
+            s.setConversionApplied(conv.isConversionApplied());
+            s.setConversionFactor(conv.getConversionFactor());
+            normalized.add(s);
+        }
+
+        normalized.sort(Comparator.comparing(MarketPriceSummaryResponse::getPriceDate));
+
+        int count = normalized.size();
         if (count == 0) {
             return new MarketIntelligenceSummaryResponse(
                     0, 0.0, 0.0, 0.0, 0.0,
@@ -166,15 +206,15 @@ public class MarketIntelligenceService {
             );
         }
 
-        double latestModal = compatible.get(count - 1).getModalPrice();
-        double firstModal = compatible.get(0).getModalPrice();
-        double minModal = compatible.stream().mapToDouble(MarketPriceSummaryResponse::getModalPrice).min().orElse(0.0);
-        double maxModal = compatible.stream().mapToDouble(MarketPriceSummaryResponse::getModalPrice).max().orElse(0.0);
-        double sumModal = compatible.stream().mapToDouble(MarketPriceSummaryResponse::getModalPrice).sum();
+        double latestModal = normalized.get(count - 1).getModalPrice();
+        double firstModal = normalized.get(0).getModalPrice();
+        double minModal = normalized.stream().mapToDouble(MarketPriceSummaryResponse::getModalPrice).min().orElse(0.0);
+        double maxModal = normalized.stream().mapToDouble(MarketPriceSummaryResponse::getModalPrice).max().orElse(0.0);
+        double sumModal = normalized.stream().mapToDouble(MarketPriceSummaryResponse::getModalPrice).sum();
         double avgModal = sumModal / count;
 
-        String firstDate = compatible.get(0).getPriceDate();
-        String latestDate = compatible.get(count - 1).getPriceDate();
+        String firstDate = normalized.get(0).getPriceDate();
+        String latestDate = normalized.get(count - 1).getPriceDate();
 
         double absChange = latestModal - firstModal;
         Double pctChange = (firstModal > 0.0) ? ((latestModal - firstModal) / firstModal) * 100.0 : null;
@@ -233,14 +273,33 @@ public class MarketIntelligenceService {
             summaries = Collections.emptyList();
         }
 
-        List<MarketPriceSummaryResponse> compatible = summaries.stream()
-                .filter(s -> s.getUnit() != null && s.getUnit().equalsIgnoreCase(targetUnit))
-                .filter(s -> s.getPriceDate() != null)
-                .sorted(Comparator.comparing(MarketPriceSummaryResponse::getPriceDate))
-                .toList();
+        List<MarketPriceSummaryResponse> normalized = new ArrayList<>();
+        for (MarketPriceSummaryResponse s : summaries) {
+            if (s.getPriceDate() == null) continue;
+            if (s.getCurrency() != null && !s.getCurrency().equalsIgnoreCase(MarketPriceService.CURRENCY_INR)) continue;
+
+            String srcUnit = s.getSourceUnit() != null ? s.getSourceUnit() : s.getUnit();
+            PriceUnitConversionService.ConvertedPriceResult conv = conversionService.convert(
+                    s.getMinPrice(), s.getModalPrice(), s.getMaxPrice(), srcUnit, targetUnit
+            );
+            if (conversionService.isSupportedUnit(targetUnit) && !conversionService.isSupportedUnit(srcUnit) && !srcUnit.equalsIgnoreCase(targetUnit)) {
+                continue;
+            }
+
+            s.setMinPrice(conv.getMinPrice());
+            s.setModalPrice(conv.getModalPrice());
+            s.setMaxPrice(conv.getMaxPrice());
+            s.setUnit(conv.getDisplayUnit());
+            s.setSourceUnit(conv.getSourceUnit());
+            s.setConversionApplied(conv.isConversionApplied());
+            s.setConversionFactor(conv.getConversionFactor());
+            normalized.add(s);
+        }
+
+        normalized.sort(Comparator.comparing(MarketPriceSummaryResponse::getPriceDate));
 
         List<PriceTrendPointDto> points = new ArrayList<>();
-        for (MarketPriceSummaryResponse s : compatible) {
+        for (MarketPriceSummaryResponse s : normalized) {
             points.add(new PriceTrendPointDto(s.getPriceDate(), s.getModalPrice(), s.getMinPrice(), s.getMaxPrice()));
         }
 
