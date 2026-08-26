@@ -24,3 +24,14 @@ app:
     private-key: ${FIREBASE_PRIVATE_KEY:}
     use-emulator: ${FIREBASE_USE_EMULATOR:false}
     emulator-host: ${FIRESTORE_EMULATOR_HOST:localhost:8081}
+
+data-gov-in:
+  base-url: ${DATA_GOV_IN_BASE_URL:https://api.data.gov.in/resource}
+  resource-id: ${DATA_GOV_IN_RESOURCE_ID:9ef84268-d588-465a-a308-a864a43d0070}
+  api-key: ${DATA_GOV_IN_API_KEY:}
+
+market-price:
+  ingestion:
+    enabled: ${MARKET_PRICE_INGEST_ENABLED:false}
+    cron: ${MARKET_PRICE_INGEST_CRON:0 30 18 * * *}
+
