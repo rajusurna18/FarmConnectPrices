@@ -1,7 +1,6 @@
 package com.farmlink.api.controller;
 
-import com.farmlink.api.dto.MarketSummaryResponse;
-import com.farmlink.api.service.MarketService;
+import com.farmlink.api.service.LocationMasterService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
@@ -13,21 +12,19 @@ import static org.mockito.Mockito.*;
 
 class LocationControllerTest {
 
-    private MarketService marketService;
+    private LocationMasterService locationMasterService;
     private LocationController locationController;
 
     @BeforeEach
     void setUp() {
-        marketService = mock(MarketService.class);
-        locationController = new LocationController(marketService);
+        locationMasterService = mock(LocationMasterService.class);
+        locationController = new LocationController(locationMasterService);
     }
 
     @Test
     void getStates_returnsDistinctSortedStates() {
-        MarketSummaryResponse m1 = new MarketSummaryResponse("m1", "M1", "C1", "MANDI", "Telangana", "Warangal", "Enumamula", "ACTIVE", 2);
-        MarketSummaryResponse m2 = new MarketSummaryResponse("m2", "M2", "C2", "MANDI", "Andhra Pradesh", "Guntur", "Guntur West", "ACTIVE", 3);
-        when(marketService.getMarkets(null, null, null, null, null, null, 100))
-                .thenReturn(List.of(m1, m2));
+        when(locationMasterService.getCanonicalStates())
+                .thenReturn(List.of("Andhra Pradesh", "Telangana"));
 
         ResponseEntity<List<String>> response = locationController.getStates();
 
@@ -39,22 +36,20 @@ class LocationControllerTest {
 
     @Test
     void getDistricts_returnsDistrictsForState() {
-        MarketSummaryResponse m1 = new MarketSummaryResponse("m1", "M1", "C1", "MANDI", "Telangana", "Warangal", "Enumamula", "ACTIVE", 2);
-        when(marketService.getMarkets("Telangana", null, null, null, null, null, 100))
-                .thenReturn(List.of(m1));
+        when(locationMasterService.getCanonicalDistricts("Telangana"))
+                .thenReturn(List.of("Hyderabad", "Warangal"));
 
         ResponseEntity<List<String>> response = locationController.getDistricts("Telangana");
 
         assertNotNull(response.getBody());
-        assertEquals(1, response.getBody().size());
-        assertEquals("Warangal", response.getBody().get(0));
+        assertEquals(2, response.getBody().size());
+        assertEquals("Hyderabad", response.getBody().get(0));
     }
 
     @Test
     void getAreas_returnsEmpty_whenNoSubAreaExists() {
-        MarketSummaryResponse m1 = new MarketSummaryResponse("m1", "M1", "C1", "MANDI", "Telangana", "Khammam", null, "ACTIVE", 2);
-        when(marketService.getMarkets("Telangana", "Khammam", null, null, null, null, 100))
-                .thenReturn(List.of(m1));
+        when(locationMasterService.getCanonicalAreas("Telangana", "Khammam"))
+                .thenReturn(List.of());
 
         ResponseEntity<List<String>> response = locationController.getAreas("Telangana", "Khammam");
 
