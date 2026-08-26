@@ -73,8 +73,12 @@ export const MarketIntelligencePage: React.FC = () => {
         <section className="w-full bg-slate-900/80 p-4 rounded-2xl border border-slate-800 backdrop-blur-md grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Crop Filter */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Crop</label>
+            <label htmlFor="intel-crop-select" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Crop
+            </label>
             <select
+              id="intel-crop-select"
+              name="cropId"
               value={filters.cropId || ''}
               onChange={(e) => setFilters((prev) => ({ ...prev, cropId: e.target.value || 'crop-chilli' }))}
               className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
@@ -89,8 +93,12 @@ export const MarketIntelligencePage: React.FC = () => {
 
           {/* State Filter */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">State Scope</label>
+            <label htmlFor="intel-state-select" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              State Scope
+            </label>
             <select
+              id="intel-state-select"
+              name="state"
               value={filters.state || ''}
               onChange={(e) => handleStateChange(e.target.value)}
               className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
@@ -106,8 +114,12 @@ export const MarketIntelligencePage: React.FC = () => {
 
           {/* District Filter */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">District Scope</label>
+            <label htmlFor="intel-district-select" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              District Scope
+            </label>
             <select
+              id="intel-district-select"
+              name="district"
               value={filters.district || ''}
               onChange={(e) => setFilters((prev) => ({ ...prev, district: e.target.value || undefined }))}
               disabled={!filters.state}
@@ -124,8 +136,12 @@ export const MarketIntelligencePage: React.FC = () => {
 
           {/* Unit Filter */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Unit</label>
+            <label htmlFor="intel-unit-select" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Unit
+            </label>
             <select
+              id="intel-unit-select"
+              name="unit"
               value={filters.unit || 'QUINTAL'}
               onChange={(e) => setFilters((prev) => ({ ...prev, unit: e.target.value }))}
               className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
@@ -215,6 +231,7 @@ export const MarketIntelligencePage: React.FC = () => {
               <span>Cross-Market Price Ranking ({filters.unit || 'QUINTAL'})</span>
             </h2>
             <button
+              type="button"
               onClick={() => refetchComp()}
               className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center space-x-1"
             >
@@ -260,7 +277,7 @@ export const MarketIntelligencePage: React.FC = () => {
                   {comparison.markets.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
-                        No verified market prices available for the selected filters.
+                        No verified market prices available for the selected crop, location, or unit ({filters.unit || 'QUINTAL'}).
                       </td>
                     </tr>
                   ) : (

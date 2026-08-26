@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class MarketIntelligenceService {
@@ -35,13 +34,32 @@ public class MarketIntelligenceService {
         String targetUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : MarketPriceService.UNIT_QUINTAL;
         String qualityStatus = MarketPriceService.QUALITY_VERIFIED;
 
-        CropResponse crop = cropMasterService.getCropById(targetCropId);
+        CropResponse crop;
+        try {
+            crop = cropMasterService.getCropById(targetCropId);
+        } catch (Exception e) {
+            logger.warn("Crop not found for comparison: {}. Returning empty comparison.", targetCropId);
+            crop = new CropResponse(targetCropId, targetCropId, "GENERAL", "", "ACTIVE");
+        }
 
-        // Fetch verified observations
+        // Fetch verified observations with correct method signature:
+        // getMarketPrices(marketId, cropId, priceDate, fromDate, toDate, qualityStatus, unit, state, district, limit)
         List<MarketPriceSummaryResponse> summaries = marketPriceService.getMarketPrices(
-                state, district, null, targetCropId, date, fromDate, toDate,
-                qualityStatus, MarketPriceService.STATUS_ACTIVE, 100
+                null,           // marketId
+                targetCropId,   // cropId
+                date,           // priceDate
+                fromDate,       // fromDate
+                toDate,         // toDate
+                qualityStatus,  // qualityStatus
+                targetUnit,     // unit
+                state,          // state
+                district,       // district
+                100             // limit
         );
+
+        if (summaries == null) {
+            summaries = Collections.emptyList();
+        }
 
         // Ensure strict Unit and Currency Consistency
         List<MarketPriceSummaryResponse> compatible = summaries.stream()
@@ -52,7 +70,7 @@ public class MarketIntelligenceService {
         // Group by MarketId to keep latest observation per market
         Map<String, MarketPriceSummaryResponse> latestPerMarket = new LinkedHashMap<>();
         for (MarketPriceSummaryResponse s : compatible) {
-            if (!latestPerMarket.containsKey(s.getMarketId())) {
+            if (s.getMarketId() != null && !latestPerMarket.containsKey(s.getMarketId())) {
                 latestPerMarket.put(s.getMarketId(), s);
             }
         }
@@ -63,17 +81,17 @@ public class MarketIntelligenceService {
             items.add(new MarketComparisonItemDto(
                     s.getMarketId(),
                     s.getMarketName() != null ? s.getMarketName() : "Market " + s.getMarketId(),
-                    m != null ? m.getState() : "",
-                    m != null ? m.getDistrict() : "",
+                    m != null ? m.getState() : (state != null ? state : ""),
+                    m != null ? m.getDistrict() : (district != null ? district : ""),
                     m != null ? m.getMandal() : "",
                     s.getMinPrice(),
                     s.getMaxPrice(),
                     s.getModalPrice(),
                     s.getCurrency(),
                     s.getUnit(),
-                    s.getPriceDate(),
-                    s.getSourceName(),
-                    s.getQualityStatus()
+                    s.getPriceDate() != null ? s.getPriceDate() : "",
+                    s.getSourceName() != null ? s.getSourceName() : "AGMARKNET",
+                    s.getQualityStatus() != null ? s.getQualityStatus() : MarketPriceService.QUALITY_VERIFIED
             ));
         }
 
@@ -94,7 +112,7 @@ public class MarketIntelligenceService {
         }
 
         String effectiveDate = (date != null && !date.trim().isEmpty()) ? date.trim() :
-                (!items.isEmpty() ? items.get(0).getPriceDate() : "");
+                (!items.isEmpty() && items.get(0).getPriceDate() != null ? items.get(0).getPriceDate() : "");
 
         return new MarketComparisonResponse(
                 crop,
@@ -114,13 +132,27 @@ public class MarketIntelligenceService {
             String state, String district, String unit
     ) {
         String targetUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : MarketPriceService.UNIT_QUINTAL;
+        
         List<MarketPriceSummaryResponse> summaries = marketPriceService.getMarketPrices(
-                state, district, marketId, cropId, null, fromDate, toDate,
-                MarketPriceService.QUALITY_VERIFIED, MarketPriceService.STATUS_ACTIVE, 200
+                marketId,
+                cropId,
+                null,
+                fromDate,
+                toDate,
+                MarketPriceService.QUALITY_VERIFIED,
+                targetUnit,
+                state,
+                district,
+                200
         );
+
+        if (summaries == null) {
+            summaries = Collections.emptyList();
+        }
 
         List<MarketPriceSummaryResponse> compatible = summaries.stream()
                 .filter(s -> s.getUnit() != null && s.getUnit().equalsIgnoreCase(targetUnit))
+                .filter(s -> s.getPriceDate() != null)
                 .sorted(Comparator.comparing(MarketPriceSummaryResponse::getPriceDate))
                 .toList();
 
@@ -168,16 +200,41 @@ public class MarketIntelligenceService {
         String targetCropId = (cropId != null && !cropId.trim().isEmpty()) ? cropId.trim() : "crop-chilli";
         String targetUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : MarketPriceService.UNIT_QUINTAL;
 
-        CropResponse crop = cropMasterService.getCropById(targetCropId);
-        MarketResponse market = (marketId != null && !marketId.trim().isEmpty()) ? marketService.getMarketById(marketId) : null;
+        CropResponse crop;
+        try {
+            crop = cropMasterService.getCropById(targetCropId);
+        } catch (Exception e) {
+            crop = new CropResponse(targetCropId, targetCropId, "GENERAL", "", "ACTIVE");
+        }
+
+        MarketResponse market = null;
+        if (marketId != null && !marketId.trim().isEmpty()) {
+            try {
+                market = marketService.getMarketById(marketId);
+            } catch (Exception ignored) {
+            }
+        }
 
         List<MarketPriceSummaryResponse> summaries = marketPriceService.getMarketPrices(
-                null, null, marketId, targetCropId, null, fromDate, toDate,
-                MarketPriceService.QUALITY_VERIFIED, MarketPriceService.STATUS_ACTIVE, 100
+                marketId,
+                targetCropId,
+                null,
+                fromDate,
+                toDate,
+                MarketPriceService.QUALITY_VERIFIED,
+                targetUnit,
+                null,
+                null,
+                100
         );
+
+        if (summaries == null) {
+            summaries = Collections.emptyList();
+        }
 
         List<MarketPriceSummaryResponse> compatible = summaries.stream()
                 .filter(s -> s.getUnit() != null && s.getUnit().equalsIgnoreCase(targetUnit))
+                .filter(s -> s.getPriceDate() != null)
                 .sorted(Comparator.comparing(MarketPriceSummaryResponse::getPriceDate))
                 .toList();
 
