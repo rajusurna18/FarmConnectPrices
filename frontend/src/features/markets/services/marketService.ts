@@ -10,18 +10,19 @@ export const marketService = {
     if (filters?.cropId) params.append('cropId', filters.cropId);
 
     const queryString = params.toString();
-    const url = queryString ? `/markets?${queryString}` : '/markets';
+    const url = queryString ? `/api/v1/markets?${queryString}` : '/api/v1/markets';
     const response = await apiClient.get<MarketSummary[]>(url);
     return response.data;
   },
 
   getMarketById: async (marketId: string): Promise<Market> => {
-    const response = await apiClient.get<Market>(`/markets/${marketId}`);
+    const response = await apiClient.get<Market>(`/api/v1/markets/${marketId}`);
     return response.data;
   },
 
   getMarketCrops: async (marketId: string): Promise<MarketCrop[]> => {
-    const response = await apiClient.get<MarketCrop[]>(`/markets/${marketId}/crops`);
+    const response = await apiClient.get<MarketCrop[]>(`/api/v1/markets/${marketId}/crops`);
     return response.data;
   },
 };
+
