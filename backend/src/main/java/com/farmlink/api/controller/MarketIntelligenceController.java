@@ -20,6 +20,7 @@ public class MarketIntelligenceController {
     @GetMapping("/compare")
     public ResponseEntity<MarketComparisonResponse> compareMarkets(
             @RequestParam(value = "cropId", required = false) String cropId,
+            @RequestParam(value = "crop", required = false) String cropAlias,
             @RequestParam(value = "date", required = false) String date,
             @RequestParam(value = "fromDate", required = false) String fromDate,
             @RequestParam(value = "toDate", required = false) String toDate,
@@ -27,8 +28,9 @@ public class MarketIntelligenceController {
             @RequestParam(value = "district", required = false) String district,
             @RequestParam(value = "unit", required = false) String unit
     ) {
+        String effectiveCropId = (cropId != null && !cropId.trim().isEmpty()) ? cropId.trim() : cropAlias;
         MarketComparisonResponse response = intelligenceService.compareMarkets(
-                cropId, date, fromDate, toDate, state, district, unit
+                effectiveCropId, date, fromDate, toDate, state, district, unit
         );
         return ResponseEntity.ok(response);
     }
@@ -36,6 +38,7 @@ public class MarketIntelligenceController {
     @GetMapping("/summary")
     public ResponseEntity<MarketIntelligenceSummaryResponse> getSummary(
             @RequestParam(value = "cropId", required = false) String cropId,
+            @RequestParam(value = "crop", required = false) String cropAlias,
             @RequestParam(value = "marketId", required = false) String marketId,
             @RequestParam(value = "fromDate", required = false) String fromDate,
             @RequestParam(value = "toDate", required = false) String toDate,
@@ -43,8 +46,9 @@ public class MarketIntelligenceController {
             @RequestParam(value = "district", required = false) String district,
             @RequestParam(value = "unit", required = false) String unit
     ) {
+        String effectiveCropId = (cropId != null && !cropId.trim().isEmpty()) ? cropId.trim() : cropAlias;
         MarketIntelligenceSummaryResponse summary = intelligenceService.getSummary(
-                cropId, marketId, fromDate, toDate, state, district, unit
+                effectiveCropId, marketId, fromDate, toDate, state, district, unit
         );
         return ResponseEntity.ok(summary);
     }
@@ -52,13 +56,15 @@ public class MarketIntelligenceController {
     @GetMapping("/trends")
     public ResponseEntity<PriceTrendResponse> getTrends(
             @RequestParam(value = "cropId", required = false) String cropId,
+            @RequestParam(value = "crop", required = false) String cropAlias,
             @RequestParam(value = "marketId", required = false) String marketId,
             @RequestParam(value = "fromDate", required = false) String fromDate,
             @RequestParam(value = "toDate", required = false) String toDate,
             @RequestParam(value = "unit", required = false) String unit
     ) {
+        String effectiveCropId = (cropId != null && !cropId.trim().isEmpty()) ? cropId.trim() : cropAlias;
         PriceTrendResponse trend = intelligenceService.getTrends(
-                cropId, marketId, fromDate, toDate, unit
+                effectiveCropId, marketId, fromDate, toDate, unit
         );
         return ResponseEntity.ok(trend);
     }
