@@ -24,6 +24,7 @@ const MarketListPage = lazy(() => import('./features/markets/pages/MarketListPag
 const MarketDetailPage = lazy(() => import('./features/markets/pages/MarketDetailPage').then((m) => ({ default: m.MarketDetailPage })));
 const MarketPriceListPage = lazy(() => import('./features/prices/pages/MarketPriceListPage').then((m) => ({ default: m.MarketPriceListPage })));
 const MarketPriceDetailPage = lazy(() => import('./features/prices/pages/MarketPriceDetailPage').then((m) => ({ default: m.MarketPriceDetailPage })));
+const MarketIntelligencePage = lazy(() => import('./features/intelligence/pages/MarketIntelligencePage').then((m) => ({ default: m.MarketIntelligencePage })));
 
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
@@ -60,6 +61,7 @@ export const App: React.FC = () => {
                 <Route path="/markets/:marketId" element={<MarketDetailPage />} />
                 <Route path="/market-prices" element={<MarketPriceListPage />} />
                 <Route path="/market-prices/:priceId" element={<MarketPriceDetailPage />} />
+                <Route path="/market-intelligence" element={<MarketIntelligencePage />} />
 
                 {/* FARMER Role Restricted Routes */}
                 <Route element={<FarmerRoute />}>
