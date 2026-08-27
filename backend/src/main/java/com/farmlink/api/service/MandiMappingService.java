@@ -135,20 +135,6 @@ public class MandiMappingService {
             }
         }
 
-        // 3. Known fallback maps for major mandis
-        if (normMarket.contains("guntur") || normDistrict.contains("guntur")) {
-            return findMarketById(allMarkets, "mkt-guntur-mandi");
-        }
-        if (normMarket.contains("warangal") || normMarket.contains("enumamula") || normDistrict.contains("warangal")) {
-            return findMarketById(allMarkets, "mkt-enumamula-warangal");
-        }
-        if (normMarket.contains("malakpet") || normMarket.contains("hyderabad") || normDistrict.contains("hyderabad")) {
-            return findMarketById(allMarkets, "mkt-malakpet-hyderabad");
-        }
-        if (normMarket.contains("devanahalli") || normMarket.contains("bengaluru") || normDistrict.contains("bengaluru")) {
-            return findMarketById(allMarkets, "mkt-devanahalli-bengaluru");
-        }
-
         logger.debug("Unmapped external market: State='{}', District='{}', Market='{}'", rawState, rawDistrict, rawMarketName);
         return Optional.empty();
     }

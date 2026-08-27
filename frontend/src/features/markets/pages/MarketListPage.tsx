@@ -11,6 +11,8 @@ import { MARKET_TYPE_LABELS } from '../types';
 import type { MarketFilterState } from '../types';
 import { MarketNetworkVisual } from '../../../components/3d/MarketNetworkVisual';
 
+import { useCrops } from '../../prices/hooks/useCrops';
+
 export const MarketListPage: React.FC = () => {
   const [filters, setFilters] = useState<MarketFilterState>({});
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
@@ -29,6 +31,10 @@ export const MarketListPage: React.FC = () => {
 
   // Dynamic location cascading via TanStack Query
   const { states, districts, areas } = useLocationCascade(filters.state, filters.district);
+
+  // Dynamic crops query
+  const { data: rawCrops = [] } = useCrops();
+  const cropsList = rawCrops.map((c) => ({ id: c.id, name: c.name }));
 
   // Check for district fallback condition
   const isMandalFiltered = Boolean(filters.mandal);
@@ -51,16 +57,6 @@ export const MarketListPage: React.FC = () => {
       mandal: undefined,
     }));
   };
-
-  const cropsList = [
-    { id: 'crop-paddy', name: 'Rice / Paddy' },
-    { id: 'crop-chilli', name: 'Red Chilli' },
-    { id: 'crop-tomato', name: 'Tomato' },
-    { id: 'crop-cotton', name: 'Cotton' },
-    { id: 'crop-turmeric', name: 'Turmeric' },
-    { id: 'crop-maize', name: 'Maize' },
-    { id: 'crop-onion', name: 'Onion' }
-  ];
 
   return (
     <div className="relative min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col justify-between overflow-x-hidden font-sans select-none">

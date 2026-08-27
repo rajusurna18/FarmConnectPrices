@@ -14,7 +14,7 @@ import type { IntelligenceFilterState } from '../types';
 
 export const MarketIntelligencePage: React.FC = () => {
   const [filters, setFilters] = useState<IntelligenceFilterState>({
-    cropId: 'crop-chilli',
+    cropId: undefined,
     unit: 'QUINTAL'
   });
 
