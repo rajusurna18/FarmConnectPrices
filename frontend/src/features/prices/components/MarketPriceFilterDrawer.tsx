@@ -33,6 +33,25 @@ export const MarketPriceFilterDrawer: React.FC<MarketPriceFilterDrawerProps> = (
     setLocalFilters(filters);
   }, [filters]);
 
+  const handleStateChange = (stateValue: string) => {
+    const val = stateValue.trim() ? stateValue.trim() : undefined;
+    setLocalFilters((prev) => ({
+      ...prev,
+      state: val,
+      district: undefined,
+      marketId: undefined,
+    }));
+  };
+
+  const handleDistrictChange = (districtValue: string) => {
+    const val = districtValue.trim() ? districtValue.trim() : undefined;
+    setLocalFilters((prev) => ({
+      ...prev,
+      district: val,
+      marketId: undefined,
+    }));
+  };
+
   const handleChange = (key: keyof MarketPriceFilterState, value: string) => {
     setLocalFilters((prev) => ({
       ...prev,
@@ -46,7 +65,7 @@ export const MarketPriceFilterDrawer: React.FC<MarketPriceFilterDrawerProps> = (
   };
 
   const handleReset = () => {
-    setLocalFilters({});
+    setLocalFilters({ unit: 'QUINTAL' });
     onReset();
     onClose();
   };
@@ -92,10 +111,10 @@ export const MarketPriceFilterDrawer: React.FC<MarketPriceFilterDrawerProps> = (
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">State</label>
                   <select
                     value={localFilters.state || ''}
-                    onChange={(e) => handleChange('state', e.target.value)}
+                    onChange={(e) => handleStateChange(e.target.value)}
                     className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="">All States</option>
+                    <option value="">All States ({availableStates.length})</option>
                     {availableStates.map((st) => (
                       <option key={st} value={st}>
                         {st}
@@ -109,10 +128,11 @@ export const MarketPriceFilterDrawer: React.FC<MarketPriceFilterDrawerProps> = (
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">District</label>
                   <select
                     value={localFilters.district || ''}
-                    onChange={(e) => handleChange('district', e.target.value)}
-                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
+                    onChange={(e) => handleDistrictChange(e.target.value)}
+                    disabled={!localFilters.state && availableDistricts.length === 0}
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                   >
-                    <option value="">All Districts</option>
+                    <option value="">{localFilters.state ? `All Districts (${availableDistricts.length})` : 'Select State First'}</option>
                     {availableDistricts.map((dist) => (
                       <option key={dist} value={dist}>
                         {dist}
@@ -129,7 +149,7 @@ export const MarketPriceFilterDrawer: React.FC<MarketPriceFilterDrawerProps> = (
                     onChange={(e) => handleChange('marketId', e.target.value)}
                     className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="">All Markets</option>
+                    <option value="">All Markets ({availableMarkets.length})</option>
                     {availableMarkets.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name}
@@ -146,12 +166,26 @@ export const MarketPriceFilterDrawer: React.FC<MarketPriceFilterDrawerProps> = (
                     onChange={(e) => handleChange('cropId', e.target.value)}
                     className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="">All Crops</option>
+                    <option value="">All Crops ({availableCrops.length})</option>
                     {availableCrops.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                {/* Display Unit */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Display Unit</label>
+                  <select
+                    value={localFilters.unit || 'QUINTAL'}
+                    onChange={(e) => handleChange('unit', e.target.value)}
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-emerald-500 font-medium"
+                  >
+                    <option value="QUINTAL">₹ / QUINTAL (100 kg)</option>
+                    <option value="KG">₹ / KG (1 kg)</option>
+                    <option value="TONNE">₹ / TONNE (1000 kg)</option>
                   </select>
                 </div>
 
@@ -169,13 +203,24 @@ export const MarketPriceFilterDrawer: React.FC<MarketPriceFilterDrawerProps> = (
                   </select>
                 </div>
 
-                {/* Business Date */}
+                {/* Date Range: From Date */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Business Date</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">From Date</label>
                   <input
                     type="date"
-                    value={localFilters.priceDate || ''}
-                    onChange={(e) => handleChange('priceDate', e.target.value)}
+                    value={localFilters.fromDate || ''}
+                    onChange={(e) => handleChange('fromDate', e.target.value)}
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                {/* Date Range: To Date */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">To Date</label>
+                  <input
+                    type="date"
+                    value={localFilters.toDate || ''}
+                    onChange={(e) => handleChange('toDate', e.target.value)}
                     className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -203,3 +248,4 @@ export const MarketPriceFilterDrawer: React.FC<MarketPriceFilterDrawerProps> = (
     </AnimatePresence>
   );
 };
+

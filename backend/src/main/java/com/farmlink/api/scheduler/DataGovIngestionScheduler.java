@@ -28,11 +28,12 @@ public class DataGovIngestionScheduler {
             return;
         }
 
-        logger.info("Starting scheduled mandi market-price ingestion from data.gov.in...");
+        logger.info("Starting scheduled daily mandi market-price incremental ingestion from data.gov.in...");
         try {
-            ingestionService.ingestMandiPrices(100);
+            ingestionService.ingestMandiPrices(null);
         } catch (Exception e) {
             logger.error("Error running scheduled market-price ingestion: {}", e.getMessage(), e);
         }
     }
 }
+

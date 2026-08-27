@@ -17,18 +17,27 @@ public class InternalIngestionController {
     private static final Logger logger = LoggerFactory.getLogger(InternalIngestionController.class);
 
     private final DataGovIngestionService ingestionService;
+    private final com.farmlink.api.service.AgmarknetCoverageAuditService auditService;
 
     @Value("${app.internal.ingest-secret:}")
     private String internalIngestSecret;
 
-    public InternalIngestionController(DataGovIngestionService ingestionService) {
+    public InternalIngestionController(DataGovIngestionService ingestionService,
+                                        com.farmlink.api.service.AgmarknetCoverageAuditService auditService) {
         this.ingestionService = ingestionService;
+        this.auditService = auditService;
     }
 
     @PostMapping("/ingest")
     public ResponseEntity<?> triggerIngestion(
             @RequestHeader(value = "X-Internal-Secret", required = false) String providedSecret,
-            @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit,
+            @RequestParam(value = "mode", required = false) String mode,
+            @RequestParam(value = "resourceId", required = false) String resourceId,
+            @RequestParam(value = "pageSize", required = false) Integer pageSize,
+            @RequestParam(value = "maxPages", required = false) Integer maxPages,
+            @RequestParam(value = "lookbackDays", required = false) Integer lookbackDays,
+            @RequestParam(value = "offset", required = false) Integer offset,
+            @RequestParam(value = "limit", required = false) Integer limit,
             Authentication authentication
     ) {
         // Enforce administrative / internal authorization
@@ -46,8 +55,48 @@ public class InternalIngestionController {
             }
         }
 
-        logger.info("Internal manual ingestion triggered by UID: {}, limit: {}", authentication.getName(), limit);
-        IngestionResultDto result = ingestionService.ingestMandiPrices(limit);
+        Integer effectivePageSize = pageSize != null ? pageSize : limit;
+        logger.info("Internal manual ingestion triggered by UID: {}, mode: {}, resourceId: {}, pageSize: {}, maxPages: {}",
+                authentication.getName(), mode, resourceId, effectivePageSize, maxPages);
+
+        IngestionResultDto result = ingestionService.ingestMandiPrices(
+                mode, resourceId, effectivePageSize, maxPages, lookbackDays, offset
+        );
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/coverage-audit")
+    public ResponseEntity<?> triggerCoverageAudit(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String providedSecret,
+            @RequestParam(value = "resourceId", required = false) String resourceId,
+            @RequestParam(value = "pageSize", required = false) Integer pageSize,
+            @RequestParam(value = "maxPages", required = false) Integer maxPages,
+            @RequestParam(value = "offset", required = false) Integer offset,
+            Authentication authentication
+    ) {
+        // Enforce administrative / internal authorization
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authentication is required to perform coverage audit.");
+        }
+
+        // If an internal secret is configured, require header match
+        if (internalIngestSecret != null && !internalIngestSecret.trim().isEmpty()) {
+            if (providedSecret == null || !internalIngestSecret.trim().equals(providedSecret.trim())) {
+                logger.warn("Unauthorized coverage audit attempt by UID: {}", authentication.getName());
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Forbidden: Invalid internal authorization secret.");
+            }
+        }
+
+        logger.info("Internal coverage audit triggered by UID: {}, resourceId: {}, pageSize: {}, maxPages: {}, offset: {}",
+                authentication.getName(), resourceId, pageSize, maxPages, offset);
+
+        com.farmlink.api.dto.CoverageAuditResultDto result = auditService.performCoverageAudit(
+                resourceId, pageSize, maxPages, offset
+        );
         return ResponseEntity.ok(result);
     }
 }
+
+

@@ -1,23 +1,25 @@
 # Real Mandi Data Source Architecture
 
 ## Overview
-FarmConnectPrices integrates with the official Government of India Open Government Data Platform (`data.gov.in`) dataset:
-- **Title**: Variety-wise Daily Market Prices Data of Commodity
-- **Resource ID**: `35985678-0d79-46b4-9ed6-6f13308a1d24`
-- **Source Agency**: AGMARKNET (Directorate of Marketing & Inspection)
+FarmConnectPrices Version 1 integrates exclusively with official Government of India Open Government Data Platform (`data.gov.in`) datasets. No third-party connectors (Farmer.in, MandiAPI) are used.
+
+- **Historical / Controlled Backfill Resource ID**: `35985678-0d79-46b4-9ed6-6f13308a1d24` ("Variety-wise Daily Market Prices Data of Commodity", 81.4M historical records).
+- **Daily Bulletin / Incremental Sync Resource ID**: `9ef84268-d588-465a-a308-a864a43d0070` ("Current Daily Price of Various Commodities AGMARKNET", ~12.8K daily active snapshot records).
+- **Source Agency**: AGMARKNET (Directorate of Marketing & Inspection, Ministry of Agriculture & Farmers Welfare).
 
 ## Real API Record Model Fields
-Inspection of resource `35985678-0d79-46b4-9ed6-6f13308a1d24` returns the following fields:
-- `State`
-- `District`
-- `Market`
-- `Commodity` / `Commodity_Code`
-- `Variety`
-- `Grade`
-- `Arrival_Date`
-- `Min_Price`
-- `Max_Price`
-- `Modal_Price`
+Inspection of AGMARKNET resources returns the following standard fields:
+- `state` / `State`
+- `district` / `District`
+- `market` / `Market`
+- `commodity` / `Commodity`
+- `commodity_code` / `Commodity_Code`
+- `variety` / `Variety`
+- `grade` / `Grade`
+- `arrival_date` / `Arrival_Date`
+- `min_price` / `Min_Price`
+- `max_price` / `Max_Price`
+- `modal_price` / `Modal_Price`
 
 ## Conditional Mandal/Area Rule
 The external dataset returns `State`, `District`, and `Market`, but **no** native Mandal / Sub-District field.
@@ -32,17 +34,18 @@ The external dataset returns `State`, `District`, and `Market`, but **no** nativ
 
 ## Data Flow
 ```
-data.gov.in (AGMARKNET Resource 35985678-0d79-46b4-9ed6-6f13308a1d24)
+AGMARKNET (Resource 9ef84268... Incremental / 35985678... Backfill)
        │
-       ▼ (HTTPS / Secure Backend Client)
-Spring Boot DataGovIngestionService
+       ▼ (HTTPS / Secure RestClient with Timeouts & Retries)
+Spring Boot DataGovIngestionService (Paginated Engine)
        │
-       ▼ (Validation & Deduplication)
+       ▼ (Raw Source Provenance, Normalization, Discovery, Validation & Idempotent Upsert)
 Cloud Firestore (/marketPrices/{priceId})
        │
-       ▼ (REST API / Firebase Admin SDK)
+       ▼ (REST API / Spring Boot Controllers)
 Spring Boot MarketPriceController & LocationController
        │
-       ▼ (Axios apiClient / TanStack Query)
+       ▼ (Axios apiClient / React)
 React Frontend (/market-prices & /markets)
 ```
+

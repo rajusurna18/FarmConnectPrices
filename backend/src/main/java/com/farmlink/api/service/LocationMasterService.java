@@ -103,10 +103,25 @@ public class LocationMasterService {
     }
 
     public List<String> getCanonicalStates() {
-        Set<String> states = new TreeSet<>();
+        Set<String> states = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         for (LocationMasterResponse loc : getAllLocations()) {
             if (loc.getState() != null && !loc.getState().trim().isEmpty()) {
                 states.add(loc.getState().trim());
+            }
+        }
+        if (firestore != null) {
+            try {
+                QuerySnapshot snapshot = firestore.collection("marketPrices").get().get();
+                if (snapshot != null && !snapshot.isEmpty()) {
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        String obsState = doc.getString("observedState");
+                        if (obsState != null && !obsState.trim().isEmpty()) {
+                            states.add(obsState.trim());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.debug("Could not merge observed states from marketPrices: {}", e.getMessage());
             }
         }
         return new ArrayList<>(states);
@@ -116,12 +131,28 @@ public class LocationMasterService {
         if (state == null || state.trim().isEmpty()) {
             return Collections.emptyList();
         }
-        Set<String> districts = new TreeSet<>();
+        Set<String> districts = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         for (LocationMasterResponse loc : getAllLocations()) {
             if (loc.getState() != null && loc.getState().equalsIgnoreCase(state.trim())) {
                 if (loc.getDistrict() != null && !loc.getDistrict().trim().isEmpty()) {
                     districts.add(loc.getDistrict().trim());
                 }
+            }
+        }
+        if (firestore != null) {
+            try {
+                QuerySnapshot snapshot = firestore.collection("marketPrices").get().get();
+                if (snapshot != null && !snapshot.isEmpty()) {
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        String obsState = doc.getString("observedState");
+                        String obsDistrict = doc.getString("observedDistrict");
+                        if (obsState != null && obsState.equalsIgnoreCase(state.trim()) && obsDistrict != null && !obsDistrict.trim().isEmpty()) {
+                            districts.add(obsDistrict.trim());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.debug("Could not merge observed districts from marketPrices: {}", e.getMessage());
             }
         }
         return new ArrayList<>(districts);
@@ -131,7 +162,7 @@ public class LocationMasterService {
         if (state == null || state.trim().isEmpty() || district == null || district.trim().isEmpty()) {
             return Collections.emptyList();
         }
-        Set<String> areas = new TreeSet<>();
+        Set<String> areas = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         for (LocationMasterResponse loc : getAllLocations()) {
             if (loc.getState() != null && loc.getState().equalsIgnoreCase(state.trim()) &&
                 loc.getDistrict() != null && loc.getDistrict().equalsIgnoreCase(district.trim())) {
@@ -143,3 +174,4 @@ public class LocationMasterService {
         return new ArrayList<>(areas);
     }
 }
+

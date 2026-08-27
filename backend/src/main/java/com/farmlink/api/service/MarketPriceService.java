@@ -227,10 +227,6 @@ public class MarketPriceService {
             throw new IllegalArgumentException("Crop ID is required.");
         }
 
-        // Validate market and crop exist
-        marketService.getMarketById(marketId);
-        cropMasterService.getCropById(cropId);
-
         List<MarketPriceResponse> fullPrices = fetchAllMarketPrices();
 
         List<MarketPriceResponse> matching = fullPrices.stream()
@@ -265,9 +261,6 @@ public class MarketPriceService {
         if (cropId == null || cropId.trim().isEmpty()) {
             throw new IllegalArgumentException("Crop ID is required.");
         }
-
-        marketService.getMarketById(marketId);
-        cropMasterService.getCropById(cropId);
 
         List<MarketPriceResponse> fullPrices = fetchAllMarketPrices();
 
@@ -407,15 +400,33 @@ public class MarketPriceService {
         String createdAt = doc.get("createdAt") != null ? doc.get("createdAt").toString() : Instant.now().toString();
         String updatedAt = doc.get("updatedAt") != null ? doc.get("updatedAt").toString() : Instant.now().toString();
 
-        // Populate embedded Market & Crop
-        MarketResponse m = marketService.getMarketById(marketId);
-        MarketSummaryResponse mSummary = new MarketSummaryResponse(
-                m.getId(), m.getName(), m.getCode(), m.getType(),
-                m.getLocation().getState(), m.getLocation().getDistrict(), m.getLocation().getMandal(),
-                m.getStatus(), 0
-        );
+        // Safe Market mapping (Canonical or Observed)
+        MarketSummaryResponse mSummary;
+        try {
+            MarketResponse m = marketService.getMarketById(marketId);
+            mSummary = new MarketSummaryResponse(
+                    m.getId(), m.getName(), m.getCode(), m.getType(),
+                    m.getLocation().getState(), m.getLocation().getDistrict(), m.getLocation().getMandal(),
+                    m.getStatus(), 0
+            );
+        } catch (Exception e) {
+            String obsState = doc.getString("observedState") != null ? doc.getString("observedState") : "Unknown State";
+            String obsDistrict = doc.getString("observedDistrict") != null ? doc.getString("observedDistrict") : "Unknown District";
+            String obsMarketName = doc.getString("observedMarketName") != null ? doc.getString("observedMarketName") : marketId;
+            mSummary = new MarketSummaryResponse(
+                    marketId, obsMarketName, "OBS-" + Math.abs(marketId.hashCode()), "OBSERVED_MANDI",
+                    obsState, obsDistrict, null, STATUS_ACTIVE, 0
+            );
+        }
 
-        CropResponse crop = cropMasterService.getCropById(cropId);
+        // Safe Crop mapping (Canonical or Observed)
+        CropResponse crop;
+        try {
+            crop = cropMasterService.getCropById(cropId);
+        } catch (Exception e) {
+            String obsCommodity = doc.getString("observedCommodityName") != null ? doc.getString("observedCommodityName") : cropId;
+            crop = new CropResponse(cropId, obsCommodity, "AGRICULTURAL_COMMODITY", null, STATUS_ACTIVE);
+        }
 
         return new MarketPriceResponse(
                 id, mSummary, crop, priceDate, observedAt,
@@ -426,6 +437,7 @@ public class MarketPriceService {
                 createdAt, updatedAt
         );
     }
+
 
     private MarketPriceSummaryResponse mapToSummary(MarketPriceResponse p) {
         return new MarketPriceSummaryResponse(

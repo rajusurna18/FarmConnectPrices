@@ -15,6 +15,9 @@ import {
 import { Navbar } from '../../../components/navigation/Navbar';
 import { Footer } from '../../../components/navigation/Footer';
 import { useMarketPrices } from '../hooks/useMarketPrices';
+import { useLocationCascade } from '../../markets/hooks/useLocationCascade';
+import { useMarkets } from '../../markets/hooks/useMarkets';
+import { useCrops } from '../hooks/useCrops';
 import { MarketPriceFilterBar } from '../components/MarketPriceFilterBar';
 import { MarketPriceFilterDrawer } from '../components/MarketPriceFilterDrawer';
 import { QualityStatusBadge } from '../components/QualityStatusBadge';
@@ -26,25 +29,47 @@ export const MarketPriceListPage: React.FC = () => {
   });
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
-  const { data: prices, isLoading, isError, refetch } = useMarketPrices(filters);
+  // Price records query
+  const { data: prices, isLoading: isPricesLoading, isError, refetch } = useMarketPrices(filters);
 
-  // Filter option options derived from reference data
-  const statesList = ['Telangana', 'Andhra Pradesh', 'Karnataka', 'Maharashtra'];
-  const districtsList = ['Guntur', 'Warangal', 'Hyderabad', 'Bengaluru Rural', 'Khammam', 'Nizamabad'];
-  const cropsList = [
-    { id: 'crop-paddy', name: 'Rice / Paddy' },
-    { id: 'crop-chilli', name: 'Red Chilli' },
-    { id: 'crop-tomato', name: 'Tomato' },
-    { id: 'crop-cotton', name: 'Cotton' },
-    { id: 'crop-onion', name: 'Onion' },
-    { id: 'crop-maize', name: 'Maize' },
-  ];
-  const marketsList = [
-    { id: 'mkt-guntur-mandi', name: 'Guntur Agricultural Market' },
-    { id: 'mkt-enumamula-warangal', name: 'Enumamula Market Yard' },
-    { id: 'mkt-malakpet-hyderabad', name: 'Malakpet Wholesale Market' },
-    { id: 'mkt-devanahalli-bengaluru', name: 'Devanahalli Rythu Bazaar' },
-  ];
+  // Dynamic Location Cascade query (States & Districts)
+  const {
+    states: dynamicStates = [],
+    districts: dynamicDistricts = [],
+    isStatesLoading,
+    isDistrictsLoading,
+  } = useLocationCascade(filters.state, filters.district);
+
+  // Dynamic Markets query (filtered by selected State / District)
+  const {
+    data: rawMarkets = [],
+    isLoading: isMarketsLoading,
+  } = useMarkets({
+    state: filters.state,
+    district: filters.district,
+  });
+
+  const availableMarkets = rawMarkets.map((m) => ({ id: m.id, name: m.name }));
+
+  // Dynamic Crops query (All master agricultural crops)
+  const {
+    data: rawCrops = [],
+    isLoading: isCropsLoading,
+  } = useCrops();
+
+  const availableCrops = rawCrops.map((c) => ({ id: c.id, name: c.name }));
+
+  const hasActiveFilters = Boolean(
+    filters.state ||
+    filters.district ||
+    filters.marketId ||
+    filters.cropId ||
+    filters.qualityStatus ||
+    filters.priceDate ||
+    filters.fromDate ||
+    filters.toDate ||
+    (filters.unit && filters.unit !== 'QUINTAL')
+  );
 
   return (
     <div className="relative min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col justify-between overflow-x-hidden font-sans select-none">
@@ -83,7 +108,7 @@ export const MarketPriceListPage: React.FC = () => {
         {/* FILTER BAR SECTION */}
         <section className="w-full">
           {/* Mobile Filter Trigger Button */}
-          <div className="lg:hidden flex items-center justify-between bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 backdrop-blur-md">
+          <div className="xl:hidden flex items-center justify-between bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 backdrop-blur-md">
             <div className="flex items-center space-x-2">
               <Filter className="w-4 h-4 text-emerald-400" />
               <span className="text-xs font-semibold text-slate-200 uppercase tracking-wider">Filter Market Prices</span>
@@ -94,7 +119,7 @@ export const MarketPriceListPage: React.FC = () => {
               className="min-h-[44px] px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center space-x-1.5 shadow-md shadow-emerald-950/50"
             >
               <span>Filters</span>
-              {(filters.state || filters.district || filters.marketId || filters.cropId || filters.qualityStatus || filters.priceDate) && (
+              {hasActiveFilters && (
                 <span className="w-2 h-2 rounded-full bg-amber-400" />
               )}
             </button>
@@ -104,10 +129,14 @@ export const MarketPriceListPage: React.FC = () => {
           <MarketPriceFilterBar
             filters={filters}
             onFilterChange={(f) => setFilters(f)}
-            availableStates={statesList}
-            availableDistricts={districtsList}
-            availableCrops={cropsList}
-            availableMarkets={marketsList}
+            availableStates={dynamicStates}
+            availableDistricts={dynamicDistricts}
+            availableCrops={availableCrops}
+            availableMarkets={availableMarkets}
+            isStatesLoading={isStatesLoading}
+            isDistrictsLoading={isDistrictsLoading}
+            isMarketsLoading={isMarketsLoading}
+            isCropsLoading={isCropsLoading}
           />
         </section>
 
@@ -119,7 +148,7 @@ export const MarketPriceListPage: React.FC = () => {
               {prices && <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">{prices.length}</span>}
             </h2>
 
-            {(filters.state || filters.district || filters.marketId || filters.cropId || filters.qualityStatus || filters.priceDate || filters.unit !== 'QUINTAL') && (
+            {hasActiveFilters && (
               <button
                 type="button"
                 onClick={() => setFilters({ unit: 'QUINTAL' })}
@@ -132,9 +161,9 @@ export const MarketPriceListPage: React.FC = () => {
           </div>
 
           {/* Loading State Skeleton */}
-          {isLoading && (
+          {isPricesLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[1, 2, 3].map((n) => (
+              {[1, 2, 3, 4, 5, 6].map((n) => (
                 <div key={n} className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 animate-pulse space-y-4">
                   <div className="h-4 bg-slate-800 rounded w-1/3" />
                   <div className="h-6 bg-slate-800 rounded w-3/4" />
@@ -151,7 +180,7 @@ export const MarketPriceListPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="px-4 py-2 min-h-[44px] rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-semibold"
+                className="px-4 py-2 min-h-[44px] rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-semibold hover:bg-slate-800"
               >
                 Retry Request
               </button>
@@ -159,12 +188,12 @@ export const MarketPriceListPage: React.FC = () => {
           )}
 
           {/* Empty State */}
-          {!isLoading && !isError && prices?.length === 0 && (
+          {!isPricesLoading && !isError && prices?.length === 0 && (
             <div className="p-12 rounded-3xl bg-slate-900/40 border border-slate-800 text-center space-y-3">
               <TrendingUp className="w-10 h-10 text-slate-600 mx-auto" />
               <h3 className="text-base font-bold text-white">No market prices found matching filter criteria</h3>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Try clearing active commodity, market, or date filters to explore available price observations.
+                Try clearing active commodity, market, location, or date filters to explore available price observations.
               </p>
               <button
                 type="button"
@@ -178,7 +207,7 @@ export const MarketPriceListPage: React.FC = () => {
           )}
 
           {/* Price Cards Grid */}
-          {!isLoading && !isError && prices && prices.length > 0 && (
+          {!isPricesLoading && !isError && prices && prices.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {prices.map((p) => (
                 <motion.div
@@ -269,10 +298,10 @@ export const MarketPriceListPage: React.FC = () => {
         filters={filters}
         onApply={(f) => setFilters(f)}
         onReset={() => setFilters({ unit: 'QUINTAL' })}
-        availableStates={statesList}
-        availableDistricts={districtsList}
-        availableCrops={cropsList}
-        availableMarkets={marketsList}
+        availableStates={dynamicStates}
+        availableDistricts={dynamicDistricts}
+        availableCrops={availableCrops}
+        availableMarkets={availableMarkets}
       />
 
       <Footer />
@@ -281,3 +310,4 @@ export const MarketPriceListPage: React.FC = () => {
 };
 
 export default MarketPriceListPage;
+

@@ -27,6 +27,14 @@ public class DataGovMandiRecordDto {
     @JsonAlias({"Variety", "variety"})
     private String variety;
 
+    @JsonProperty("commodity_code")
+    @JsonAlias({"Commodity_Code", "commodity_code", "commodityCode"})
+    private String commodityCode;
+
+    @JsonProperty("grade")
+    @JsonAlias({"Grade", "grade"})
+    private String grade;
+
     @JsonProperty("arrival_date")
     @JsonAlias({"Arrival_Date", "arrival_date", "arrivalDate", "Date"})
     private String arrivalDate;
@@ -131,4 +139,21 @@ public class DataGovMandiRecordDto {
     public void setModalPrice(String modalPrice) {
         this.modalPrice = modalPrice;
     }
+
+    public String getCommodityCode() {
+        return commodityCode;
+    }
+
+    public void setCommodityCode(String commodityCode) {
+        this.commodityCode = commodityCode;
+    }
+
+    public String getGrade() {
+        return grade;
+    }
+
+    public void setGrade(String grade) {
+        this.grade = grade;
+    }
 }
+

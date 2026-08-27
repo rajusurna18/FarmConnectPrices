@@ -271,6 +271,7 @@ public class MarketService {
 
     private List<MarketResponse> fetchAllMarkets() {
         List<MarketResponse> list = new ArrayList<>();
+        Set<String> seenIds = new HashSet<>();
         if (firestore != null) {
             try {
                 QuerySnapshot snapshot = firestore.collection("markets").get().get();
@@ -280,14 +281,47 @@ public class MarketService {
                             MarketResponse m = mapDocToMarketResponse(doc);
                             if (m != null) {
                                 list.add(m);
+                                seenIds.add(m.getId());
                             }
                         } catch (Exception e) {
                             logger.warn("Skipping malformed market document ID {}: {}", doc.getId(), e.getMessage());
                         }
                     }
-                    if (!list.isEmpty()) {
-                        return list;
+                }
+
+                // Merge observed markets from marketPrices collection
+                try {
+                    QuerySnapshot priceSnapshot = firestore.collection("marketPrices").get().get();
+                    if (priceSnapshot != null && !priceSnapshot.isEmpty()) {
+                        for (DocumentSnapshot doc : priceSnapshot.getDocuments()) {
+                            String mId = doc.getString("marketId");
+                            if (mId != null && !seenIds.contains(mId)) {
+                                String obsState = doc.getString("observedState");
+                                String obsDistrict = doc.getString("observedDistrict");
+                                String obsMarketName = doc.getString("observedMarketName");
+                                if (obsMarketName != null) {
+                                    LocationDto loc = new LocationDto(
+                                            obsState != null ? obsState : "Unknown State",
+                                            obsDistrict != null ? obsDistrict : "Unknown District",
+                                            null, null, null
+                                    );
+                                    MarketResponse obsMkt = new MarketResponse(
+                                            mId, obsMarketName, "OBS-" + Math.abs(mId.hashCode()),
+                                            TYPE_MANDI, loc, null, null, STATUS_ACTIVE,
+                                            Instant.now().toString(), Instant.now().toString()
+                                    );
+                                    list.add(obsMkt);
+                                    seenIds.add(mId);
+                                }
+                            }
+                        }
                     }
+                } catch (Exception e) {
+                    logger.debug("Could not merge observed markets from marketPrices: {}", e.getMessage());
+                }
+
+                if (!list.isEmpty()) {
+                    return list;
                 }
             } catch (Exception e) {
                 logger.warn("Could not fetch markets from Firestore: {}", e.getMessage());
@@ -295,6 +329,7 @@ public class MarketService {
         }
         return DEFAULT_MARKETS;
     }
+
 
     private MarketResponse mapDocToMarketResponse(DocumentSnapshot doc) {
         if (doc == null) return null;

@@ -79,12 +79,37 @@ public class MandiMappingService {
      * Maps external state, district, and market name to an existing Module 06 Market.
      * Does NOT create or modify markets automatically.
      */
+    private List<MarketSummaryResponse> cachedMarkets = null;
+    private List<CropResponse> cachedCrops = null;
+
+    private synchronized List<MarketSummaryResponse> getCachedMarkets() {
+        if (cachedMarkets == null) {
+            try {
+                cachedMarkets = marketService.getMarkets(null, null, null, null, null, null, 100);
+            } catch (Exception e) {
+                cachedMarkets = Collections.emptyList();
+            }
+        }
+        return cachedMarkets;
+    }
+
+    private synchronized List<CropResponse> getCachedCrops() {
+        if (cachedCrops == null) {
+            try {
+                cachedCrops = cropMasterService.getAllCrops();
+            } catch (Exception e) {
+                cachedCrops = Collections.emptyList();
+            }
+        }
+        return cachedCrops;
+    }
+
     public Optional<MarketSummaryResponse> mapMarket(String rawState, String rawDistrict, String rawMarketName) {
         if (rawMarketName == null || rawMarketName.trim().isEmpty()) {
             return Optional.empty();
         }
 
-        List<MarketSummaryResponse> allMarkets = marketService.getMarkets(null, null, null, null, null, null, 100);
+        List<MarketSummaryResponse> allMarkets = getCachedMarkets();
         String normMarket = rawMarketName.trim().toLowerCase(Locale.ROOT);
         String normDistrict = rawDistrict != null ? rawDistrict.trim().toLowerCase(Locale.ROOT) : "";
         String normState = rawState != null ? rawState.trim().toLowerCase(Locale.ROOT) : "";
@@ -151,14 +176,18 @@ public class MandiMappingService {
         }
 
         if (targetCropId != null) {
-            CropResponse crop = cropMasterService.getCropById(targetCropId);
-            if (crop != null) {
-                return Optional.of(crop);
+            List<CropResponse> allCrops = getCachedCrops();
+            for (CropResponse crop : allCrops) {
+                if (crop.getId().equalsIgnoreCase(targetCropId)) {
+                    return Optional.of(crop);
+                }
             }
+            return Optional.of(new CropResponse(targetCropId, normCommodity, "AGRICULTURAL_COMMODITY", "", "ACTIVE"));
+
         }
 
         // Direct matching against all crops
-        List<CropResponse> allCrops = cropMasterService.getAllCrops();
+        List<CropResponse> allCrops = getCachedCrops();
         for (CropResponse crop : allCrops) {
             String cName = crop.getName().toLowerCase(Locale.ROOT);
             if (cName.contains(normCommodity) || normCommodity.contains(cName)) {
@@ -166,11 +195,40 @@ public class MandiMappingService {
             }
         }
 
+
+
         logger.debug("Unmapped external commodity: '{}'", rawCommodity);
         return Optional.empty();
+    }
+
+    public String normalizeString(String input) {
+        if (input == null) return "";
+        String norm = input.trim().toLowerCase(Locale.ROOT);
+        norm = norm.replaceAll("[^a-z0-9\\s]", " ");
+        norm = norm.replaceAll("\\s+", " ").trim();
+        if (norm.endsWith("es") && norm.length() > 4) {
+            norm = norm.substring(0, norm.length() - 2);
+        } else if (norm.endsWith("s") && !norm.endsWith("ss") && norm.length() > 3) {
+            norm = norm.substring(0, norm.length() - 1);
+        }
+        return norm;
+    }
+
+    public String generateObservedMarketId(String state, String district, String market) {
+        String nState = normalizeString(state);
+        String nDist = normalizeString(district);
+        String nMkt = normalizeString(market);
+        String combined = nState + "|" + nDist + "|" + nMkt;
+        return "obs-mkt-" + Math.abs(combined.hashCode());
+    }
+
+    public String generateObservedCropId(String commodity) {
+        String nComm = normalizeString(commodity);
+        return "obs-crop-" + Math.abs(nComm.hashCode());
     }
 
     private Optional<MarketSummaryResponse> findMarketById(List<MarketSummaryResponse> list, String id) {
         return list.stream().filter(m -> m.getId().equalsIgnoreCase(id)).findFirst();
     }
 }
+

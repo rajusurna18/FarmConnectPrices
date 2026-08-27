@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
 
 @Service
 public class CropMasterService {
@@ -38,6 +38,7 @@ public class CropMasterService {
 
     public List<CropResponse> getAllCrops() {
         List<CropResponse> crops = new ArrayList<>();
+        Set<String> seenIds = new java.util.HashSet<>();
         if (firestore != null) {
             try {
                 QuerySnapshot snapshot = firestore.collection("crops").get().get();
@@ -50,8 +51,28 @@ public class CropMasterService {
                         String status = doc.getString("status") != null ? doc.getString("status") : "ACTIVE";
                         if (name != null) {
                             crops.add(new CropResponse(id, name, category != null ? category : "OTHER", scientificName, status));
+                            seenIds.add(id);
                         }
                     }
+                }
+
+                // Merge observed crops from marketPrices collection
+                try {
+                    QuerySnapshot priceSnapshot = firestore.collection("marketPrices").get().get();
+                    if (priceSnapshot != null && !priceSnapshot.isEmpty()) {
+                        for (DocumentSnapshot doc : priceSnapshot.getDocuments()) {
+                            String cId = doc.getString("cropId");
+                            if (cId != null && !seenIds.contains(cId)) {
+                                String obsCommodity = doc.getString("observedCommodityName");
+                                if (obsCommodity != null && !obsCommodity.trim().isEmpty()) {
+                                    crops.add(new CropResponse(cId, obsCommodity, "AGRICULTURAL_COMMODITY", null, "ACTIVE"));
+                                    seenIds.add(cId);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.debug("Could not merge observed crops from marketPrices: {}", e.getMessage());
                 }
             } catch (Exception e) {
                 logger.warn("Could not fetch crops from Firestore: {}. Returning default reference crops.", e.getMessage());
@@ -64,6 +85,7 @@ public class CropMasterService {
 
         return crops;
     }
+
 
     public CropResponse getCropById(String cropId) {
         if (cropId == null || cropId.trim().isEmpty()) {

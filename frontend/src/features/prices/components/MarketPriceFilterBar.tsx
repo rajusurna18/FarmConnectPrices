@@ -9,6 +9,10 @@ interface MarketPriceFilterBarProps {
   availableDistricts: string[];
   availableCrops: { id: string; name: string }[];
   availableMarkets: { id: string; name: string }[];
+  isStatesLoading?: boolean;
+  isDistrictsLoading?: boolean;
+  isMarketsLoading?: boolean;
+  isCropsLoading?: boolean;
 }
 
 export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
@@ -18,29 +22,52 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
   availableDistricts,
   availableCrops,
   availableMarkets,
+  isStatesLoading = false,
+  isDistrictsLoading = false,
+  isMarketsLoading = false,
+  isCropsLoading = false,
 }) => {
+  const handleStateChange = (stateValue: string) => {
+    const val = stateValue.trim() ? stateValue.trim() : undefined;
+    onFilterChange({
+      ...filters,
+      state: val,
+      district: undefined,
+      marketId: undefined,
+    });
+  };
+
+  const handleDistrictChange = (districtValue: string) => {
+    const val = districtValue.trim() ? districtValue.trim() : undefined;
+    onFilterChange({
+      ...filters,
+      district: val,
+      marketId: undefined,
+    });
+  };
+
   const handleChange = (key: keyof MarketPriceFilterState, value: string) => {
     onFilterChange({
       ...filters,
-      [key]: value.trim() ? value : undefined,
+      [key]: value.trim() ? value.trim() : undefined,
     });
   };
 
   return (
-    <div className="hidden lg:grid grid-cols-7 gap-3 bg-slate-900/80 p-4 rounded-2xl border border-slate-800 backdrop-blur-md text-xs">
+    <div className="hidden xl:grid grid-cols-8 gap-3 bg-slate-900/80 p-4 rounded-2xl border border-slate-800 backdrop-blur-md text-xs">
       {/* State */}
       <div>
         <label htmlFor="filter-state" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-          State
+          State {isStatesLoading && <span className="text-emerald-400 font-mono text-[10px]">...</span>}
         </label>
         <select
           id="filter-state"
           name="state"
           value={filters.state || ''}
-          onChange={(e) => handleChange('state', e.target.value)}
+          onChange={(e) => handleStateChange(e.target.value)}
           className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
         >
-          <option value="">All States</option>
+          <option value="">All States ({availableStates.length})</option>
           {availableStates.map((st) => (
             <option key={st} value={st}>
               {st}
@@ -52,16 +79,17 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
       {/* District */}
       <div>
         <label htmlFor="filter-district" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-          District
+          District {isDistrictsLoading && <span className="text-emerald-400 font-mono text-[10px]">...</span>}
         </label>
         <select
           id="filter-district"
           name="district"
           value={filters.district || ''}
-          onChange={(e) => handleChange('district', e.target.value)}
-          className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+          onChange={(e) => handleDistrictChange(e.target.value)}
+          disabled={!filters.state && availableDistricts.length === 0}
+          className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
         >
-          <option value="">All Districts</option>
+          <option value="">{filters.state ? `All Districts (${availableDistricts.length})` : 'Select State First'}</option>
           {availableDistricts.map((dist) => (
             <option key={dist} value={dist}>
               {dist}
@@ -73,7 +101,7 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
       {/* Market */}
       <div>
         <label htmlFor="filter-market" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-          Market
+          Market {isMarketsLoading && <span className="text-emerald-400 font-mono text-[10px]">...</span>}
         </label>
         <select
           id="filter-market"
@@ -82,7 +110,7 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
           onChange={(e) => handleChange('marketId', e.target.value)}
           className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500 truncate"
         >
-          <option value="">All Markets</option>
+          <option value="">All Markets ({availableMarkets.length})</option>
           {availableMarkets.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name}
@@ -94,7 +122,7 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
       {/* Crop */}
       <div>
         <label htmlFor="filter-crop" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-          Commodity
+          Commodity {isCropsLoading && <span className="text-emerald-400 font-mono text-[10px]">...</span>}
         </label>
         <select
           id="filter-crop"
@@ -103,7 +131,7 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
           onChange={(e) => handleChange('cropId', e.target.value)}
           className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500 truncate"
         >
-          <option value="">All Crops</option>
+          <option value="">All Crops ({availableCrops.length})</option>
           {availableCrops.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -112,7 +140,7 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
         </select>
       </div>
 
-      {/* Unit Selector */}
+      {/* Display Unit */}
       <div>
         <label htmlFor="filter-unit" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
           Display Unit
@@ -122,11 +150,11 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
           name="unit"
           value={filters.unit || 'QUINTAL'}
           onChange={(e) => handleChange('unit', e.target.value)}
-          className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+          className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500 font-medium"
         >
-          <option value="QUINTAL">₹ / QUINTAL</option>
-          <option value="KG">₹ / KG</option>
-          <option value="TONNE">₹ / TONNE</option>
+          <option value="QUINTAL">₹ / QUINTAL (100 kg)</option>
+          <option value="KG">₹ / KG (1 kg)</option>
+          <option value="TONNE">₹ / TONNE (1000 kg)</option>
         </select>
       </div>
 
@@ -148,18 +176,33 @@ export const MarketPriceFilterBar: React.FC<MarketPriceFilterBarProps> = ({
         </select>
       </div>
 
-      {/* Date */}
+      {/* From Date */}
       <div>
-        <label htmlFor="filter-date" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-          Business Date
+        <label htmlFor="filter-from-date" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          From Date
         </label>
         <input
-          id="filter-date"
-          name="priceDate"
+          id="filter-from-date"
+          name="fromDate"
           type="date"
-          value={filters.priceDate || ''}
-          onChange={(e) => handleChange('priceDate', e.target.value)}
-          className="w-full min-h-[42px] px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+          value={filters.fromDate || ''}
+          onChange={(e) => handleChange('fromDate', e.target.value)}
+          className="w-full min-h-[42px] px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+        />
+      </div>
+
+      {/* To Date */}
+      <div>
+        <label htmlFor="filter-to-date" className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          To Date
+        </label>
+        <input
+          id="filter-to-date"
+          name="toDate"
+          type="date"
+          value={filters.toDate || ''}
+          onChange={(e) => handleChange('toDate', e.target.value)}
+          className="w-full min-h-[42px] px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
         />
       </div>
     </div>
