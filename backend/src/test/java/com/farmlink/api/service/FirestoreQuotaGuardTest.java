@@ -9,6 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,7 +30,7 @@ public class FirestoreQuotaGuardTest {
     @Test
     @DisplayName("Should be CLOSED initially and allow operations")
     public void testInitialClosedState() {
-        assertFalse(quotaGuard.isCircuitOpen());
+        assertEquals(FirestoreQuotaGuard.State.CLOSED, quotaGuard.getState());
         assertDoesNotThrow(() -> quotaGuard.checkQuotaAvailability());
     }
 
@@ -36,37 +40,107 @@ public class FirestoreQuotaGuardTest {
         Exception quotaError = new RuntimeException("io.grpc.StatusRuntimeException: RESOURCE_EXHAUSTED: Quota exceeded.");
         quotaGuard.recordQuotaExhaustion(quotaError);
 
-        assertTrue(quotaGuard.isCircuitOpen());
+        assertEquals(FirestoreQuotaGuard.State.OPEN, quotaGuard.getState());
         assertThrows(FirestoreQuotaExhaustedException.class, () -> quotaGuard.checkQuotaAvailability());
     }
 
     @Test
-    @DisplayName("Should transition from OPEN to CLOSED when cooldown window expires")
-    public void testCircuitCooldownExpiry() throws InterruptedException {
+    @DisplayName("Should transition from OPEN to HALF_OPEN probe state when cooldown window expires, granting single probe ownership")
+    public void testSingleProbeOwnershipAfterCooldown() throws InterruptedException {
         quotaGuard.recordQuotaExhaustion(new RuntimeException("RESOURCE_EXHAUSTED"));
-        assertTrue(quotaGuard.isCircuitOpen());
+        assertEquals(FirestoreQuotaGuard.State.OPEN, quotaGuard.getState());
 
         // Wait for 1.1s cooldown expiry
         Thread.sleep(1100L);
 
-        assertFalse(quotaGuard.isCircuitOpen());
+        // First caller wins probe ownership -> state transitions OPEN -> HALF_OPEN
         assertDoesNotThrow(() -> quotaGuard.checkQuotaAvailability());
+        assertEquals(FirestoreQuotaGuard.State.HALF_OPEN, quotaGuard.getState());
+
+        // Second caller during HALF_OPEN probe state is rejected immediately with 503
+        assertThrows(FirestoreQuotaExhaustedException.class, () -> quotaGuard.checkQuotaAvailability());
     }
 
     @Test
-    @DisplayName("Probe after cooldown window failure immediately trips circuit OPEN again")
-    public void testProbeFailureReopensCircuit() throws InterruptedException {
+    @DisplayName("10 concurrent requests after cooldown window yield exactly 1 probe owner and 9 rejected requests")
+    public void testProbeStampedePrevention() throws InterruptedException {
         quotaGuard.recordQuotaExhaustion(new RuntimeException("RESOURCE_EXHAUSTED"));
-        assertTrue(quotaGuard.isCircuitOpen());
+        Thread.sleep(1100L); // Cooldown expires
 
-        // Wait for 1.1s cooldown expiry
+        int numThreads = 10;
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch finishLatch = new CountDownLatch(numThreads);
+
+        AtomicInteger probeOwnerCount = new AtomicInteger(0);
+        AtomicInteger rejectedCount = new AtomicInteger(0);
+
+        for (int i = 0; i < numThreads; i++) {
+            executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    quotaGuard.checkQuotaAvailability();
+                    probeOwnerCount.incrementAndGet();
+                } catch (FirestoreQuotaExhaustedException e) {
+                    rejectedCount.incrementAndGet();
+                } catch (Exception ignored) {
+                } finally {
+                    finishLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown(); // Release threads simultaneously
+        finishLatch.await();
+        executor.shutdown();
+
+        assertEquals(1, probeOwnerCount.get(), "Exactly 1 thread must win probe ownership");
+        assertEquals(9, rejectedCount.get(), "Remaining 9 concurrent threads must be rejected");
+        assertEquals(FirestoreQuotaGuard.State.HALF_OPEN, quotaGuard.getState());
+    }
+
+    @Test
+    @DisplayName("Successful probe transitions HALF_OPEN to CLOSED")
+    public void testSuccessfulProbeClosesCircuit() throws InterruptedException {
+        quotaGuard.recordQuotaExhaustion(new RuntimeException("RESOURCE_EXHAUSTED"));
         Thread.sleep(1100L);
-        assertFalse(quotaGuard.isCircuitOpen());
+
+        // Probe owner checks availability -> HALF_OPEN
+        quotaGuard.checkQuotaAvailability();
+        assertEquals(FirestoreQuotaGuard.State.HALF_OPEN, quotaGuard.getState());
+
+        // Probe succeeds
+        quotaGuard.recordSuccess();
+        assertEquals(FirestoreQuotaGuard.State.CLOSED, quotaGuard.getState());
+    }
+
+    @Test
+    @DisplayName("Failed probe transitions HALF_OPEN back to OPEN with new cooldown")
+    public void testFailedProbeReopensCircuit() throws InterruptedException {
+        quotaGuard.recordQuotaExhaustion(new RuntimeException("RESOURCE_EXHAUSTED"));
+        Thread.sleep(1100L);
+
+        // Probe owner checks availability -> HALF_OPEN
+        quotaGuard.checkQuotaAvailability();
+        assertEquals(FirestoreQuotaGuard.State.HALF_OPEN, quotaGuard.getState());
 
         // Probe fails with RESOURCE_EXHAUSTED
         quotaGuard.recordQuotaExhaustion(new RuntimeException("RESOURCE_EXHAUSTED"));
-        assertTrue(quotaGuard.isCircuitOpen());
+        assertEquals(FirestoreQuotaGuard.State.OPEN, quotaGuard.getState());
         assertThrows(FirestoreQuotaExhaustedException.class, () -> quotaGuard.checkQuotaAvailability());
+    }
+
+    @Test
+    @DisplayName("classifyFailure correctly distinguishes QUOTA_EXHAUSTED from NETWORK_UNAVAILABLE")
+    public void testFailureClassification() {
+        Throwable quotaEx = new RuntimeException("io.grpc.StatusRuntimeException: RESOURCE_EXHAUSTED: Quota exceeded.");
+        assertEquals(FirestoreQuotaGuard.FailureType.QUOTA_EXHAUSTED, FirestoreQuotaGuard.classifyFailure(quotaEx));
+
+        Throwable netEx = new RuntimeException("UnknownHostException: firestore.googleapis.com");
+        assertEquals(FirestoreQuotaGuard.FailureType.NETWORK_UNAVAILABLE, FirestoreQuotaGuard.classifyFailure(netEx));
+
+        Throwable unavailEx = new RuntimeException("io.grpc.StatusRuntimeException: UNAVAILABLE: DnsNameResolver failed");
+        assertEquals(FirestoreQuotaGuard.FailureType.NETWORK_UNAVAILABLE, FirestoreQuotaGuard.classifyFailure(unavailEx));
     }
 
     @Test
