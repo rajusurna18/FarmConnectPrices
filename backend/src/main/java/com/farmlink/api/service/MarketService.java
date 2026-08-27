@@ -31,11 +31,18 @@ public class MarketService {
 
     private final Firestore firestore;
     private final CropMasterService cropMasterService;
+    private final FirestoreQuotaGuard quotaGuard;
     private final AtomicReference<Map<String, MarketResponse>> marketMapCache = new AtomicReference<>();
 
     public MarketService(Firestore firestore, CropMasterService cropMasterService) {
+        this(firestore, cropMasterService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public MarketService(Firestore firestore, CropMasterService cropMasterService, @org.springframework.beans.factory.annotation.Autowired(required = false) FirestoreQuotaGuard quotaGuard) {
         this.firestore = firestore;
         this.cropMasterService = cropMasterService;
+        this.quotaGuard = quotaGuard;
     }
 
     public List<MarketSummaryResponse> getMarkets(
@@ -207,6 +214,11 @@ public class MarketService {
         if (cachedMap != null && !cachedMap.isEmpty()) {
             return new ArrayList<>(cachedMap.values());
         }
+
+        if (quotaGuard != null) {
+            quotaGuard.checkQuotaAvailability();
+        }
+
         if (firestore == null) {
             return Collections.emptyList();
         }
@@ -239,11 +251,26 @@ public class MarketService {
                 }
             }
             marketMapCache.compareAndSet(null, Collections.unmodifiableMap(map));
+            if (quotaGuard != null) {
+                quotaGuard.recordSuccess();
+            }
             return list;
         } catch (Exception e) {
+            if (quotaGuard != null && isQuotaExhaustedError(e)) {
+                quotaGuard.recordQuotaExhaustion(e);
+            }
             logger.error("Could not fetch markets from Firestore: {}", e.getMessage());
             throw new RuntimeException("Could not fetch markets from Firestore: " + e.getMessage(), e);
         }
+    }
+
+    private boolean isQuotaExhaustedError(Throwable t) {
+        if (t == null) return false;
+        String msg = t.getMessage();
+        if (msg != null && (msg.contains("RESOURCE_EXHAUSTED") || msg.contains("Quota exceeded"))) {
+            return true;
+        }
+        return isQuotaExhaustedError(t.getCause());
     }
 
     private MarketResponse mapDocToMarketResponse(DocumentSnapshot doc) {

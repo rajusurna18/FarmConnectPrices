@@ -6,6 +6,7 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QuerySnapshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +17,24 @@ public class LocationMasterService {
 
     private static final Logger logger = LoggerFactory.getLogger(LocationMasterService.class);
     private final Firestore firestore;
+    private final FirestoreQuotaGuard quotaGuard;
 
     public LocationMasterService(Firestore firestore) {
+        this(firestore, null);
+    }
+
+    @Autowired
+    public LocationMasterService(Firestore firestore, @Autowired(required = false) FirestoreQuotaGuard quotaGuard) {
         this.firestore = firestore;
+        this.quotaGuard = quotaGuard;
     }
 
     @Cacheable(value = "locations", sync = true)
     public List<LocationMasterResponse> getAllLocations() {
+        if (quotaGuard != null) {
+            quotaGuard.checkQuotaAvailability();
+        }
+
         if (firestore == null) {
             return Collections.emptyList();
         }
@@ -49,8 +61,14 @@ public class LocationMasterService {
                     }
                 }
             }
+            if (quotaGuard != null) {
+                quotaGuard.recordSuccess();
+            }
             return locations;
         } catch (Exception e) {
+            if (quotaGuard != null && isQuotaExhaustedError(e)) {
+                quotaGuard.recordQuotaExhaustion(e);
+            }
             logger.error("Firestore read error in getAllLocations: {}", e.getMessage());
             throw new RuntimeException("Could not fetch locations from Firestore: " + e.getMessage(), e);
         }
@@ -58,6 +76,10 @@ public class LocationMasterService {
 
     @Cacheable(value = "states", sync = true)
     public List<String> getCanonicalStates() {
+        if (quotaGuard != null) {
+            quotaGuard.checkQuotaAvailability();
+        }
+
         if (firestore == null) {
             return Collections.emptyList();
         }
@@ -101,8 +123,14 @@ public class LocationMasterService {
                 }
             }
 
+            if (quotaGuard != null) {
+                quotaGuard.recordSuccess();
+            }
             return new ArrayList<>(states);
         } catch (Exception e) {
+            if (quotaGuard != null && isQuotaExhaustedError(e)) {
+                quotaGuard.recordQuotaExhaustion(e);
+            }
             logger.error("Firestore read error in getCanonicalStates: {}", e.getMessage());
             throw new RuntimeException("Could not fetch states from Firestore: " + e.getMessage(), e);
         }
@@ -112,6 +140,10 @@ public class LocationMasterService {
     public List<String> getCanonicalDistricts(String state) {
         if (state == null || state.trim().isEmpty()) {
             return Collections.emptyList();
+        }
+
+        if (quotaGuard != null) {
+            quotaGuard.checkQuotaAvailability();
         }
 
         if (firestore == null) {
@@ -159,8 +191,14 @@ public class LocationMasterService {
                 }
             }
 
+            if (quotaGuard != null) {
+                quotaGuard.recordSuccess();
+            }
             return new ArrayList<>(districts);
         } catch (Exception e) {
+            if (quotaGuard != null && isQuotaExhaustedError(e)) {
+                quotaGuard.recordQuotaExhaustion(e);
+            }
             logger.error("Firestore read error in getCanonicalDistricts for state {}: {}", state, e.getMessage());
             throw new RuntimeException("Could not fetch districts from Firestore: " + e.getMessage(), e);
         }
@@ -180,5 +218,14 @@ public class LocationMasterService {
             }
         }
         return new ArrayList<>(areas);
+    }
+
+    private boolean isQuotaExhaustedError(Throwable t) {
+        if (t == null) return false;
+        String msg = t.getMessage();
+        if (msg != null && (msg.contains("RESOURCE_EXHAUSTED") || msg.contains("Quota exceeded"))) {
+            return true;
+        }
+        return isQuotaExhaustedError(t.getCause());
     }
 }

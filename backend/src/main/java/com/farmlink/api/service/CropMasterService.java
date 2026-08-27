@@ -6,6 +6,7 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QuerySnapshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -17,10 +18,17 @@ public class CropMasterService {
 
     private static final Logger logger = LoggerFactory.getLogger(CropMasterService.class);
     private final Firestore firestore;
+    private final FirestoreQuotaGuard quotaGuard;
     private final AtomicReference<Map<String, CropResponse>> cropMapCache = new AtomicReference<>();
 
     public CropMasterService(Firestore firestore) {
+        this(firestore, null);
+    }
+
+    @Autowired
+    public CropMasterService(Firestore firestore, @Autowired(required = false) FirestoreQuotaGuard quotaGuard) {
         this.firestore = firestore;
+        this.quotaGuard = quotaGuard;
     }
 
     @Cacheable(value = "crops", sync = true)
@@ -29,6 +37,11 @@ public class CropMasterService {
         if (cachedMap != null && !cachedMap.isEmpty()) {
             return new ArrayList<>(cachedMap.values());
         }
+
+        if (quotaGuard != null) {
+            quotaGuard.checkQuotaAvailability();
+        }
+
         if (firestore == null) {
             return Collections.emptyList();
         }
@@ -61,8 +74,14 @@ public class CropMasterService {
                 }
             }
             cropMapCache.compareAndSet(null, Collections.unmodifiableMap(map));
+            if (quotaGuard != null) {
+                quotaGuard.recordSuccess();
+            }
             return crops;
         } catch (Exception e) {
+            if (quotaGuard != null && isQuotaExhaustedError(e)) {
+                quotaGuard.recordQuotaExhaustion(e);
+            }
             logger.error("Firestore read error in getAllCrops: {}", e.getMessage());
             throw new RuntimeException("Could not fetch crops from Firestore: " + e.getMessage(), e);
         }
@@ -101,5 +120,14 @@ public class CropMasterService {
             }
         }
         return null;
+    }
+
+    private boolean isQuotaExhaustedError(Throwable t) {
+        if (t == null) return false;
+        String msg = t.getMessage();
+        if (msg != null && (msg.contains("RESOURCE_EXHAUSTED") || msg.contains("Quota exceeded"))) {
+            return true;
+        }
+        return isQuotaExhaustedError(t.getCause());
     }
 }

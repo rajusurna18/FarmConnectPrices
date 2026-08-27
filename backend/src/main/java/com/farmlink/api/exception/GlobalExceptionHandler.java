@@ -32,6 +32,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    @ExceptionHandler(FirestoreQuotaExhaustedException.class)
+    public ResponseEntity<Map<String, String>> handleFirestoreQuotaExhaustedException(FirestoreQuotaExhaustedException ex) {
+        logger.warn("Firestore quota circuit breaker active: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Live market discovery is temporarily unavailable due to database quota limits. Please retry shortly.");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
     @ExceptionHandler(com.google.api.gax.rpc.ResourceExhaustedException.class)
     public ResponseEntity<Map<String, String>> handleResourceExhaustedException(com.google.api.gax.rpc.ResourceExhaustedException ex) {
         logger.error("Firestore read quota exceeded: {}", ex.getMessage());
@@ -69,4 +77,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }
-

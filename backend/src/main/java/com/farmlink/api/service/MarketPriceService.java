@@ -31,6 +31,7 @@ public class MarketPriceService {
     private final MarketService marketService;
     private final CropMasterService cropMasterService;
     private final PriceUnitConversionService conversionService;
+    private final FirestoreQuotaGuard quotaGuard;
 
     public MarketPriceService(
             Firestore firestore,
@@ -38,10 +39,22 @@ public class MarketPriceService {
             CropMasterService cropMasterService,
             PriceUnitConversionService conversionService
     ) {
+        this(firestore, marketService, cropMasterService, conversionService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public MarketPriceService(
+            Firestore firestore,
+            MarketService marketService,
+            CropMasterService cropMasterService,
+            PriceUnitConversionService conversionService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) FirestoreQuotaGuard quotaGuard
+    ) {
         this.firestore = firestore;
         this.marketService = marketService;
         this.cropMasterService = cropMasterService;
         this.conversionService = conversionService;
+        this.quotaGuard = quotaGuard;
     }
 
     public List<MarketPriceResponse> getMarketPrices(
@@ -304,6 +317,10 @@ public class MarketPriceService {
             String district,
             Integer limit
     ) {
+        if (quotaGuard != null) {
+            quotaGuard.checkQuotaAvailability();
+        }
+
         if (firestore == null) {
             return Collections.emptyList();
         }
@@ -336,20 +353,38 @@ public class MarketPriceService {
 
             query = query.limit(fetchLimit);
 
-            QuerySnapshot snapshot = query.get().get();
-            if (snapshot != null && !snapshot.isEmpty()) {
-                for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                    MarketPriceResponse p = mapDocToMarketPriceResponse(doc);
-                    if (p != null) {
-                        list.add(p);
+            var future = query.get();
+            if (future != null) {
+                QuerySnapshot snapshot = future.get();
+                if (snapshot != null && !snapshot.isEmpty()) {
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        MarketPriceResponse p = mapDocToMarketPriceResponse(doc);
+                        if (p != null) {
+                            list.add(p);
+                        }
                     }
                 }
             }
+            if (quotaGuard != null) {
+                quotaGuard.recordSuccess();
+            }
             return list;
         } catch (Exception e) {
+            if (quotaGuard != null && isQuotaExhaustedError(e)) {
+                quotaGuard.recordQuotaExhaustion(e);
+            }
             logger.error("Could not query marketPrices from Firestore: {}", e.getMessage());
             throw new RuntimeException("Could not query marketPrices from Firestore: " + e.getMessage(), e);
         }
+    }
+
+    private boolean isQuotaExhaustedError(Throwable t) {
+        if (t == null) return false;
+        String msg = t.getMessage();
+        if (msg != null && (msg.contains("RESOURCE_EXHAUSTED") || msg.contains("Quota exceeded"))) {
+            return true;
+        }
+        return isQuotaExhaustedError(t.getCause());
     }
 
     private List<MarketPriceResponse> fetchAllMarketPrices() {
