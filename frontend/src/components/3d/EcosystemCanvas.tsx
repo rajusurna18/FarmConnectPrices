@@ -112,7 +112,7 @@ export const EcosystemCanvas: React.FC<{ activeStep?: number }> = ({ activeStep 
     <div ref={containerRef} className="w-full h-48 sm:h-64 relative">
       {isInView && (
         <WebGLBoundary>
-          <Canvas camera={{ position: [0, 0, 7], fov: 45 }} gl={{ alpha: true }} dpr={[1, 1.5]}>
+          <Canvas camera={{ position: [0, 0, 7], fov: 45 }} gl={{ alpha: true, powerPreference: 'low-power' }} dpr={[1, 1.5]}>
             <ambientLight intensity={0.7} />
             <directionalLight position={[5, 10, 5]} intensity={1.2} />
             <ConnectingLines />

@@ -107,7 +107,7 @@ export const IndiaMarketMap: React.FC<IndiaMarketMapProps> = ({ selectedNodeId, 
     <div ref={containerRef} className="w-full h-80 sm:h-96 relative">
       {isInView && (
         <WebGLBoundary>
-          <Canvas camera={{ position: [0, 0, 4.2], fov: 45 }} gl={{ alpha: true }} dpr={[1, 1.5]}>
+          <Canvas camera={{ position: [0, 0, 4.2], fov: 45 }} gl={{ alpha: true, powerPreference: 'low-power' }} dpr={[1, 1.5]}>
             <ambientLight intensity={0.7} />
             <pointLight position={[5, 5, 5]} intensity={1.2} color="#10b981" />
             <AnimatedOrbitGroup>

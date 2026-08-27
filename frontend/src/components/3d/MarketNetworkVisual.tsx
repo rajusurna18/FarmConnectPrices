@@ -120,7 +120,7 @@ export const MarketNetworkVisual: React.FC<MarketNetworkVisualProps> = ({ isMobi
         <WebGLBoundary fallback={<div className="hidden" />}>
           <Canvas
             camera={{ position: [0, 0, isMobile ? 6.0 : 6.5], fov: isMobile ? 50 : 45 }}
-            gl={{ alpha: true, antialias: !isMobile }}
+            gl={{ alpha: true, antialias: !isMobile, powerPreference: 'low-power' }}
             dpr={isMobile ? 1 : [1, 1.5]}
           >
             <ambientLight intensity={0.8} />

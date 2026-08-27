@@ -122,7 +122,7 @@ export const AIDataSphere: React.FC = () => {
     <div ref={containerRef} className="w-full h-80 sm:h-96 relative">
       {isInView && (
         <WebGLBoundary>
-          <Canvas camera={{ position: [0, 1.2, 5], fov: 45 }} gl={{ alpha: true }} dpr={[1, 1.5]}>
+          <Canvas camera={{ position: [0, 1.2, 5], fov: 45 }} gl={{ alpha: true, powerPreference: 'low-power' }} dpr={[1, 1.5]}>
             <ambientLight intensity={0.8} />
             <pointLight position={[5, 5, 5]} intensity={1.5} color="#10b981" />
             <pointLight position={[-5, -5, -5]} intensity={0.8} color="#f59e0b" />

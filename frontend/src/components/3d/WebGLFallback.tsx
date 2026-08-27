@@ -11,8 +11,8 @@ interface WebGLBoundaryState {
 }
 
 /**
- * WebGL Error Boundary to catch 3D context creation errors, WebGL context loss, or device GPU limitations.
- * Listens to canvas webglcontextlost events and degrades gracefully to a 2D ambient fallback.
+ * Robust WebGL Error Boundary to catch 3D context creation errors, WebGL context loss, or device GPU limitations.
+ * Listens directly to canvas webglcontextlost events and degrades gracefully to an optimized 2D fallback.
  */
 export class WebGLBoundary extends Component<WebGLBoundaryProps, WebGLBoundaryState> {
   public state: WebGLBoundaryState = {
@@ -20,6 +20,8 @@ export class WebGLBoundary extends Component<WebGLBoundaryProps, WebGLBoundarySt
   };
 
   private containerRef = React.createRef<HTMLDivElement>();
+  private observer: MutationObserver | null = null;
+  private attachedCanvases = new Set<HTMLCanvasElement>();
 
   private handleContextLost = (event: Event) => {
     event.preventDefault();
@@ -27,12 +29,29 @@ export class WebGLBoundary extends Component<WebGLBoundaryProps, WebGLBoundarySt
     this.setState({ hasError: true });
   };
 
+  private attachCanvasListeners = () => {
+    if (!this.containerRef.current) return;
+    const canvases = this.containerRef.current.querySelectorAll('canvas');
+    canvases.forEach((canvas) => {
+      if (!this.attachedCanvases.has(canvas)) {
+        canvas.addEventListener('webglcontextlost', this.handleContextLost, true);
+        this.attachedCanvases.add(canvas);
+      }
+    });
+  };
+
   public componentDidMount() {
     if (typeof window !== 'undefined') {
       window.addEventListener('webglcontextlost', this.handleContextLost, true);
     }
-    if (this.containerRef.current) {
-      this.containerRef.current.addEventListener('webglcontextlost', this.handleContextLost, true);
+    
+    this.attachCanvasListeners();
+
+    if (typeof MutationObserver !== 'undefined' && this.containerRef.current) {
+      this.observer = new MutationObserver(() => {
+        this.attachCanvasListeners();
+      });
+      this.observer.observe(this.containerRef.current, { childList: true, subtree: true });
     }
   }
 
@@ -40,9 +59,14 @@ export class WebGLBoundary extends Component<WebGLBoundaryProps, WebGLBoundarySt
     if (typeof window !== 'undefined') {
       window.removeEventListener('webglcontextlost', this.handleContextLost, true);
     }
-    if (this.containerRef.current) {
-      this.containerRef.current.removeEventListener('webglcontextlost', this.handleContextLost, true);
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
     }
+    this.attachedCanvases.forEach((canvas) => {
+      canvas.removeEventListener('webglcontextlost', this.handleContextLost, true);
+    });
+    this.attachedCanvases.clear();
   }
 
   public static getDerivedStateFromError(): WebGLBoundaryState {
@@ -52,6 +76,10 @@ export class WebGLBoundary extends Component<WebGLBoundaryProps, WebGLBoundarySt
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.warn('[WebGLBoundary] WebGL / R3F Canvas Error caught by boundary:', error.message || error, errorInfo);
   }
+
+  private handleRetry = () => {
+    this.setState({ hasError: false });
+  };
 
   public render() {
     if (this.state.hasError) {
@@ -63,8 +91,15 @@ export class WebGLBoundary extends Component<WebGLBoundaryProps, WebGLBoundarySt
           </div>
           <p className="relative z-10 text-sm font-bold text-slate-100 tracking-wide">Agricultural Market Intelligence</p>
           <p className="relative z-10 text-xs text-slate-400 max-w-xs mt-1 leading-relaxed">
-            Optimized high-performance interface active for your device configuration.
+            Optimized high-performance 2D interface active for your device configuration.
           </p>
+          <button
+            type="button"
+            onClick={this.handleRetry}
+            className="relative z-10 mt-3 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-medium transition-colors"
+          >
+            Reload 3D Graphics
+          </button>
         </div>
       );
     }

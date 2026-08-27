@@ -225,7 +225,7 @@ export const Hero3DElements: React.FC<Hero3DElementsProps> = ({ isMobile = false
         <WebGLBoundary fallback={<div className="hidden" />}>
           <Canvas
             camera={{ position: [0, 0, isMobile ? 7.0 : 7.2], fov: isMobile ? 50 : 50 }}
-            gl={{ alpha: true, antialias: !isMobile }}
+            gl={{ alpha: true, antialias: !isMobile, powerPreference: 'low-power' }}
             dpr={isMobile ? 1 : [1, 1.5]}
           >
             <ambientLight intensity={0.7} />
