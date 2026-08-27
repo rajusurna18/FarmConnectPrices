@@ -54,6 +54,22 @@ public class FirestoreQuotaGuardTest {
     }
 
     @Test
+    @DisplayName("Probe after cooldown window failure immediately trips circuit OPEN again")
+    public void testProbeFailureReopensCircuit() throws InterruptedException {
+        quotaGuard.recordQuotaExhaustion(new RuntimeException("RESOURCE_EXHAUSTED"));
+        assertTrue(quotaGuard.isCircuitOpen());
+
+        // Wait for 1.1s cooldown expiry
+        Thread.sleep(1100L);
+        assertFalse(quotaGuard.isCircuitOpen());
+
+        // Probe fails with RESOURCE_EXHAUSTED
+        quotaGuard.recordQuotaExhaustion(new RuntimeException("RESOURCE_EXHAUSTED"));
+        assertTrue(quotaGuard.isCircuitOpen());
+        assertThrows(FirestoreQuotaExhaustedException.class, () -> quotaGuard.checkQuotaAvailability());
+    }
+
+    @Test
     @DisplayName("GlobalExceptionHandler should convert FirestoreQuotaExhaustedException to HTTP 503 SERVICE_UNAVAILABLE")
     public void testExceptionHandlerMapping() {
         FirestoreQuotaExhaustedException ex = new FirestoreQuotaExhaustedException("Firestore quota circuit breaker is OPEN.");

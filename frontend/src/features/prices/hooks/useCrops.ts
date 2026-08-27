@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../services/api';
+import { defaultRetry, queryKeys } from '../../../utils/queryConfig';
 
 export interface CropMasterItem {
   id: string;
@@ -11,13 +12,14 @@ export interface CropMasterItem {
 
 export function useCrops() {
   return useQuery<CropMasterItem[]>({
-    queryKey: ['crops'],
+    queryKey: queryKeys.crops(),
     queryFn: async () => {
       const response = await apiClient.get<CropMasterItem[]>('/api/v1/crops');
       return response.data;
     },
     staleTime: 1000 * 60 * 30,
-    retry: 1,
+    retry: defaultRetry,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
-
