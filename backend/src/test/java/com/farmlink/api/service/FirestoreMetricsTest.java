@@ -18,17 +18,18 @@ public class FirestoreMetricsTest {
     }
 
     @Test
-    @DisplayName("Should accurately record reads, writes, and cache hits/misses")
+    @DisplayName("Should accurately record query RPCs, documents fetched, writes, and cache hits/misses")
     public void testRecordMetrics() {
-        metrics.recordRead("crops", 10);
-        metrics.recordRead("markets", 5);
+        metrics.recordQuery("crops", 10);
+        metrics.recordQuery("markets", 5);
         metrics.recordWrite(2);
         metrics.recordCacheHit();
         metrics.recordCacheHit();
         metrics.recordCacheMiss();
 
         Map<String, Object> summary = metrics.getMetricsSummary();
-        assertEquals(15L, summary.get("totalReads"));
+        assertEquals(2L, summary.get("queryRpcInvocations"));
+        assertEquals(15L, summary.get("documentsFetched"));
         assertEquals(2L, summary.get("totalWrites"));
         assertEquals(2L, summary.get("cacheHits"));
         assertEquals(1L, summary.get("cacheMisses"));
@@ -38,12 +39,13 @@ public class FirestoreMetricsTest {
     @Test
     @DisplayName("Should reset metrics cleanly")
     public void testResetMetrics() {
-        metrics.recordRead("crops", 10);
+        metrics.recordQuery("crops", 10);
         metrics.recordQuotaExhaustion();
         metrics.resetMetrics();
 
         Map<String, Object> summary = metrics.getMetricsSummary();
-        assertEquals(0L, summary.get("totalReads"));
+        assertEquals(0L, summary.get("queryRpcInvocations"));
+        assertEquals(0L, summary.get("documentsFetched"));
         assertEquals(0L, summary.get("quotaExhaustionEvents"));
     }
 }
