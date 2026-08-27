@@ -136,6 +136,23 @@ public class MarketIntelligenceService {
         String effectiveDate = (date != null && !date.trim().isEmpty()) ? date.trim() :
                 (!items.isEmpty() && items.get(0).getPriceDate() != null ? items.get(0).getPriceDate() : "");
 
+        String cropName = crop != null ? crop.getName() : "this crop";
+        String observationSummary;
+        if (items.size() > 1 && highest != null && lowest != null) {
+            if (pctDiff != null) {
+                observationSummary = String.format("%s currently has the highest observed price for %s among the selected markets at ₹%,.0f / %s, which is ₹%,.0f (+%.1f%%) higher than %s.",
+                        highest.getMarketName(), cropName, highest.getModalPrice(), targetUnit, priceDiff, pctDiff, lowest.getMarketName());
+            } else {
+                observationSummary = String.format("%s currently has the highest observed price for %s among the selected markets at ₹%,.0f / %s.",
+                        highest.getMarketName(), cropName, highest.getModalPrice(), targetUnit);
+            }
+        } else if (items.size() == 1 && highest != null) {
+            observationSummary = String.format("%s is currently the only market with a verified price observation for %s at ₹%,.0f / %s.",
+                    highest.getMarketName(), cropName, highest.getModalPrice(), targetUnit);
+        } else {
+            observationSummary = "No verified market price observations found matching the selected criteria.";
+        }
+
         return new MarketComparisonResponse(
                 crop,
                 effectiveDate,
@@ -145,7 +162,9 @@ public class MarketIntelligenceService {
                 highest,
                 lowest,
                 priceDiff,
-                pctDiff
+                pctDiff,
+                "COMMODITY_LEVEL",
+                observationSummary
         );
     }
 

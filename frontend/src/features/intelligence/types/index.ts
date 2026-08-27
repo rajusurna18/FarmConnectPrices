@@ -31,6 +31,8 @@ export interface MarketComparisonData {
   lowestMarket?: MarketComparisonItem | null;
   priceDifference: number;
   percentageDifference?: number | null;
+  comparisonScope?: string;
+  observationSummary?: string;
 }
 
 export interface MarketIntelligenceSummaryData {

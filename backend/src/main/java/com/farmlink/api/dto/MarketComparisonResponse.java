@@ -14,6 +14,8 @@ public class MarketComparisonResponse {
     private MarketComparisonItemDto lowestMarket;
     private double priceDifference;
     private Double percentageDifference; // Nullable if lowest price is 0
+    private String comparisonScope = "COMMODITY_LEVEL";
+    private String observationSummary;
 
     public MarketComparisonResponse() {
     }
@@ -22,6 +24,13 @@ public class MarketComparisonResponse {
                                   List<MarketComparisonItemDto> markets, MarketComparisonItemDto highestMarket,
                                   MarketComparisonItemDto lowestMarket, double priceDifference,
                                   Double percentageDifference) {
+        this(crop, date, currency, unit, markets, highestMarket, lowestMarket, priceDifference, percentageDifference, "COMMODITY_LEVEL", null);
+    }
+
+    public MarketComparisonResponse(CropResponse crop, String date, String currency, String unit,
+                                  List<MarketComparisonItemDto> markets, MarketComparisonItemDto highestMarket,
+                                  MarketComparisonItemDto lowestMarket, double priceDifference,
+                                  Double percentageDifference, String comparisonScope, String observationSummary) {
         this.crop = crop;
         this.date = date;
         this.currency = currency;
@@ -31,6 +40,8 @@ public class MarketComparisonResponse {
         this.lowestMarket = lowestMarket;
         this.priceDifference = priceDifference;
         this.percentageDifference = percentageDifference;
+        this.comparisonScope = comparisonScope != null ? comparisonScope : "COMMODITY_LEVEL";
+        this.observationSummary = observationSummary;
     }
 
     public CropResponse getCrop() {
@@ -104,4 +115,21 @@ public class MarketComparisonResponse {
     public void setPercentageDifference(Double percentageDifference) {
         this.percentageDifference = percentageDifference;
     }
+
+    public String getComparisonScope() {
+        return comparisonScope;
+    }
+
+    public void setComparisonScope(String comparisonScope) {
+        this.comparisonScope = comparisonScope;
+    }
+
+    public String getObservationSummary() {
+        return observationSummary;
+    }
+
+    public void setObservationSummary(String observationSummary) {
+        this.observationSummary = observationSummary;
+    }
 }
+
