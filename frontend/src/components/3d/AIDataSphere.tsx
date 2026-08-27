@@ -10,7 +10,7 @@ function CentralCoreSphere() {
   const glowRef = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
-    const time = clock.getElapsedTime();
+    const time = clock.elapsedTime;
     if (meshRef.current) {
       meshRef.current.rotation.y = time * 0.4;
       meshRef.current.rotation.x = time * 0.2;
@@ -50,7 +50,7 @@ function OrbitingDataNode({ node }: { node: AINodePoint }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
-    const time = clock.getElapsedTime();
+    const time = clock.elapsedTime;
     if (groupRef.current) {
       const currentAngle = node.angle + time * node.speed * 0.4;
       groupRef.current.position.x = Math.cos(currentAngle) * node.orbitRadius;
@@ -83,7 +83,7 @@ function ConnectingBeams() {
   useFrame(({ clock }) => {
     if (linesRef.current) {
       const mat = linesRef.current.material as THREE.LineBasicMaterial;
-      mat.opacity = 0.3 + Math.sin(clock.getElapsedTime() * 3) * 0.15;
+      mat.opacity = 0.3 + Math.sin(clock.elapsedTime * 3) * 0.15;
     }
   });
 

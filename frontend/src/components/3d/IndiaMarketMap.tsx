@@ -15,7 +15,7 @@ function MarketNodePoint({ node, isSelected, onClick }: { node: MarketMapNode; i
   const ringRef = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
-    const time = clock.getElapsedTime();
+    const time = clock.elapsedTime;
     if (meshRef.current) {
       meshRef.current.rotation.y = time * 0.8;
     }
@@ -87,8 +87,8 @@ function AnimatedOrbitGroup({ children }: { children: React.ReactNode }) {
 
   useFrame(({ clock }) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.2) * 0.15;
-      groupRef.current.rotation.x = Math.cos(clock.getElapsedTime() * 0.15) * 0.08;
+      groupRef.current.rotation.y = Math.sin(clock.elapsedTime * 0.2) * 0.15;
+      groupRef.current.rotation.x = Math.cos(clock.elapsedTime * 0.15) * 0.08;
     }
   });
 

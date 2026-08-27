@@ -29,7 +29,7 @@ function FloatingParticles({ count = 30 }: { count?: number }) {
 
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
-    const time = clock.getElapsedTime();
+    const time = clock.elapsedTime;
 
     particles.forEach((particle, i) => {
       const { x, y, z, scale, speed, factor } = particle;
@@ -72,7 +72,7 @@ function AgriculturalIntelligenceSphere({ isMobile }: { isMobile?: boolean }) {
   const ringMeshRef = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
-    const time = clock.getElapsedTime();
+    const time = clock.elapsedTime;
 
     if (outerGroupRef.current) {
       outerGroupRef.current.rotation.y = time * (isMobile ? 0.06 : 0.09);
@@ -167,7 +167,7 @@ function MarketNetworkConnections() {
   useFrame(({ clock }) => {
     if (lineRef.current) {
       const mat = lineRef.current.material as THREE.LineBasicMaterial;
-      mat.opacity = 0.25 + Math.sin(clock.getElapsedTime() * 1.5) * 0.1;
+      mat.opacity = 0.25 + Math.sin(clock.elapsedTime * 1.5) * 0.1;
     }
   });
 

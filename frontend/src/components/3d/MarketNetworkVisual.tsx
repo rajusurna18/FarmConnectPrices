@@ -28,7 +28,7 @@ function FloatingMarketNodes({ count = 10 }: { count?: number }) {
 
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
-    const time = clock.getElapsedTime();
+    const time = clock.elapsedTime;
 
     nodes.forEach((node, i) => {
       const { x, y, z, scale, speed, factor } = node;
@@ -90,7 +90,7 @@ function MarketNetworkLines() {
   useFrame(({ clock }) => {
     if (lineRef.current) {
       const mat = lineRef.current.material as THREE.LineBasicMaterial;
-      mat.opacity = 0.3 + Math.sin(clock.getElapsedTime() * 1.2) * 0.1;
+      mat.opacity = 0.3 + Math.sin(clock.elapsedTime * 1.2) * 0.1;
     }
   });
 

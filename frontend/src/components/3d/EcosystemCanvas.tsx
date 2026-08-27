@@ -17,7 +17,7 @@ function EcosystemNode({ position, color, active }: NodeProps) {
   const ringRef = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
-    const time = clock.getElapsedTime();
+    const time = clock.elapsedTime;
     if (meshRef.current) {
       meshRef.current.rotation.y = time * 0.5;
       meshRef.current.position.y = position[1] + Math.sin(time * 1.5) * 0.08;
@@ -58,7 +58,7 @@ function DataPulseStream() {
 
   useFrame(({ clock }) => {
     if (!pulseRef.current) return;
-    const t = (clock.getElapsedTime() * 0.4) % 1;
+    const t = (clock.elapsedTime * 0.4) % 1;
     // Animate along path from -4.5 to +4.5
     pulseRef.current.position.x = -4.5 + t * 9;
     pulseRef.current.position.y = Math.sin(t * Math.PI * 3) * 0.2;
