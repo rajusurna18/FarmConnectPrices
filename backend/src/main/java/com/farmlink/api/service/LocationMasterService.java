@@ -21,6 +21,7 @@ public class LocationMasterService {
         this.firestore = firestore;
     }
 
+    @Cacheable(value = "locations", sync = true)
     public List<LocationMasterResponse> getAllLocations() {
         if (firestore == null) {
             return Collections.emptyList();
@@ -28,17 +29,23 @@ public class LocationMasterService {
 
         List<LocationMasterResponse> locations = new ArrayList<>();
         try {
-            QuerySnapshot snapshot = firestore.collection("locations").get().get();
-            if (snapshot != null && !snapshot.isEmpty()) {
-                for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                    String id = doc.getId();
-                    String state = doc.getString("state");
-                    String district = doc.getString("district");
-                    String mandal = doc.getString("mandal");
-                    String village = doc.getString("village");
-                    String pincode = doc.getString("pincode");
-                    if (state != null && district != null) {
-                        locations.add(new LocationMasterResponse(id, state, district, mandal, village, pincode));
+            var colRef = firestore.collection("locations");
+            if (colRef != null) {
+                var future = colRef.get();
+                if (future != null) {
+                    QuerySnapshot snapshot = future.get();
+                    if (snapshot != null && !snapshot.isEmpty()) {
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            String id = doc.getId();
+                            String state = doc.getString("state");
+                            String district = doc.getString("district");
+                            String mandal = doc.getString("mandal");
+                            String village = doc.getString("village");
+                            String pincode = doc.getString("pincode");
+                            if (state != null && district != null) {
+                                locations.add(new LocationMasterResponse(id, state, district, mandal, village, pincode));
+                            }
+                        }
                     }
                 }
             }
@@ -49,7 +56,7 @@ public class LocationMasterService {
         }
     }
 
-    @Cacheable(value = "states")
+    @Cacheable(value = "states", sync = true)
     public List<String> getCanonicalStates() {
         if (firestore == null) {
             return Collections.emptyList();
@@ -60,12 +67,15 @@ public class LocationMasterService {
             // Read lightweight locations master collection
             var locRef = firestore.collection("locations");
             if (locRef != null) {
-                QuerySnapshot locSnapshot = locRef.get().get();
-                if (locSnapshot != null && !locSnapshot.isEmpty()) {
-                    for (DocumentSnapshot doc : locSnapshot.getDocuments()) {
-                        String st = doc.getString("state");
-                        if (st != null && !st.trim().isEmpty()) {
-                            states.add(st.trim());
+                var future = locRef.get();
+                if (future != null) {
+                    QuerySnapshot locSnapshot = future.get();
+                    if (locSnapshot != null && !locSnapshot.isEmpty()) {
+                        for (DocumentSnapshot doc : locSnapshot.getDocuments()) {
+                            String st = doc.getString("state");
+                            if (st != null && !st.trim().isEmpty()) {
+                                states.add(st.trim());
+                            }
                         }
                     }
                 }
@@ -74,14 +84,17 @@ public class LocationMasterService {
             // Merge states from lightweight markets master collection
             var mktRef = firestore.collection("markets");
             if (mktRef != null) {
-                QuerySnapshot mktSnapshot = mktRef.get().get();
-                if (mktSnapshot != null && !mktSnapshot.isEmpty()) {
-                    for (DocumentSnapshot doc : mktSnapshot.getDocuments()) {
-                        Object locObj = doc.get("location");
-                        if (locObj instanceof Map<?, ?> locMap) {
-                            Object stObj = locMap.get("state");
-                            if (stObj != null && !stObj.toString().trim().isEmpty()) {
-                                states.add(stObj.toString().trim());
+                var future = mktRef.get();
+                if (future != null) {
+                    QuerySnapshot mktSnapshot = future.get();
+                    if (mktSnapshot != null && !mktSnapshot.isEmpty()) {
+                        for (DocumentSnapshot doc : mktSnapshot.getDocuments()) {
+                            Object locObj = doc.get("location");
+                            if (locObj instanceof Map<?, ?> locMap) {
+                                Object stObj = locMap.get("state");
+                                if (stObj != null && !stObj.toString().trim().isEmpty()) {
+                                    states.add(stObj.toString().trim());
+                                }
                             }
                         }
                     }
@@ -95,7 +108,7 @@ public class LocationMasterService {
         }
     }
 
-    @Cacheable(value = "districts", key = "#state")
+    @Cacheable(value = "districts", key = "#state", sync = true)
     public List<String> getCanonicalDistricts(String state) {
         if (state == null || state.trim().isEmpty()) {
             return Collections.emptyList();
@@ -112,14 +125,15 @@ public class LocationMasterService {
             // Query lightweight locations collection filtered by state
             var locRef = firestore.collection("locations");
             if (locRef != null) {
-                QuerySnapshot locSnapshot = locRef
-                        .whereEqualTo("state", targetState)
-                        .get().get();
-                if (locSnapshot != null && !locSnapshot.isEmpty()) {
-                    for (DocumentSnapshot doc : locSnapshot.getDocuments()) {
-                        String dist = doc.getString("district");
-                        if (dist != null && !dist.trim().isEmpty()) {
-                            districts.add(dist.trim());
+                var future = locRef.whereEqualTo("state", targetState).get();
+                if (future != null) {
+                    QuerySnapshot locSnapshot = future.get();
+                    if (locSnapshot != null && !locSnapshot.isEmpty()) {
+                        for (DocumentSnapshot doc : locSnapshot.getDocuments()) {
+                            String dist = doc.getString("district");
+                            if (dist != null && !dist.trim().isEmpty()) {
+                                districts.add(dist.trim());
+                            }
                         }
                     }
                 }
@@ -128,16 +142,17 @@ public class LocationMasterService {
             // Query lightweight markets collection filtered by location.state
             var mktRef = firestore.collection("markets");
             if (mktRef != null) {
-                QuerySnapshot mktSnapshot = mktRef
-                        .whereEqualTo("location.state", targetState)
-                        .get().get();
-                if (mktSnapshot != null && !mktSnapshot.isEmpty()) {
-                    for (DocumentSnapshot doc : mktSnapshot.getDocuments()) {
-                        Object locObj = doc.get("location");
-                        if (locObj instanceof Map<?, ?> locMap) {
-                            Object distObj = locMap.get("district");
-                            if (distObj != null && !distObj.toString().trim().isEmpty()) {
-                                districts.add(distObj.toString().trim());
+                var future = mktRef.whereEqualTo("location.state", targetState).get();
+                if (future != null) {
+                    QuerySnapshot mktSnapshot = future.get();
+                    if (mktSnapshot != null && !mktSnapshot.isEmpty()) {
+                        for (DocumentSnapshot doc : mktSnapshot.getDocuments()) {
+                            Object locObj = doc.get("location");
+                            if (locObj instanceof Map<?, ?> locMap) {
+                                Object distObj = locMap.get("district");
+                                if (distObj != null && !distObj.toString().trim().isEmpty()) {
+                                    districts.add(distObj.toString().trim());
+                                }
                             }
                         }
                     }
@@ -167,6 +182,3 @@ public class LocationMasterService {
         return new ArrayList<>(areas);
     }
 }
-
-
-
