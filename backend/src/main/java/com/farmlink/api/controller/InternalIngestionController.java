@@ -18,14 +18,17 @@ public class InternalIngestionController {
 
     private final DataGovIngestionService ingestionService;
     private final com.farmlink.api.service.AgmarknetCoverageAuditService auditService;
+    private final com.farmlink.api.service.DiscoveryIndexSyncService discoveryIndexSyncService;
 
     @Value("${app.internal.ingest-secret:}")
     private String internalIngestSecret;
 
     public InternalIngestionController(DataGovIngestionService ingestionService,
-                                        com.farmlink.api.service.AgmarknetCoverageAuditService auditService) {
+                                        com.farmlink.api.service.AgmarknetCoverageAuditService auditService,
+                                        com.farmlink.api.service.DiscoveryIndexSyncService discoveryIndexSyncService) {
         this.ingestionService = ingestionService;
         this.auditService = auditService;
+        this.discoveryIndexSyncService = discoveryIndexSyncService;
     }
 
     @PostMapping("/ingest")
@@ -97,6 +100,29 @@ public class InternalIngestionController {
         );
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/sync-discovery-index")
+    public ResponseEntity<?> syncDiscoveryIndex(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String providedSecret,
+            Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authentication is required to sync discovery index.");
+        }
+
+        if (internalIngestSecret != null && !internalIngestSecret.trim().isEmpty()) {
+            if (providedSecret == null || !internalIngestSecret.trim().equals(providedSecret.trim())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Forbidden: Invalid internal authorization secret.");
+            }
+        }
+
+        logger.info("Internal discovery index sync triggered by UID: {}", authentication.getName());
+        var metrics = discoveryIndexSyncService.syncDiscoveryIndexFromObservedData();
+        return ResponseEntity.ok(metrics);
+    }
 }
+
 
 

@@ -48,4 +48,11 @@ market-price:
     max-pages: ${MARKET_PRICE_INGEST_MAX_PAGES:10}
     lookback-days: ${MARKET_PRICE_INGEST_LOOKBACK_DAYS:30}
 
+farmconnectprices:
+  discovery:
+    cache:
+      enabled: ${DISCOVERY_CACHE_ENABLED:true}
+      ttl-minutes: ${DISCOVERY_CACHE_TTL_MINUTES:60}
+
+
 

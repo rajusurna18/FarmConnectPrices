@@ -11,16 +11,17 @@ export interface LocationCascadeResult {
 }
 
 export function useLocationCascade(selectedState?: string, selectedDistrict?: string) {
-  const { data: states = [], isLoading: isStatesLoading } = useQuery<string[]>({
+  const { data: states = [], isLoading: isStatesLoading, isError: isStatesError, refetch: refetchStates } = useQuery<string[]>({
     queryKey: ['locations', 'states'],
     queryFn: async () => {
       const response = await apiClient.get<string[]>('/api/v1/locations/states');
       return response.data;
     },
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000 * 60 * 60,
+    retry: 1
   });
 
-  const { data: districts = [], isLoading: isDistrictsLoading } = useQuery<string[]>({
+  const { data: districts = [], isLoading: isDistrictsLoading, isError: isDistrictsError, refetch: refetchDistricts } = useQuery<string[]>({
     queryKey: ['locations', 'districts', selectedState],
     queryFn: async () => {
       if (!selectedState) return [];
@@ -30,10 +31,11 @@ export function useLocationCascade(selectedState?: string, selectedDistrict?: st
       return response.data;
     },
     enabled: Boolean(selectedState),
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000 * 60 * 60,
+    retry: 1
   });
 
-  const { data: areas = [], isLoading: isAreasLoading } = useQuery<string[]>({
+  const { data: areas = [], isLoading: isAreasLoading, isError: isAreasError, refetch: refetchAreas } = useQuery<string[]>({
     queryKey: ['locations', 'areas', selectedState, selectedDistrict],
     queryFn: async () => {
       if (!selectedState || !selectedDistrict) return [];
@@ -43,7 +45,8 @@ export function useLocationCascade(selectedState?: string, selectedDistrict?: st
       return response.data;
     },
     enabled: Boolean(selectedState && selectedDistrict),
-    staleTime: 1000 * 60 * 10
+    staleTime: 1000 * 60 * 60,
+    retry: 1
   });
 
   return {
@@ -52,6 +55,13 @@ export function useLocationCascade(selectedState?: string, selectedDistrict?: st
     areas,
     isStatesLoading,
     isDistrictsLoading,
-    isAreasLoading
+    isAreasLoading,
+    isStatesError,
+    isDistrictsError,
+    isAreasError,
+    refetchStates,
+    refetchDistricts,
+    refetchAreas
   };
 }
+

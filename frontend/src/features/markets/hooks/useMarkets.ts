@@ -6,7 +6,8 @@ export const useMarkets = (filters?: MarketFilterState) => {
   return useQuery({
     queryKey: ['markets', filters],
     queryFn: () => marketService.getMarkets(filters),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1000 * 60 * 30,
+    retry: 1,
   });
 };
 
@@ -15,7 +16,8 @@ export const useMarket = (marketId?: string) => {
     queryKey: ['market', marketId],
     queryFn: () => marketService.getMarketById(marketId!),
     enabled: Boolean(marketId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1000 * 60 * 30,
+    retry: 1,
   });
 };
 
@@ -24,6 +26,8 @@ export const useMarketCrops = (marketId?: string) => {
     queryKey: ['marketCrops', marketId],
     queryFn: () => marketService.getMarketCrops(marketId!),
     enabled: Boolean(marketId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1000 * 60 * 30,
+    retry: 1,
   });
 };
+

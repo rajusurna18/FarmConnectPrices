@@ -4,6 +4,7 @@ import com.farmlink.api.dto.*;
 import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -30,7 +31,6 @@ public class MarketService {
     private final Firestore firestore;
     private final CropMasterService cropMasterService;
 
-    // Reference Seed Markets (Used for development reference & offline fallback)
     public static final List<MarketResponse> DEFAULT_MARKETS = List.of(
             new MarketResponse(
                     "mkt-guntur-mandi",
@@ -74,7 +74,6 @@ public class MarketService {
             )
     );
 
-    // Reference Market-Crop Mappings
     private static final Map<String, List<String>> SEED_MARKET_CROPS = Map.of(
             "mkt-guntur-mandi", List.of("crop-chilli", "crop-paddy", "crop-cotton", "crop-turmeric"),
             "mkt-enumamula-warangal", List.of("crop-chilli", "crop-cotton", "crop-maize", "crop-paddy"),
@@ -86,10 +85,6 @@ public class MarketService {
         this.firestore = firestore;
         this.cropMasterService = cropMasterService;
     }
-
-    // ==========================================
-    // READ-ONLY MARKET DISCOVERY OPERATIONS
-    // ==========================================
 
     public List<MarketSummaryResponse> getMarkets(
             String state,
@@ -143,17 +138,19 @@ public class MarketService {
                 }
             }
 
-            List<MarketCropResponse> crops = getMarketCrops(m.getId());
+            // Perform crop filter check only when cropId is requested to prevent unnecessary N+1 queries
+            int cropCount = 0;
             if (cropId != null && !cropId.trim().isEmpty()) {
+                List<MarketCropResponse> crops = getMarketCrops(m.getId());
                 boolean supportsCrop = crops != null && crops.stream().anyMatch(c ->
                         c != null && c.getCropId() != null && c.getCropId().equalsIgnoreCase(cropId.trim())
                 );
                 if (!supportsCrop) {
                     continue;
                 }
+                cropCount = crops != null ? crops.size() : 0;
             }
 
-            int cropCount = crops != null ? crops.size() : 0;
             summaries.add(new MarketSummaryResponse(
                     m.getId(),
                     m.getName() != null ? m.getName() : "Unnamed Market",
@@ -181,11 +178,14 @@ public class MarketService {
 
         if (firestore != null) {
             try {
-                DocumentSnapshot doc = firestore.collection("markets").document(marketId).get().get();
-                if (doc.exists()) {
-                    MarketResponse response = mapDocToMarketResponse(doc);
-                    if (response != null) {
-                        return response;
+                var colRef = firestore.collection("markets");
+                if (colRef != null) {
+                    DocumentSnapshot doc = colRef.document(marketId).get().get();
+                    if (doc != null && doc.exists()) {
+                        MarketResponse response = mapDocToMarketResponse(doc);
+                        if (response != null) {
+                            return response;
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -202,39 +202,39 @@ public class MarketService {
         throw new NoSuchElementException("Market not found with ID: " + marketId);
     }
 
+    @Cacheable(value = "marketCrops", key = "#marketId")
     public List<MarketCropResponse> getMarketCrops(String marketId) {
         if (marketId == null || marketId.trim().isEmpty()) {
             return Collections.emptyList();
         }
 
         List<MarketCropResponse> marketCrops = new ArrayList<>();
-
         if (firestore != null) {
             try {
-                QuerySnapshot snapshot = firestore.collection("marketCrops")
-                        .whereEqualTo("marketId", marketId)
-                        .get().get();
+                var colRef = firestore.collection("marketCrops");
+                if (colRef != null) {
+                    QuerySnapshot snapshot = colRef
+                            .whereEqualTo("marketId", marketId)
+                            .get().get();
 
-                if (snapshot != null && !snapshot.isEmpty()) {
-                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                        if (doc == null) continue;
-                        String id = doc.getId();
-                        String cropId = doc.getString("cropId");
-                        if (cropId == null || cropId.trim().isEmpty()) continue;
+                    if (snapshot != null && !snapshot.isEmpty()) {
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            if (doc == null) continue;
+                            String id = doc.getId();
+                            String cropId = doc.getString("cropId");
+                            if (cropId == null || cropId.trim().isEmpty()) continue;
 
-                        String status = doc.getString("status") != null ? doc.getString("status") : STATUS_ACTIVE;
-                        String createdAt = doc.get("createdAt") != null ? doc.get("createdAt").toString() : Instant.now().toString();
-                        String updatedAt = doc.get("updatedAt") != null ? doc.get("updatedAt").toString() : Instant.now().toString();
+                            String status = doc.getString("status") != null ? doc.getString("status") : STATUS_ACTIVE;
+                            String createdAt = doc.get("createdAt") != null ? doc.get("createdAt").toString() : Instant.now().toString();
+                            String updatedAt = doc.get("updatedAt") != null ? doc.get("updatedAt").toString() : Instant.now().toString();
 
-                        CropResponse crop = cropMasterService.getCropById(cropId);
-                        String cropName = crop != null && crop.getName() != null ? crop.getName() : cropId;
-                        String cropCategory = crop != null && crop.getCategory() != null ? crop.getCategory() : "OTHER";
-                        String cropScientific = crop != null && crop.getScientificName() != null ? crop.getScientificName() : "";
+                            CropResponse crop = cropMasterService.getCropById(cropId);
+                            String cropName = crop != null && crop.getName() != null ? crop.getName() : cropId;
+                            String cropCategory = crop != null && crop.getCategory() != null ? crop.getCategory() : "AGRICULTURAL_COMMODITY";
+                            String cropScientific = crop != null && crop.getScientificName() != null ? crop.getScientificName() : "";
 
-                        marketCrops.add(new MarketCropResponse(id, marketId, cropId, cropName, cropCategory, cropScientific, status, createdAt, updatedAt));
-                    }
-                    if (!marketCrops.isEmpty()) {
-                        return marketCrops;
+                            marketCrops.add(new MarketCropResponse(id, marketId, cropId, cropName, cropCategory, cropScientific, status, createdAt, updatedAt));
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -242,94 +242,57 @@ public class MarketService {
             }
         }
 
-        // Fallback reference seed mappings
-        List<String> seedCropIds = SEED_MARKET_CROPS.getOrDefault(marketId, Collections.emptyList());
-        String nowIso = Instant.now().toString();
-        for (String cId : seedCropIds) {
-            CropResponse crop = cropMasterService.getCropById(cId);
-            if (crop != null) {
-                String deterministicId = marketId + "_" + crop.getId();
-                marketCrops.add(new MarketCropResponse(
-                        deterministicId,
-                        marketId,
-                        crop.getId(),
-                        crop.getName(),
-                        crop.getCategory(),
-                        crop.getScientificName(),
-                        STATUS_ACTIVE,
-                        nowIso, nowIso
-                ));
+        if (marketCrops.isEmpty()) {
+            List<String> seedCropIds = SEED_MARKET_CROPS.getOrDefault(marketId, Collections.emptyList());
+            String nowIso = Instant.now().toString();
+            for (String cId : seedCropIds) {
+                CropResponse crop = cropMasterService.getCropById(cId);
+                if (crop != null) {
+                    marketCrops.add(new MarketCropResponse(
+                            marketId + "_" + crop.getId(), marketId, crop.getId(),
+                            crop.getName(), crop.getCategory(), crop.getScientificName(),
+                            STATUS_ACTIVE, nowIso, nowIso
+                    ));
+                }
             }
         }
 
         return marketCrops;
     }
 
-    // ==========================================
-    // HELPERS & DATA ACCESS
-    // ==========================================
+    @Cacheable(value = "markets")
+    public List<MarketResponse> fetchAllMarkets() {
+        if (firestore == null) {
+            return DEFAULT_MARKETS;
+        }
 
-    private List<MarketResponse> fetchAllMarkets() {
         List<MarketResponse> list = new ArrayList<>();
-        Set<String> seenIds = new HashSet<>();
-        if (firestore != null) {
-            try {
-                QuerySnapshot snapshot = firestore.collection("markets").get().get();
+        try {
+            var colRef = firestore.collection("markets");
+            if (colRef != null) {
+                QuerySnapshot snapshot = colRef.get().get();
                 if (snapshot != null && !snapshot.isEmpty()) {
                     for (DocumentSnapshot doc : snapshot.getDocuments()) {
                         try {
                             MarketResponse m = mapDocToMarketResponse(doc);
                             if (m != null) {
                                 list.add(m);
-                                seenIds.add(m.getId());
                             }
                         } catch (Exception e) {
                             logger.warn("Skipping malformed market document ID {}: {}", doc.getId(), e.getMessage());
                         }
                     }
                 }
-
-                // Merge observed markets from marketPrices collection
-                try {
-                    QuerySnapshot priceSnapshot = firestore.collection("marketPrices").get().get();
-                    if (priceSnapshot != null && !priceSnapshot.isEmpty()) {
-                        for (DocumentSnapshot doc : priceSnapshot.getDocuments()) {
-                            String mId = doc.getString("marketId");
-                            if (mId != null && !seenIds.contains(mId)) {
-                                String obsState = doc.getString("observedState");
-                                String obsDistrict = doc.getString("observedDistrict");
-                                String obsMarketName = doc.getString("observedMarketName");
-                                if (obsMarketName != null) {
-                                    LocationDto loc = new LocationDto(
-                                            obsState != null ? obsState : "Unknown State",
-                                            obsDistrict != null ? obsDistrict : "Unknown District",
-                                            null, null, null
-                                    );
-                                    MarketResponse obsMkt = new MarketResponse(
-                                            mId, obsMarketName, "OBS-" + Math.abs(mId.hashCode()),
-                                            TYPE_MANDI, loc, null, null, STATUS_ACTIVE,
-                                            Instant.now().toString(), Instant.now().toString()
-                                    );
-                                    list.add(obsMkt);
-                                    seenIds.add(mId);
-                                }
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.debug("Could not merge observed markets from marketPrices: {}", e.getMessage());
-                }
-
-                if (!list.isEmpty()) {
-                    return list;
-                }
-            } catch (Exception e) {
-                logger.warn("Could not fetch markets from Firestore: {}", e.getMessage());
             }
+        } catch (Exception e) {
+            logger.error("Could not fetch markets from Firestore: {}", e.getMessage());
         }
-        return DEFAULT_MARKETS;
-    }
 
+        if (list.isEmpty()) {
+            return DEFAULT_MARKETS;
+        }
+        return list;
+    }
 
     private MarketResponse mapDocToMarketResponse(DocumentSnapshot doc) {
         if (doc == null) return null;
@@ -374,3 +337,4 @@ public class MarketService {
         return null;
     }
 }
+

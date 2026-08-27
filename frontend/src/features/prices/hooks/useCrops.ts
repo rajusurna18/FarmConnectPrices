@@ -16,6 +16,8 @@ export function useCrops() {
       const response = await apiClient.get<CropMasterItem[]>('/api/v1/crops');
       return response.data;
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 30,
+    retry: 1,
   });
 }
+

@@ -148,7 +148,7 @@ public class MarketPriceService {
             String district,
             Integer limit
     ) {
-        List<MarketPriceResponse> fullPrices = fetchAllMarketPrices();
+        List<MarketPriceResponse> fullPrices = fetchTargetedMarketPrices(marketId, cropId, priceDate, state, district, limit);
 
         int maxResults = (limit != null && limit > 0 && limit <= 100) ? limit : 50;
 
@@ -350,28 +350,70 @@ public class MarketPriceService {
     // PRIVATE HELPERS
     // ==========================================
 
-    private List<MarketPriceResponse> fetchAllMarketPrices() {
+    private List<MarketPriceResponse> fetchTargetedMarketPrices(
+            String marketId,
+            String cropId,
+            String priceDate,
+            String state,
+            String district,
+            Integer limit
+    ) {
+        if (firestore == null) {
+            return DEFAULT_PRICES;
+        }
+
         List<MarketPriceResponse> list = new ArrayList<>();
-        if (firestore != null) {
-            try {
-                QuerySnapshot snapshot = firestore.collection("marketPrices").get().get();
-                if (snapshot != null && !snapshot.isEmpty()) {
-                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                        MarketPriceResponse p = mapDocToMarketPriceResponse(doc);
-                        if (p != null) {
-                            list.add(p);
-                        }
-                    }
-                    if (!list.isEmpty()) {
-                        return list;
+        try {
+            var colRef = firestore.collection("marketPrices");
+            if (colRef == null) {
+                return DEFAULT_PRICES;
+            }
+
+            int fetchLimit = (limit != null && limit > 0 && limit <= 100) ? Math.min(limit * 4, 300) : 100;
+            Query query = colRef;
+
+            if (marketId != null && !marketId.trim().isEmpty()) {
+                query = query.whereEqualTo("marketId", marketId.trim());
+            }
+            if (cropId != null && !cropId.trim().isEmpty()) {
+                query = query.whereEqualTo("cropId", cropId.trim());
+            }
+            if (priceDate != null && !priceDate.trim().isEmpty()) {
+                query = query.whereEqualTo("priceDate", priceDate.trim());
+            }
+            if (state != null && !state.trim().isEmpty()) {
+                query = query.whereEqualTo("observedState", state.trim());
+            }
+            if (district != null && !district.trim().isEmpty()) {
+                query = query.whereEqualTo("observedDistrict", district.trim());
+            }
+
+            query = query.limit(fetchLimit);
+
+            QuerySnapshot snapshot = query.get().get();
+            if (snapshot != null && !snapshot.isEmpty()) {
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    MarketPriceResponse p = mapDocToMarketPriceResponse(doc);
+                    if (p != null) {
+                        list.add(p);
                     }
                 }
-            } catch (Exception e) {
-                logger.warn("Could not fetch marketPrices from Firestore: {}", e.getMessage());
             }
+        } catch (Exception e) {
+            logger.error("Could not query marketPrices from Firestore: {}", e.getMessage());
         }
-        return DEFAULT_PRICES;
+
+        if (list.isEmpty()) {
+            return DEFAULT_PRICES;
+        }
+
+        return list;
     }
+
+    private List<MarketPriceResponse> fetchAllMarketPrices() {
+        return fetchTargetedMarketPrices(null, null, null, null, null, 50);
+    }
+
 
     private MarketPriceResponse mapDocToMarketPriceResponse(DocumentSnapshot doc) {
         String id = doc.getId();

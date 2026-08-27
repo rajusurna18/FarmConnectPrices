@@ -32,11 +32,41 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    @ExceptionHandler(com.google.api.gax.rpc.ResourceExhaustedException.class)
+    public ResponseEntity<Map<String, String>> handleResourceExhaustedException(com.google.api.gax.rpc.ResourceExhaustedException ex) {
+        logger.error("Firestore read quota exceeded: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Live market discovery is temporarily unavailable. Please retry.");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
+    @ExceptionHandler(io.grpc.StatusRuntimeException.class)
+    public ResponseEntity<Map<String, String>> handleStatusRuntimeException(io.grpc.StatusRuntimeException ex) {
+        if (ex.getStatus() != null && ex.getStatus().getCode() == io.grpc.Status.Code.RESOURCE_EXHAUSTED) {
+            logger.error("gRPC Firestore RESOURCE_EXHAUSTED error: {}", ex.getMessage());
+            Map<String, String> response = new HashMap<>();
+            response.put("error", "Live market discovery is temporarily unavailable. Please retry.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+        }
+        logger.error("gRPC StatusRuntimeException: {}", ex.getMessage(), ex);
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Live market telemetry service unavailable. Please retry.");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "";
+        if (msg.contains("RESOURCE_EXHAUSTED") || msg.contains("Quota exceeded")) {
+            logger.error("Firestore Quota Exceeded Exception: {}", msg);
+            Map<String, String> response = new HashMap<>();
+            response.put("error", "Live market discovery is temporarily unavailable. Please retry.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+        }
         logger.error("Unhandled API exception occurred: {}", ex.getMessage(), ex);
         Map<String, String> response = new HashMap<>();
         response.put("error", ex.getMessage() != null ? ex.getMessage() : "An unexpected server error occurred.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }
+

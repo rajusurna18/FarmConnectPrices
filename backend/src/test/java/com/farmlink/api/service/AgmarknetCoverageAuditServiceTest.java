@@ -222,7 +222,7 @@ class AgmarknetCoverageAuditServiceTest {
     @Test
     void triggerCoverageAudit_deniesUnauthenticatedRequests() {
         com.farmlink.api.controller.InternalIngestionController controller =
-                new com.farmlink.api.controller.InternalIngestionController(mock(DataGovIngestionService.class), auditService);
+                new com.farmlink.api.controller.InternalIngestionController(mock(DataGovIngestionService.class), auditService, mock(DiscoveryIndexSyncService.class));
 
         org.springframework.http.ResponseEntity<?> unauthResp = controller.triggerCoverageAudit(null, null, 100, 1, 0, null);
         assertEquals(org.springframework.http.HttpStatus.UNAUTHORIZED, unauthResp.getStatusCode());
