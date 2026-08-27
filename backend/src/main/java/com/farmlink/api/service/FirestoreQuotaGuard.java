@@ -3,6 +3,8 @@ package com.farmlink.api.service;
 import com.farmlink.api.exception.FirestoreQuotaExhaustedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,7 +26,8 @@ public class FirestoreQuotaGuard {
         this(DEFAULT_COOLDOWN_MS);
     }
 
-    public FirestoreQuotaGuard(long cooldownMs) {
+    @Autowired
+    public FirestoreQuotaGuard(@Value("${firestore.quota.cooldown-ms:60000}") long cooldownMs) {
         this.cooldownMs = cooldownMs;
     }
 

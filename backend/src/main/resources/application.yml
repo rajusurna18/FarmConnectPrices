@@ -25,6 +25,10 @@ app:
     use-emulator: ${FIREBASE_USE_EMULATOR:false}
     emulator-host: ${FIRESTORE_EMULATOR_HOST:localhost:8081}
 
+firestore:
+  quota:
+    cooldown-ms: ${FIRESTORE_QUOTA_COOLDOWN_MS:60000}
+
 data-gov-in:
   base-url: ${DATA_GOV_IN_BASE_URL:https://api.data.gov.in/resource}
   resource-id: ${DATA_GOV_IN_RESOURCE_ID:35985678-0d79-46b4-9ed6-6f13308a1d24}
@@ -53,6 +57,3 @@ farmconnectprices:
     cache:
       enabled: ${DISCOVERY_CACHE_ENABLED:true}
       ttl-minutes: ${DISCOVERY_CACHE_TTL_MINUTES:60}
-
-
-
