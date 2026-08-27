@@ -33,16 +33,17 @@ public class MarketIntelligenceService {
             String cropId, String date, String fromDate, String toDate,
             String state, String district, String unit
     ) {
-        String targetCropId = (cropId != null && !cropId.trim().isEmpty()) ? cropId.trim() : "crop-chilli";
+        String targetCropId = (cropId != null && !cropId.trim().isEmpty()) ? cropId.trim() : null;
         String targetUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : MarketPriceService.UNIT_QUINTAL;
         String qualityStatus = MarketPriceService.QUALITY_VERIFIED;
 
-        CropResponse crop;
-        try {
-            crop = cropMasterService.getCropById(targetCropId);
-        } catch (Exception e) {
-            logger.warn("Crop not found for comparison: {}. Returning empty comparison.", targetCropId);
-            crop = new CropResponse(targetCropId, targetCropId, "GENERAL", "", "ACTIVE");
+        CropResponse crop = null;
+        if (targetCropId != null) {
+            try {
+                crop = cropMasterService.getCropById(targetCropId);
+            } catch (Exception e) {
+                logger.warn("Crop not found for comparison: {}", targetCropId);
+            }
         }
 
         List<MarketPriceSummaryResponse> summaries = marketPriceService.getMarketPrices(
@@ -257,14 +258,15 @@ public class MarketIntelligenceService {
     public PriceTrendResponse getTrends(
             String cropId, String marketId, String fromDate, String toDate, String unit
     ) {
-        String targetCropId = (cropId != null && !cropId.trim().isEmpty()) ? cropId.trim() : "crop-chilli";
+        String targetCropId = (cropId != null && !cropId.trim().isEmpty()) ? cropId.trim() : null;
         String targetUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : MarketPriceService.UNIT_QUINTAL;
 
-        CropResponse crop;
-        try {
-            crop = cropMasterService.getCropById(targetCropId);
-        } catch (Exception e) {
-            crop = new CropResponse(targetCropId, targetCropId, "GENERAL", "", "ACTIVE");
+        CropResponse crop = null;
+        if (targetCropId != null) {
+            try {
+                crop = cropMasterService.getCropById(targetCropId);
+            } catch (Exception ignored) {
+            }
         }
 
         MarketResponse market = null;

@@ -21,6 +21,7 @@ import { useCrops } from '../hooks/useCrops';
 import { MarketPriceFilterBar } from '../components/MarketPriceFilterBar';
 import { MarketPriceFilterDrawer } from '../components/MarketPriceFilterDrawer';
 import { QualityStatusBadge } from '../components/QualityStatusBadge';
+import { DataAvailabilityBadge } from '../../../components/common/DataAvailabilityBadge';
 import type { MarketPriceFilterState } from '../types';
 
 export const MarketPriceListPage: React.FC = () => {
@@ -142,17 +143,33 @@ export const MarketPriceListPage: React.FC = () => {
 
         {/* RESULTS SECTION */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
-              <span>Market Price Records</span>
-              {prices && <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">{prices.length}</span>}
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+            <div className="flex items-center space-x-3">
+              <h2 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
+                <span>Market Price Records</span>
+                {prices && <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">{prices.length}</span>}
+              </h2>
+              {/* Telemetry Status Badge */}
+              <DataAvailabilityBadge
+                status={
+                  isPricesLoading
+                    ? 'LOADING'
+                    : isError
+                    ? 'TEMPORARILY_UNAVAILABLE'
+                    : prices && prices.length > 0
+                    ? 'REAL_DATA'
+                    : 'NO_DATA'
+                }
+                recordCount={prices?.length || 0}
+                onRetry={() => refetch()}
+              />
+            </div>
 
             {hasActiveFilters && (
               <button
                 type="button"
                 onClick={() => setFilters({ unit: 'QUINTAL' })}
-                className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center space-x-1"
+                className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center space-x-1 self-start sm:self-auto"
               >
                 <RefreshCw className="w-3 h-3" />
                 <span>Clear Filters</span>
@@ -173,36 +190,47 @@ export const MarketPriceListPage: React.FC = () => {
             </div>
           )}
 
-          {/* Error State */}
+          {/* Error State (HTTP 503 / Network Failure) */}
           {isError && (
-            <div className="p-8 rounded-2xl bg-rose-950/30 border border-rose-800/40 text-center space-y-3">
-              <p className="text-sm text-rose-300">Failed to load market price data from backend API.</p>
+            <div className="p-10 rounded-3xl bg-rose-950/40 border border-rose-800/50 text-center space-y-4 shadow-xl backdrop-blur-md">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
+                <Database className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 max-w-lg mx-auto">
+                <h3 className="text-lg font-bold text-rose-200">Market data temporarily unavailable</h3>
+                <p className="text-xs text-rose-300/80 leading-relaxed">
+                  Live AGMARKNET telemetry has not reached FarmConnectPrices right now. Please try again shortly.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="px-4 py-2 min-h-[44px] rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-semibold hover:bg-slate-800"
+                className="px-6 py-2.5 min-h-[44px] rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-lg shadow-rose-950/60 transition-colors inline-flex items-center space-x-2"
               >
-                Retry Request
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retry</span>
               </button>
             </div>
           )}
 
-          {/* Empty State */}
+          {/* Empty State (HTTP 200 with 0 Records) */}
           {!isPricesLoading && !isError && prices?.length === 0 && (
             <div className="p-12 rounded-3xl bg-slate-900/40 border border-slate-800 text-center space-y-3">
               <TrendingUp className="w-10 h-10 text-slate-600 mx-auto" />
-              <h3 className="text-base font-bold text-white">No market prices found matching filter criteria</h3>
+              <h3 className="text-base font-bold text-white">No market data available</h3>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Try clearing active commodity, market, location, or date filters to explore available price observations.
+                No AGMARKNET observations were found for the selected filters.
               </p>
-              <button
-                type="button"
-                onClick={() => setFilters({ unit: 'QUINTAL' })}
-                className="mt-2 px-5 py-2.5 min-h-[48px] rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs inline-flex items-center space-x-1.5"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Reset All Filters</span>
-              </button>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={() => setFilters({ unit: 'QUINTAL' })}
+                  className="mt-2 px-5 py-2.5 min-h-[48px] rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs inline-flex items-center space-x-1.5"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Reset All Filters</span>
+                </button>
+              )}
             </div>
           )}
 

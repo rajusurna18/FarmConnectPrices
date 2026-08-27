@@ -31,56 +31,6 @@ public class MarketService {
     private final Firestore firestore;
     private final CropMasterService cropMasterService;
 
-    public static final List<MarketResponse> DEFAULT_MARKETS = List.of(
-            new MarketResponse(
-                    "mkt-guntur-mandi",
-                    "Guntur Agricultural Market",
-                    "GNT-MND-001",
-                    TYPE_MANDI,
-                    new LocationDto("Andhra Pradesh", "Guntur", "Guntur West", "Pattabhipuram", "522006"),
-                    16.2974, 80.4398,
-                    STATUS_ACTIVE,
-                    "2026-08-26T00:00:00Z", "2026-08-26T00:00:00Z"
-            ),
-            new MarketResponse(
-                    "mkt-enumamula-warangal",
-                    "Enumamula Market Yard",
-                    "WGL-MND-002",
-                    TYPE_MANDI,
-                    new LocationDto("Telangana", "Warangal", "Warangal Urban", "Enumamula", "506002"),
-                    17.9784, 79.6000,
-                    STATUS_ACTIVE,
-                    "2026-08-26T00:00:00Z", "2026-08-26T00:00:00Z"
-            ),
-            new MarketResponse(
-                    "mkt-malakpet-hyderabad",
-                    "Malakpet Wholesale Market",
-                    "HYD-WHL-003",
-                    TYPE_WHOLESALE_MARKET,
-                    new LocationDto("Telangana", "Hyderabad", "Bahadurpura", "Malakpet", "500036"),
-                    17.3753, 78.4983,
-                    STATUS_ACTIVE,
-                    "2026-08-26T00:00:00Z", "2026-08-26T00:00:00Z"
-            ),
-            new MarketResponse(
-                    "mkt-devanahalli-bengaluru",
-                    "Devanahalli Rythu Bazaar",
-                    "BLR-RYT-004",
-                    TYPE_RYTHU_BAZAAR,
-                    new LocationDto("Karnataka", "Bengaluru Rural", "Devanahalli", "Devanahalli Village", "562110"),
-                    13.2458, 77.7124,
-                    STATUS_ACTIVE,
-                    "2026-08-26T00:00:00Z", "2026-08-26T00:00:00Z"
-            )
-    );
-
-    private static final Map<String, List<String>> SEED_MARKET_CROPS = Map.of(
-            "mkt-guntur-mandi", List.of("crop-chilli", "crop-paddy", "crop-cotton", "crop-turmeric"),
-            "mkt-enumamula-warangal", List.of("crop-chilli", "crop-cotton", "crop-maize", "crop-paddy"),
-            "mkt-malakpet-hyderabad", List.of("crop-tomato", "crop-onion", "crop-paddy", "crop-mango"),
-            "mkt-devanahalli-bengaluru", List.of("crop-tomato", "crop-onion", "crop-maize")
-    );
-
     public MarketService(Firestore firestore, CropMasterService cropMasterService) {
         this.firestore = firestore;
         this.cropMasterService = cropMasterService;
@@ -189,13 +139,8 @@ public class MarketService {
                     }
                 }
             } catch (Exception e) {
-                logger.warn("Error fetching market ID {} from Firestore: {}", marketId, e.getMessage());
-            }
-        }
-
-        for (MarketResponse m : DEFAULT_MARKETS) {
-            if (m.getId().equalsIgnoreCase(marketId.trim())) {
-                return m;
+                logger.error("Error fetching market ID {} from Firestore: {}", marketId, e.getMessage());
+                throw new RuntimeException("Could not fetch market from Firestore: " + e.getMessage(), e);
             }
         }
 
@@ -238,22 +183,8 @@ public class MarketService {
                     }
                 }
             } catch (Exception e) {
-                logger.warn("Error fetching marketCrops for marketId {} from Firestore: {}", marketId, e.getMessage());
-            }
-        }
-
-        if (marketCrops.isEmpty()) {
-            List<String> seedCropIds = SEED_MARKET_CROPS.getOrDefault(marketId, Collections.emptyList());
-            String nowIso = Instant.now().toString();
-            for (String cId : seedCropIds) {
-                CropResponse crop = cropMasterService.getCropById(cId);
-                if (crop != null) {
-                    marketCrops.add(new MarketCropResponse(
-                            marketId + "_" + crop.getId(), marketId, crop.getId(),
-                            crop.getName(), crop.getCategory(), crop.getScientificName(),
-                            STATUS_ACTIVE, nowIso, nowIso
-                    ));
-                }
+                logger.error("Error fetching marketCrops for marketId {} from Firestore: {}", marketId, e.getMessage());
+                throw new RuntimeException("Could not fetch market crops from Firestore: " + e.getMessage(), e);
             }
         }
 
@@ -263,7 +194,7 @@ public class MarketService {
     @Cacheable(value = "markets")
     public List<MarketResponse> fetchAllMarkets() {
         if (firestore == null) {
-            return DEFAULT_MARKETS;
+            return Collections.emptyList();
         }
 
         List<MarketResponse> list = new ArrayList<>();
@@ -284,14 +215,11 @@ public class MarketService {
                     }
                 }
             }
+            return list;
         } catch (Exception e) {
             logger.error("Could not fetch markets from Firestore: {}", e.getMessage());
+            throw new RuntimeException("Could not fetch markets from Firestore: " + e.getMessage(), e);
         }
-
-        if (list.isEmpty()) {
-            return DEFAULT_MARKETS;
-        }
-        return list;
     }
 
     private MarketResponse mapDocToMarketResponse(DocumentSnapshot doc) {

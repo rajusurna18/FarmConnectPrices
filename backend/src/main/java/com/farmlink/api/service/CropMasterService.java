@@ -17,15 +17,6 @@ public class CropMasterService {
     private static final Logger logger = LoggerFactory.getLogger(CropMasterService.class);
     private final Firestore firestore;
 
-    public static final List<CropResponse> DEFAULT_CROPS = List.of(
-            new CropResponse("crop-paddy", "Rice / Paddy", "CEREAL", "Oryza sativa", "ACTIVE"),
-            new CropResponse("crop-wheat", "Wheat", "CEREAL", "Triticum aestivum", "ACTIVE"),
-            new CropResponse("crop-maize", "Maize", "CEREAL", "Zea mays", "ACTIVE"),
-            new CropResponse("crop-cotton", "Cotton", "FIBER", "Gossypium hirsutum", "ACTIVE"),
-            new CropResponse("crop-chilli", "Red Chilli", "SPICE", "Capsicum annuum", "ACTIVE"),
-            new CropResponse("crop-tomato", "Tomato", "VEGETABLE", "Solanum lycopersicum", "ACTIVE")
-    );
-
     public CropMasterService(Firestore firestore) {
         this.firestore = firestore;
     }
@@ -33,7 +24,7 @@ public class CropMasterService {
     @Cacheable(value = "crops")
     public List<CropResponse> getAllCrops() {
         if (firestore == null) {
-            return DEFAULT_CROPS;
+            return Collections.emptyList();
         }
 
         List<CropResponse> crops = new ArrayList<>();
@@ -54,15 +45,11 @@ public class CropMasterService {
                     }
                 }
             }
+            return crops;
         } catch (Exception e) {
             logger.error("Firestore read error in getAllCrops: {}", e.getMessage());
+            throw new RuntimeException("Could not fetch crops from Firestore: " + e.getMessage(), e);
         }
-
-        if (crops.isEmpty()) {
-            return DEFAULT_CROPS;
-        }
-
-        return crops;
     }
 
     public CropResponse getCropById(String cropId) {
@@ -77,4 +64,5 @@ public class CropMasterService {
         return null;
     }
 }
+
 

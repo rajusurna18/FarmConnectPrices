@@ -9,6 +9,7 @@ import { Footer } from '../../../components/navigation/Footer';
 import { useMarketComparison, useMarketIntelligenceSummary, usePriceTrends } from '../hooks/useMarketIntelligence';
 import { useLocationCascade } from '../../markets/hooks/useLocationCascade';
 import { useCrops } from '../../prices/hooks/useCrops';
+import { DataAvailabilityBadge } from '../../../components/common/DataAvailabilityBadge';
 import type { IntelligenceFilterState } from '../types';
 
 export const MarketIntelligencePage: React.FC = () => {
@@ -266,15 +267,30 @@ export const MarketIntelligencePage: React.FC = () => {
 
         {/* MARKET COMPARISON TABLE SECTION */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
-              <Building2 className="w-5 h-5 text-emerald-400" />
-              <span>Cross-Market Price Ranking ({filters.unit || 'QUINTAL'})</span>
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+            <div className="flex items-center space-x-3">
+              <h2 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
+                <Building2 className="w-5 h-5 text-emerald-400" />
+                <span>Cross-Market Price Ranking ({filters.unit || 'QUINTAL'})</span>
+              </h2>
+              <DataAvailabilityBadge
+                status={
+                  isCompLoading
+                    ? 'LOADING'
+                    : isCompError
+                    ? 'TEMPORARILY_UNAVAILABLE'
+                    : comparison && comparison.markets && comparison.markets.length > 0
+                    ? 'REAL_DATA'
+                    : 'NO_DATA'
+                }
+                recordCount={comparison?.markets?.length || 0}
+                onRetry={() => refetchComp()}
+              />
+            </div>
             <button
               type="button"
               onClick={() => refetchComp()}
-              className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center space-x-1"
+              className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center space-x-1 self-start sm:self-auto"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Refresh</span>
@@ -289,23 +305,42 @@ export const MarketIntelligencePage: React.FC = () => {
             </div>
           )}
 
-          {/* Error State */}
+          {/* Error State (HTTP 503 / Network Failure) */}
           {isCompError && (
-            <div className="p-8 rounded-2xl bg-rose-950/30 border border-rose-800/40 text-center space-y-3">
-              <AlertCircle className="w-8 h-8 text-rose-400 mx-auto" />
-              <p className="text-sm text-rose-300">Failed to load market price comparison data.</p>
+            <div className="p-10 rounded-3xl bg-rose-950/40 border border-rose-800/50 text-center space-y-4 shadow-xl backdrop-blur-md">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 max-w-lg mx-auto">
+                <h3 className="text-lg font-bold text-rose-200">Market intelligence temporarily unavailable</h3>
+                <p className="text-xs text-rose-300/80 leading-relaxed">
+                  Live AGMARKNET telemetry has not reached FarmConnectPrices right now. Please try again shortly.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => refetchComp()}
-                className="px-4 py-2 min-h-[44px] rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-semibold hover:bg-slate-800"
+                className="px-6 py-2.5 min-h-[44px] rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-lg shadow-rose-950/60 transition-colors inline-flex items-center space-x-2"
               >
-                Retry Comparison Request
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retry</span>
               </button>
             </div>
           )}
 
+          {/* Empty / Insufficient Data State */}
+          {!isCompLoading && !isCompError && (!comparison || !comparison.markets || comparison.markets.length === 0) && (
+            <div className="p-12 rounded-3xl bg-slate-900/40 border border-slate-800 text-center space-y-3">
+              <Building2 className="w-10 h-10 text-slate-600 mx-auto" />
+              <h3 className="text-base font-bold text-white">Not enough market observations for a reliable comparison.</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Select a different commodity or location scope to compare market rates across mandis.
+              </p>
+            </div>
+          )}
+
           {/* Comparison Table */}
-          {!isCompLoading && !isCompError && comparison && (
+          {!isCompLoading && !isCompError && comparison && comparison.markets && comparison.markets.length > 0 && (
             <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/70 backdrop-blur-md">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] font-mono border-b border-slate-800">

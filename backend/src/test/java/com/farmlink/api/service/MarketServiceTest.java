@@ -21,50 +21,16 @@ class MarketServiceTest {
 
     @BeforeEach
     void setUp() {
-        firestore = Mockito.mock(Firestore.class);
+        firestore = null; // Uninitialized Firestore simulation
         cropMasterService = Mockito.mock(CropMasterService.class);
-        Mockito.when(cropMasterService.getCropById("crop-chilli"))
-                .thenReturn(new com.farmlink.api.dto.CropResponse("crop-chilli", "Red Chilli", "SPICE", "Capsicum annuum", "ACTIVE"));
-        Mockito.when(cropMasterService.getCropById("crop-paddy"))
-                .thenReturn(new com.farmlink.api.dto.CropResponse("crop-paddy", "Rice", "CEREAL", "Oryza sativa", "ACTIVE"));
         marketService = new MarketService(firestore, cropMasterService);
     }
 
     @Test
-    void getMarkets_returnsDefaultSeedMarkets_whenFirestoreEmpty() {
+    void getMarkets_returnsEmptyList_whenFirestoreEmpty() {
         List<MarketSummaryResponse> markets = marketService.getMarkets(null, null, null, null, null, null, null);
         assertNotNull(markets);
-        assertFalse(markets.isEmpty());
-        assertEquals(4, markets.size());
-    }
-
-    @Test
-    void getMarkets_filtersByState_correctly() {
-        List<MarketSummaryResponse> apMarkets = marketService.getMarkets("Andhra Pradesh", null, null, null, null, null, null);
-        assertEquals(1, apMarkets.size());
-        assertEquals("Guntur Agricultural Market", apMarkets.get(0).getName());
-    }
-
-    @Test
-    void getMarkets_filtersByDistrict_correctly() {
-        List<MarketSummaryResponse> wglMarkets = marketService.getMarkets(null, "Warangal", null, null, null, null, null);
-        assertEquals(1, wglMarkets.size());
-        assertEquals("WGL-MND-002", wglMarkets.get(0).getCode());
-    }
-
-    @Test
-    void getMarkets_filtersByType_correctly() {
-        List<MarketSummaryResponse> rythuBazaars = marketService.getMarkets(null, null, null, "RYTHU_BAZAAR", null, null, null);
-        assertEquals(1, rythuBazaars.size());
-        assertEquals("Devanahalli Rythu Bazaar", rythuBazaars.get(0).getName());
-    }
-
-    @Test
-    void getMarketById_returnsMarket_whenIdValid() {
-        MarketResponse m = marketService.getMarketById("mkt-guntur-mandi");
-        assertNotNull(m);
-        assertEquals("GNT-MND-001", m.getCode());
-        assertEquals("Andhra Pradesh", m.getLocation().getState());
+        assertTrue(markets.isEmpty(), "Module 10B: Must return empty list when Firestore is empty without default fallbacks");
     }
 
     @Test
@@ -73,9 +39,9 @@ class MarketServiceTest {
     }
 
     @Test
-    void getMarketCrops_returnsSeedMappings_whenFirestoreEmpty() {
+    void getMarketCrops_returnsEmptyList_whenFirestoreEmpty() {
         List<MarketCropResponse> crops = marketService.getMarketCrops("mkt-guntur-mandi");
         assertNotNull(crops);
-        assertFalse(crops.isEmpty());
+        assertTrue(crops.isEmpty(), "Module 10B: Must return empty list when market crops are not found in Firestore");
     }
 }

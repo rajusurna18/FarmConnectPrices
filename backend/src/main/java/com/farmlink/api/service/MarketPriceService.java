@@ -32,91 +32,6 @@ public class MarketPriceService {
     private final CropMasterService cropMasterService;
     private final PriceUnitConversionService conversionService;
 
-    // Reference Development Seed Data (Clearly marked DEVELOPMENT DATA, never fake government data)
-    public static final List<MarketPriceResponse> DEFAULT_PRICES;
-
-    static {
-        MarketPriceSourceDto seedSource = new MarketPriceSourceDto(
-                "IMPORTED_DATA",
-                "Development Reference Seed Data",
-                "ref-dev-seed-2026"
-        );
-
-        List<MarketPriceResponse> list = new ArrayList<>();
-
-        // Guntur Mandi - Red Chilli (Verified)
-        list.add(new MarketPriceResponse(
-                "prc-gnt-chilli-20260826",
-                new MarketSummaryResponse("mkt-guntur-mandi", "Guntur Agricultural Market", "GNT-MND-001", "MANDI", "Andhra Pradesh", "Guntur", "Guntur West", "ACTIVE", 4),
-                new CropResponse("crop-chilli", "Red Chilli", "SPICE", "Capsicum annuum", "ACTIVE"),
-                "2026-08-26",
-                "2026-08-26T06:00:00Z",
-                18500.0, 22500.0, 20500.0,
-                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
-                seedSource,
-                QUALITY_VERIFIED, STATUS_ACTIVE,
-                "2026-08-26T06:00:00Z", "2026-08-26T06:00:00Z"
-        ));
-
-        // Guntur Mandi - Red Chilli (Historical Day 2)
-        list.add(new MarketPriceResponse(
-                "prc-gnt-chilli-20260825",
-                new MarketSummaryResponse("mkt-guntur-mandi", "Guntur Agricultural Market", "GNT-MND-001", "MANDI", "Andhra Pradesh", "Guntur", "Guntur West", "ACTIVE", 4),
-                new CropResponse("crop-chilli", "Red Chilli", "SPICE", "Capsicum annuum", "ACTIVE"),
-                "2026-08-25",
-                "2026-08-25T06:00:00Z",
-                18200.0, 22100.0, 20200.0,
-                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
-                seedSource,
-                QUALITY_VERIFIED, STATUS_ACTIVE,
-                "2026-08-25T06:00:00Z", "2026-08-25T06:00:00Z"
-        ));
-
-        // Enumamula Warangal - Paddy / Rice (Verified)
-        list.add(new MarketPriceResponse(
-                "prc-wgl-paddy-20260826",
-                new MarketSummaryResponse("mkt-enumamula-warangal", "Enumamula Market Yard", "WGL-MND-002", "MANDI", "Telangana", "Warangal", "Warangal Urban", "ACTIVE", 4),
-                new CropResponse("crop-paddy", "Rice / Paddy", "CEREAL", "Oryza sativa", "ACTIVE"),
-                "2026-08-26",
-                "2026-08-26T07:30:00Z",
-                2180.0, 2450.0, 2320.0,
-                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
-                seedSource,
-                QUALITY_VERIFIED, STATUS_ACTIVE,
-                "2026-08-26T07:30:00Z", "2026-08-26T07:30:00Z"
-        ));
-
-        // Malakpet Hyderabad - Tomato (Unverified observation)
-        list.add(new MarketPriceResponse(
-                "prc-hyd-tomato-20260826",
-                new MarketSummaryResponse("mkt-malakpet-hyderabad", "Malakpet Wholesale Market", "HYD-WHL-003", "WHOLESALE_MARKET", "Telangana", "Hyderabad", "Bahadurpura", "ACTIVE", 4),
-                new CropResponse("crop-tomato", "Tomato", "VEGETABLE", "Solanum lycopersicum", "ACTIVE"),
-                "2026-08-26",
-                "2026-08-26T08:00:00Z",
-                1400.0, 1900.0, 1650.0,
-                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
-                seedSource,
-                QUALITY_UNVERIFIED, STATUS_ACTIVE,
-                "2026-08-26T08:00:00Z", "2026-08-26T08:00:00Z"
-        ));
-
-        // Devanahalli Bengaluru - Onion (Verified)
-        list.add(new MarketPriceResponse(
-                "prc-blr-onion-20260826",
-                new MarketSummaryResponse("mkt-devanahalli-bengaluru", "Devanahalli Rythu Bazaar", "BLR-RYT-004", "RYTHU_BAZAAR", "Karnataka", "Bengaluru Rural", "Devanahalli", "ACTIVE", 3),
-                new CropResponse("crop-onion", "Onion", "VEGETABLE", "Allium cepa", "ACTIVE"),
-                "2026-08-26",
-                "2026-08-26T09:15:00Z",
-                2400.0, 3100.0, 2750.0,
-                CURRENCY_INR, UNIT_QUINTAL, UNIT_QUINTAL, false, 1.0,
-                seedSource,
-                QUALITY_VERIFIED, STATUS_ACTIVE,
-                "2026-08-26T09:15:00Z", "2026-08-26T09:15:00Z"
-        ));
-
-        DEFAULT_PRICES = Collections.unmodifiableList(list);
-    }
-
     public MarketPriceService(
             Firestore firestore,
             MarketService marketService,
@@ -129,33 +44,54 @@ public class MarketPriceService {
         this.conversionService = conversionService;
     }
 
-    public static boolean validatePriceRecord(double minPrice, double maxPrice, double modalPrice) {
-        if (minPrice < 0 || maxPrice < 0 || modalPrice < 0) {
-            return false;
-        }
-        return minPrice <= modalPrice && modalPrice <= maxPrice;
-    }
-
-    public List<MarketPriceSummaryResponse> getMarketPrices(
+    public List<MarketPriceResponse> getMarketPrices(
+            String state,
+            String district,
             String marketId,
             String cropId,
             String priceDate,
-            String fromDate,
-            String toDate,
             String qualityStatus,
             String unit,
-            String state,
-            String district,
+            String sortBy,
+            String sortDirection,
+            Integer page,
+            Integer pageSize,
             Integer limit
     ) {
         List<MarketPriceResponse> fullPrices = fetchTargetedMarketPrices(marketId, cropId, priceDate, state, district, limit);
 
-        int maxResults = (limit != null && limit > 0 && limit <= 100) ? limit : 50;
-
         List<MarketPriceResponse> filtered = fullPrices.stream().filter(p -> {
-            // Exclude REJECTED unless specifically requested
+            if (p == null) return false;
+            MarketSummaryResponse mkt = p.getMarket();
+            CropResponse crp = p.getCrop();
+
+            if (state != null && !state.trim().isEmpty()) {
+                if (mkt == null || mkt.getState() == null || !mkt.getState().equalsIgnoreCase(state.trim())) {
+                    return false;
+                }
+            }
+            if (district != null && !district.trim().isEmpty()) {
+                if (mkt == null || mkt.getDistrict() == null || !mkt.getDistrict().equalsIgnoreCase(district.trim())) {
+                    return false;
+                }
+            }
+            if (marketId != null && !marketId.trim().isEmpty()) {
+                if (mkt == null || mkt.getId() == null || !mkt.getId().equalsIgnoreCase(marketId.trim())) {
+                    return false;
+                }
+            }
+            if (cropId != null && !cropId.trim().isEmpty()) {
+                if (crp == null || crp.getId() == null || !crp.getId().equalsIgnoreCase(cropId.trim())) {
+                    return false;
+                }
+            }
+            if (priceDate != null && !priceDate.trim().isEmpty()) {
+                if (p.getPriceDate() == null || !p.getPriceDate().equalsIgnoreCase(priceDate.trim())) {
+                    return false;
+                }
+            }
             if (qualityStatus != null && !qualityStatus.trim().isEmpty()) {
-                if (!p.getQualityStatus().equalsIgnoreCase(qualityStatus.trim())) {
+                if (p.getQualityStatus() == null || !p.getQualityStatus().equalsIgnoreCase(qualityStatus.trim())) {
                     return false;
                 }
             } else {
@@ -163,41 +99,6 @@ public class MarketPriceService {
                     return false;
                 }
             }
-
-            if (marketId != null && !marketId.trim().isEmpty() && !p.getMarket().getId().equalsIgnoreCase(marketId.trim())) {
-                return false;
-            }
-            if (cropId != null && !cropId.trim().isEmpty() && !p.getCrop().getId().equalsIgnoreCase(cropId.trim())) {
-                return false;
-            }
-            if (priceDate != null && !priceDate.trim().isEmpty() && !p.getPriceDate().equals(priceDate.trim())) {
-                return false;
-            }
-            if (fromDate != null && !fromDate.trim().isEmpty() && p.getPriceDate().compareTo(fromDate.trim()) < 0) {
-                return false;
-            }
-            if (toDate != null && !toDate.trim().isEmpty() && p.getPriceDate().compareTo(toDate.trim()) > 0) {
-                return false;
-            }
-            // Unit filtering: keep observation if source unit and target unit are mutually convertible
-            if (unit != null && !unit.trim().isEmpty()) {
-                String targetUnit = unit.trim();
-                String sourceUnit = p.getSourceUnit() != null ? p.getSourceUnit() : p.getUnit();
-                boolean targetSupported = conversionService.isSupportedUnit(targetUnit);
-                boolean sourceSupported = conversionService.isSupportedUnit(sourceUnit);
-                if (!targetSupported || !sourceSupported) {
-                    if (!sourceUnit.equalsIgnoreCase(targetUnit)) {
-                        return false;
-                    }
-                }
-            }
-            if (state != null && !state.trim().isEmpty() && p.getMarket().getState() != null && !p.getMarket().getState().equalsIgnoreCase(state.trim())) {
-                return false;
-            }
-            if (district != null && !district.trim().isEmpty() && p.getMarket().getDistrict() != null && !p.getMarket().getDistrict().equalsIgnoreCase(district.trim())) {
-                return false;
-            }
-
             return true;
         }).collect(Collectors.toList());
 
@@ -207,16 +108,26 @@ public class MarketPriceService {
                 .collect(Collectors.toList());
 
         // Deterministic Sorting: priceDate descending, observedAt descending
-        converted.sort((a, b) -> {
-            int cmpDate = b.getPriceDate().compareTo(a.getPriceDate());
+        boolean asc = "asc".equalsIgnoreCase(sortDirection);
+        Comparator<MarketPriceResponse> comp = (a, b) -> {
+            int cmpDate = Objects.toString(b.getPriceDate(), "").compareTo(Objects.toString(a.getPriceDate(), ""));
             if (cmpDate != 0) return cmpDate;
-            return b.getObservedAt().compareTo(a.getObservedAt());
-        });
+            return Objects.toString(b.getObservedAt(), "").compareTo(Objects.toString(a.getObservedAt(), ""));
+        };
+        if (asc) {
+            comp = comp.reversed();
+        }
+        converted.sort(comp);
 
-        return converted.stream()
-                .limit(maxResults)
-                .map(this::mapToSummary)
-                .collect(Collectors.toList());
+        int pSize = (pageSize != null && pageSize > 0 && pageSize <= 100) ? pageSize : (limit != null && limit > 0 ? limit : 50);
+        int pNum = (page != null && page >= 1) ? page : 1;
+        int fromIdx = (pNum - 1) * pSize;
+        if (fromIdx >= converted.size()) {
+            return Collections.emptyList();
+        }
+
+        int toIdx = Math.min(fromIdx + pSize, converted.size());
+        return converted.subList(fromIdx, toIdx);
     }
 
     public MarketPriceResponse getLatestMarketPrice(String marketId, String cropId) {
@@ -289,6 +200,43 @@ public class MarketPriceService {
         return matching;
     }
 
+    public static boolean validatePriceRecord(double minPrice, double maxPrice, double modalPrice) {
+        if (minPrice < 0 || maxPrice < 0 || modalPrice < 0) {
+            return false;
+        }
+        return minPrice <= modalPrice && modalPrice <= maxPrice;
+    }
+
+    public List<MarketPriceSummaryResponse> getMarketPrices(
+            String marketId,
+            String cropId,
+            String priceDate,
+            String fromDate,
+            String toDate,
+            String qualityStatus,
+            String unit,
+            String state,
+            String district,
+            Integer limit
+    ) {
+        List<MarketPriceResponse> responses = getMarketPrices(
+                state, district, marketId, cropId, priceDate, qualityStatus, unit, "priceDate", "desc", 1, limit, limit
+        );
+
+        List<MarketPriceSummaryResponse> summaries = new ArrayList<>();
+        for (MarketPriceResponse p : responses) {
+            if (p == null) continue;
+            if (fromDate != null && !fromDate.trim().isEmpty() && p.getPriceDate().compareTo(fromDate.trim()) < 0) {
+                continue;
+            }
+            if (toDate != null && !toDate.trim().isEmpty() && p.getPriceDate().compareTo(toDate.trim()) > 0) {
+                continue;
+            }
+            summaries.add(mapToSummary(p));
+        }
+        return summaries;
+    }
+
     public MarketPriceResponse getMarketPriceById(String priceId) {
         if (priceId == null || priceId.trim().isEmpty()) {
             throw new IllegalArgumentException("Price ID cannot be empty.");
@@ -297,17 +245,15 @@ public class MarketPriceService {
         if (firestore != null) {
             try {
                 DocumentSnapshot doc = firestore.collection("marketPrices").document(priceId).get().get();
-                if (doc.exists()) {
-                    return mapDocToMarketPriceResponse(doc);
+                if (doc != null && doc.exists()) {
+                    MarketPriceResponse response = mapDocToMarketPriceResponse(doc);
+                    if (response != null) {
+                        return response;
+                    }
                 }
             } catch (Exception e) {
-                logger.warn("Error fetching marketPrice ID {} from Firestore: {}", priceId, e.getMessage());
-            }
-        }
-
-        for (MarketPriceResponse p : DEFAULT_PRICES) {
-            if (p.getId().equalsIgnoreCase(priceId.trim())) {
-                return p;
+                logger.error("Error fetching marketPrice ID {} from Firestore: {}", priceId, e.getMessage());
+                throw new RuntimeException("Could not fetch market price from Firestore: " + e.getMessage(), e);
             }
         }
 
@@ -359,14 +305,14 @@ public class MarketPriceService {
             Integer limit
     ) {
         if (firestore == null) {
-            return DEFAULT_PRICES;
+            return Collections.emptyList();
         }
 
         List<MarketPriceResponse> list = new ArrayList<>();
         try {
             var colRef = firestore.collection("marketPrices");
             if (colRef == null) {
-                return DEFAULT_PRICES;
+                return Collections.emptyList();
             }
 
             int fetchLimit = (limit != null && limit > 0 && limit <= 100) ? Math.min(limit * 4, 300) : 100;
@@ -399,15 +345,11 @@ public class MarketPriceService {
                     }
                 }
             }
+            return list;
         } catch (Exception e) {
             logger.error("Could not query marketPrices from Firestore: {}", e.getMessage());
+            throw new RuntimeException("Could not query marketPrices from Firestore: " + e.getMessage(), e);
         }
-
-        if (list.isEmpty()) {
-            return DEFAULT_PRICES;
-        }
-
-        return list;
     }
 
     private List<MarketPriceResponse> fetchAllMarketPrices() {

@@ -17,20 +17,13 @@ public class LocationMasterService {
     private static final Logger logger = LoggerFactory.getLogger(LocationMasterService.class);
     private final Firestore firestore;
 
-    public static final List<LocationMasterResponse> DEFAULT_LOCATIONS = List.of(
-            new LocationMasterResponse("loc-tg-hyd", "Telangana", "Hyderabad", "Bahadurpura", "Malakpet", "500036"),
-            new LocationMasterResponse("loc-tg-wgl", "Telangana", "Warangal", "Warangal Urban", "Enumamula", "506002"),
-            new LocationMasterResponse("loc-ap-gnt", "Andhra Pradesh", "Guntur", "Guntur West", "Pattabhipuram", "522006"),
-            new LocationMasterResponse("loc-ka-blr-r", "Karnataka", "Bengaluru Rural", "Devanahalli", "Devanahalli Village", "562110")
-    );
-
     public LocationMasterService(Firestore firestore) {
         this.firestore = firestore;
     }
 
     public List<LocationMasterResponse> getAllLocations() {
         if (firestore == null) {
-            return DEFAULT_LOCATIONS;
+            return Collections.emptyList();
         }
 
         List<LocationMasterResponse> locations = new ArrayList<>();
@@ -59,11 +52,7 @@ public class LocationMasterService {
     @Cacheable(value = "states")
     public List<String> getCanonicalStates() {
         if (firestore == null) {
-            Set<String> defaults = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-            for (LocationMasterResponse loc : DEFAULT_LOCATIONS) {
-                defaults.add(loc.getState());
-            }
-            return new ArrayList<>(defaults);
+            return Collections.emptyList();
         }
 
         Set<String> states = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
@@ -99,20 +88,10 @@ public class LocationMasterService {
                 }
             }
 
-            if (states.isEmpty()) {
-                for (LocationMasterResponse loc : DEFAULT_LOCATIONS) {
-                    states.add(loc.getState());
-                }
-            }
-
             return new ArrayList<>(states);
         } catch (Exception e) {
             logger.error("Firestore read error in getCanonicalStates: {}", e.getMessage());
-            Set<String> defaults = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-            for (LocationMasterResponse loc : DEFAULT_LOCATIONS) {
-                defaults.add(loc.getState());
-            }
-            return new ArrayList<>(defaults);
+            throw new RuntimeException("Could not fetch states from Firestore: " + e.getMessage(), e);
         }
     }
 
@@ -123,13 +102,7 @@ public class LocationMasterService {
         }
 
         if (firestore == null) {
-            Set<String> defaults = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-            for (LocationMasterResponse loc : DEFAULT_LOCATIONS) {
-                if (loc.getState().equalsIgnoreCase(state.trim())) {
-                    defaults.add(loc.getDistrict());
-                }
-            }
-            return new ArrayList<>(defaults);
+            return Collections.emptyList();
         }
 
         Set<String> districts = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
@@ -171,24 +144,10 @@ public class LocationMasterService {
                 }
             }
 
-            if (districts.isEmpty()) {
-                for (LocationMasterResponse loc : DEFAULT_LOCATIONS) {
-                    if (loc.getState().equalsIgnoreCase(state.trim())) {
-                        districts.add(loc.getDistrict());
-                    }
-                }
-            }
-
             return new ArrayList<>(districts);
         } catch (Exception e) {
             logger.error("Firestore read error in getCanonicalDistricts for state {}: {}", state, e.getMessage());
-            Set<String> defaults = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-            for (LocationMasterResponse loc : DEFAULT_LOCATIONS) {
-                if (loc.getState().equalsIgnoreCase(state.trim())) {
-                    defaults.add(loc.getDistrict());
-                }
-            }
-            return new ArrayList<>(defaults);
+            throw new RuntimeException("Could not fetch districts from Firestore: " + e.getMessage(), e);
         }
     }
 
@@ -208,5 +167,6 @@ public class LocationMasterService {
         return new ArrayList<>(areas);
     }
 }
+
 
 
