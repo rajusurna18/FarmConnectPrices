@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import React, { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 
 interface WebGLBoundaryProps {
@@ -12,28 +12,36 @@ interface WebGLBoundaryState {
 
 /**
  * WebGL Error Boundary to catch 3D context creation errors, WebGL context loss, or device GPU limitations.
- * Ensures the web application never crashes and displays an elegant 2D fallback layout.
+ * Listens to canvas webglcontextlost events and degrades gracefully to a 2D ambient fallback.
  */
 export class WebGLBoundary extends Component<WebGLBoundaryProps, WebGLBoundaryState> {
   public state: WebGLBoundaryState = {
     hasError: false,
   };
 
+  private containerRef = React.createRef<HTMLDivElement>();
+
   private handleContextLost = (event: Event) => {
     event.preventDefault();
-    console.info('[WebGLBoundary] WebGL Context Lost event caught. Degrading gracefully to 2D ambient fallback.');
+    console.info('[WebGLBoundary] WebGL Context Lost caught. Degrading gracefully to 2D ambient fallback.');
     this.setState({ hasError: true });
   };
 
   public componentDidMount() {
     if (typeof window !== 'undefined') {
-      window.addEventListener('webglcontextlost', this.handleContextLost, false);
+      window.addEventListener('webglcontextlost', this.handleContextLost, true);
+    }
+    if (this.containerRef.current) {
+      this.containerRef.current.addEventListener('webglcontextlost', this.handleContextLost, true);
     }
   }
 
   public componentWillUnmount() {
     if (typeof window !== 'undefined') {
-      window.removeEventListener('webglcontextlost', this.handleContextLost, false);
+      window.removeEventListener('webglcontextlost', this.handleContextLost, true);
+    }
+    if (this.containerRef.current) {
+      this.containerRef.current.removeEventListener('webglcontextlost', this.handleContextLost, true);
     }
   }
 
@@ -61,6 +69,10 @@ export class WebGLBoundary extends Component<WebGLBoundaryProps, WebGLBoundarySt
       );
     }
 
-    return this.props.children;
+    return (
+      <div ref={this.containerRef} className="w-full h-full">
+        {this.props.children}
+      </div>
+    );
   }
 }

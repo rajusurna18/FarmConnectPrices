@@ -3,9 +3,9 @@ package com.farmlink.api.config;
 import com.farmlink.api.security.FirebaseAuthFilter;
 import com.google.firebase.FirebaseApp;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,7 +18,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -26,27 +25,21 @@ import java.util.List;
 public class SecurityConfig {
 
     private final FirebaseApp firebaseApp;
-    private final String allowedOrigins;
 
-    public SecurityConfig(
-            FirebaseApp firebaseApp,
-            @Value("${app.cors.allowed-origins:http://localhost:5173}") String allowedOrigins
-    ) {
+    public SecurityConfig(FirebaseApp firebaseApp) {
         this.firebaseApp = firebaseApp;
-        this.allowedOrigins = allowedOrigins;
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
-
-        configuration.setAllowedOrigins(origins);
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        configuration.setAllowedOriginPatterns(List.of(
+            "http://localhost:[*]",
+            "http://127.0.0.1:[*]",
+            "https://*.vercel.app"
+        ));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
@@ -72,7 +65,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                 .requestMatchers("/api/v1/health", "/api/v1/health/firebase", "/actuator/**").permitAll()
-                .requestMatchers("/api/v1/users/**", "/api/v1/profile/**", "/api/v1/farms/**", "/api/v1/crops/**", "/api/v1/locations/**", "/api/v1/markets/**", "/api/v1/market-prices/**", "/api/v1/market-intelligence/**", "/api/v1/internal/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/locations/**", "/api/v1/crops/**", "/api/v1/markets/**", "/api/v1/market-prices/**", "/api/v1/market-intelligence/**").permitAll()
+                .requestMatchers("/api/v1/users/**", "/api/v1/profile/**", "/api/v1/farms/**", "/api/v1/internal/**").authenticated()
                 .anyRequest().permitAll()
             )
             .addFilterBefore(new FirebaseAuthFilter(firebaseApp), UsernamePasswordAuthenticationFilter.class);
