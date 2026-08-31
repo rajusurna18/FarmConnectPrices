@@ -28,13 +28,14 @@ export const Navbar: React.FC = () => {
     setMobileMenuOpen(false);
   };
 
+  const isFarmer = userDocument?.role === 'FARMER';
+
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Markets', href: '/markets' },
     { label: 'Market Prices', href: '/market-prices' },
     { label: 'Intelligence', href: '/market-intelligence' },
-    { label: 'AI Insights', href: '/#ai-insights' },
-    { label: 'Marketplace', href: '/#role-previews' },
+    ...(isFarmer ? [{ label: 'Profitability', href: '/decision-support' }] : []),
     { label: 'About', href: '/#ecosystem' },
   ];
 

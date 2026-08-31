@@ -5,7 +5,7 @@ export interface UserDocument {
   displayName: string;
   email: string;
   emailVerified: boolean;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'FARMER' | 'MEDIATOR_BUYER' | 'CUSTOMER' | 'ADMIN' | string;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt?: unknown;
   updatedAt?: unknown;

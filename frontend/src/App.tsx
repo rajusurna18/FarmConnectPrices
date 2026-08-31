@@ -25,6 +25,9 @@ const MarketDetailPage = lazy(() => import('./features/markets/pages/MarketDetai
 const MarketPriceListPage = lazy(() => import('./features/prices/pages/MarketPriceListPage').then((m) => ({ default: m.MarketPriceListPage })));
 const MarketPriceDetailPage = lazy(() => import('./features/prices/pages/MarketPriceDetailPage').then((m) => ({ default: m.MarketPriceDetailPage })));
 const MarketIntelligencePage = lazy(() => import('./features/intelligence/pages/MarketIntelligencePage').then((m) => ({ default: m.MarketIntelligencePage })));
+const DecisionSupportOverviewPage = lazy(() => import('./features/decisionSupport/pages/DecisionSupportOverviewPage').then((m) => ({ default: m.DecisionSupportOverviewPage })));
+const SingleMarketEvaluationPage = lazy(() => import('./features/decisionSupport/pages/SingleMarketEvaluationPage').then((m) => ({ default: m.SingleMarketEvaluationPage })));
+const MarketComparisonPage = lazy(() => import('./features/decisionSupport/pages/MarketComparisonPage').then((m) => ({ default: m.MarketComparisonPage })));
 
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
@@ -70,6 +73,9 @@ export const App: React.FC = () => {
                   <Route path="/farms/:farmId" element={<FarmDetailPage />} />
                   <Route path="/farms/:farmId/edit" element={<EditFarmPage />} />
                   <Route path="/farms/:farmId/crops" element={<FarmCropsPage />} />
+                  <Route path="/decision-support" element={<DecisionSupportOverviewPage />} />
+                  <Route path="/decision-support/evaluate" element={<SingleMarketEvaluationPage />} />
+                  <Route path="/decision-support/compare" element={<MarketComparisonPage />} />
                 </Route>
               </Route>
             </Routes>
