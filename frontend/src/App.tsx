@@ -29,6 +29,13 @@ const DecisionSupportOverviewPage = lazy(() => import('./features/decisionSuppor
 const SingleMarketEvaluationPage = lazy(() => import('./features/decisionSupport/pages/SingleMarketEvaluationPage').then((m) => ({ default: m.SingleMarketEvaluationPage })));
 const MarketComparisonPage = lazy(() => import('./features/decisionSupport/pages/MarketComparisonPage').then((m) => ({ default: m.MarketComparisonPage })));
 
+// Module 10 — Farm Economics routes
+const FarmEconomicsDashboardPage = lazy(() => import('./features/farmEconomics/pages/FarmEconomicsDashboardPage').then((m) => ({ default: m.FarmEconomicsDashboardPage })));
+const CreateFarmEconomicPage = lazy(() => import('./features/farmEconomics/pages/CreateFarmEconomicPage').then((m) => ({ default: m.CreateFarmEconomicPage })));
+const EditFarmEconomicPage = lazy(() => import('./features/farmEconomics/pages/EditFarmEconomicPage').then((m) => ({ default: m.EditFarmEconomicPage })));
+const FarmEconomicDetailPage = lazy(() => import('./features/farmEconomics/pages/FarmEconomicDetailPage').then((m) => ({ default: m.FarmEconomicDetailPage })));
+const FarmMarketComparisonPage = lazy(() => import('./features/farmEconomics/pages/FarmMarketComparisonPage').then((m) => ({ default: m.FarmMarketComparisonPage })));
+
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
     <div className="flex flex-col items-center space-y-4">
@@ -76,6 +83,11 @@ export const App: React.FC = () => {
                   <Route path="/decision-support" element={<DecisionSupportOverviewPage />} />
                   <Route path="/decision-support/evaluate" element={<SingleMarketEvaluationPage />} />
                   <Route path="/decision-support/compare" element={<MarketComparisonPage />} />
+                  <Route path="/farm-economics" element={<FarmEconomicsDashboardPage />} />
+                  <Route path="/farm-economics/new" element={<CreateFarmEconomicPage />} />
+                  <Route path="/farm-economics/compare" element={<FarmMarketComparisonPage />} />
+                  <Route path="/farm-economics/:id" element={<FarmEconomicDetailPage />} />
+                  <Route path="/farm-economics/:id/edit" element={<EditFarmEconomicPage />} />
                 </Route>
               </Route>
             </Routes>

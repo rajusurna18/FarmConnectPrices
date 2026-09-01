@@ -52,6 +52,12 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerUid;
     }
 
+    // Farm Economics Collection: Authenticated farmers access only their own economic records
+    match /farmEconomics/{recordId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerUid;
+    }
+
     // Master Reference Crops Collection: Read-only for authenticated users
     match /crops/{cropId} {
       allow read: if request.auth != null;
