@@ -18,6 +18,7 @@ public class AiDecisionContext {
     private List<MarketEvaluationResponse> marketEvaluations = new ArrayList<>();
     private FarmProfitabilityEvaluationResponse profitabilityEvaluation;
     private FarmMarketComparisonResponse marketComparison;
+    private MarketIntelligenceSummaryResponse marketIntelligence;
 
     private BigDecimal quantity;
     private String quantityUnit = "QUINTAL";
@@ -101,6 +102,14 @@ public class AiDecisionContext {
 
     public void setMarketComparison(FarmMarketComparisonResponse marketComparison) {
         this.marketComparison = marketComparison;
+    }
+
+    public MarketIntelligenceSummaryResponse getMarketIntelligence() {
+        return marketIntelligence;
+    }
+
+    public void setMarketIntelligence(MarketIntelligenceSummaryResponse marketIntelligence) {
+        this.marketIntelligence = marketIntelligence;
     }
 
     public BigDecimal getQuantity() {

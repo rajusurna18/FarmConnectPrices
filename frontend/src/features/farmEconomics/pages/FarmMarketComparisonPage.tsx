@@ -31,14 +31,14 @@ export const FarmMarketComparisonPage: React.FC = () => {
     } else if (records && records.length > 0 && !selectedRecordId) {
       setSelectedRecordId(records[0].id);
     }
-  }, [recordIdParam, records]);
+  }, [recordIdParam, records, selectedRecordId]);
 
   // Pre-select first 3 markets when markets load
   useEffect(() => {
     if (markets && markets.length > 0 && selectedMarketIds.length === 0) {
       setSelectedMarketIds(markets.slice(0, 3).map((m) => m.id));
     }
-  }, [markets]);
+  }, [markets, selectedMarketIds.length]);
 
   const toggleMarketSelection = (marketId: string) => {
     setSelectedMarketIds((prev) =>
@@ -109,7 +109,7 @@ export const FarmMarketComparisonPage: React.FC = () => {
             <label className="block text-xs font-medium text-slate-300 mb-1">Price Basis</label>
             <select
               value={priceBasis}
-              onChange={(e) => setPriceBasis(e.target.value as any)}
+              onChange={(e) => setPriceBasis(e.target.value as 'MODAL' | 'MIN' | 'MAX')}
               className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 text-white rounded-lg text-xs focus:outline-none focus:border-emerald-500"
             >
               <option value="MODAL">MODAL Price</option>
@@ -122,7 +122,7 @@ export const FarmMarketComparisonPage: React.FC = () => {
             <label className="block text-xs font-medium text-slate-300 mb-1">Price Mode</label>
             <select
               value={priceMode}
-              onChange={(e) => setPriceMode(e.target.value as any)}
+              onChange={(e) => setPriceMode(e.target.value as 'LATEST_AVAILABLE' | 'EXACT_DATE')}
               className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 text-white rounded-lg text-xs focus:outline-none focus:border-emerald-500"
             >
               <option value="LATEST_AVAILABLE">Latest Available Price</option>
@@ -137,7 +137,7 @@ export const FarmMarketComparisonPage: React.FC = () => {
             Select Target Markets to Compare ({selectedMarketIds.length} selected):
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-48 overflow-y-auto p-3 bg-slate-900/60 rounded-xl border border-slate-700/50">
-            {markets?.map((m: any) => {
+            {markets?.map((m) => {
               const isSelected = selectedMarketIds.includes(m.id);
               return (
                 <button
@@ -151,7 +151,7 @@ export const FarmMarketComparisonPage: React.FC = () => {
                   }`}
                 >
                   <div className="truncate font-semibold">{m.name}</div>
-                  <div className="text-[10px] text-slate-400">{m.location?.district}</div>
+                  <div className="text-[10px] text-slate-400">{m.district}</div>
                 </button>
               );
             })}

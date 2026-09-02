@@ -56,6 +56,7 @@ class AiDecisionServiceTest {
         when(contextBuilder.buildContext(eq(farmerUid), any())).thenReturn(context);
 
         AiDecisionResponse rawResponse = new AiDecisionResponse();
+        rawResponse.setDecisionType(AiDecisionType.MARKET_SELECTION);
         rawResponse.setSummary("Market 1 is recommended.");
         when(decisionEngine.generateDecision(any(), any())).thenReturn(rawResponse);
 
@@ -65,5 +66,88 @@ class AiDecisionServiceTest {
         assertEquals(AiConfidenceLevel.HIGH, result.getConfidence());
         assertNotNull(result.getSummary());
         assertFalse(result.getLimitations().isEmpty());
+    }
+
+    @Test
+    void testConfidenceLevel_LowWhenMissingVerifiedPrice() {
+        String farmerUid = "farmer-1";
+        AiDecisionRequest request = new AiDecisionRequest();
+        request.setDecisionType(AiDecisionType.MARKET_SELECTION);
+
+        AiDecisionContext context = new AiDecisionContext();
+        context.setHasVerifiedPrice(false); // missing price
+
+        when(contextBuilder.buildContext(eq(farmerUid), any())).thenReturn(context);
+
+        AiDecisionResponse rawResponse = new AiDecisionResponse();
+        rawResponse.setDecisionType(AiDecisionType.MARKET_SELECTION);
+        rawResponse.setSummary("No price available");
+        when(decisionEngine.generateDecision(any(), any())).thenReturn(rawResponse);
+
+        AiDecisionResponse result = service.processDecisionRequest(farmerUid, request);
+        assertEquals(AiConfidenceLevel.LOW, result.getConfidence());
+    }
+
+    @Test
+    void testConfidenceLevel_MediumWhenStalePrice() {
+        String farmerUid = "farmer-1";
+        AiDecisionRequest request = new AiDecisionRequest();
+        request.setDecisionType(AiDecisionType.MARKET_SELECTION);
+
+        AiDecisionContext context = new AiDecisionContext();
+        context.setHasVerifiedPrice(true);
+        context.setHasStalePrice(true); // stale price
+
+        when(contextBuilder.buildContext(eq(farmerUid), any())).thenReturn(context);
+
+        AiDecisionResponse rawResponse = new AiDecisionResponse();
+        rawResponse.setDecisionType(AiDecisionType.MARKET_SELECTION);
+        rawResponse.setSummary("Stale price recommendation");
+        when(decisionEngine.generateDecision(any(), any())).thenReturn(rawResponse);
+
+        AiDecisionResponse result = service.processDecisionRequest(farmerUid, request);
+        assertEquals(AiConfidenceLevel.MEDIUM, result.getConfidence());
+    }
+
+    @Test
+    void testConfidenceLevel_LowWhenMissingRequiredEconomicsRecordForProfitability() {
+        String farmerUid = "farmer-1";
+        AiDecisionRequest request = new AiDecisionRequest();
+        request.setDecisionType(AiDecisionType.PROFITABILITY_EXPLANATION);
+
+        AiDecisionContext context = new AiDecisionContext();
+        context.setHasVerifiedPrice(true);
+        context.setProfitabilityEvaluation(null); // missing profitability evaluation
+
+        when(contextBuilder.buildContext(eq(farmerUid), any())).thenReturn(context);
+
+        AiDecisionResponse rawResponse = new AiDecisionResponse();
+        rawResponse.setDecisionType(AiDecisionType.PROFITABILITY_EXPLANATION);
+        rawResponse.setSummary("Profitability requested without record");
+        when(decisionEngine.generateDecision(any(), any())).thenReturn(rawResponse);
+
+        AiDecisionResponse result = service.processDecisionRequest(farmerUid, request);
+        assertEquals(AiConfidenceLevel.LOW, result.getConfidence());
+    }
+
+    @Test
+    void testInvalidSchemaTriggersFallbackToRuleBasedEngine() {
+        String farmerUid = "farmer-1";
+        AiDecisionRequest request = new AiDecisionRequest();
+        request.setDecisionType(AiDecisionType.MARKET_SELECTION);
+
+        AiDecisionContext context = new AiDecisionContext();
+        context.setHasVerifiedPrice(true);
+        when(contextBuilder.buildContext(eq(farmerUid), any())).thenReturn(context);
+
+        // Invalid response missing summary and required arrays
+        AiDecisionResponse invalidResponse = new AiDecisionResponse();
+        invalidResponse.setSummary(null);
+        when(decisionEngine.generateDecision(any(), any())).thenReturn(invalidResponse);
+
+        AiDecisionResponse result = service.processDecisionRequest(farmerUid, request);
+        assertNotNull(result);
+        assertNotNull(result.getSummary());
+        assertTrue(result.getLimitations().stream().anyMatch(l -> l.contains("fallback rule engine")));
     }
 }

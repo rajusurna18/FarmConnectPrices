@@ -76,8 +76,9 @@ export const AiDecisionPage: React.FC = () => {
         otherSellingCosts: otherSellingCosts,
       });
       setResult(res);
-    } catch (err: any) {
-      setFormError(err.response?.data?.message || 'Failed to process AI decision support. Please try again.');
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
+      setFormError(errorObj.response?.data?.message || 'Failed to process AI decision support. Please try again.');
     }
   };
 
@@ -182,7 +183,7 @@ export const AiDecisionPage: React.FC = () => {
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
               >
                 <option value="">-- Choose Crop --</option>
-                {crops.map((c: any) => (
+                {crops.map((c) => (
                   <option key={c.id} value={c.id}>{c.name} ({c.category})</option>
                 ))}
               </select>
@@ -199,7 +200,7 @@ export const AiDecisionPage: React.FC = () => {
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
               >
                 <option value="">-- Optional Saved Record --</option>
-                {economicRecords.map((r: any) => (
+                {economicRecords.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.cropName} ({r.farmName} - {r.season})
                   </option>
@@ -268,7 +269,7 @@ export const AiDecisionPage: React.FC = () => {
               Select Target Markets to Evaluate ({selectedMarketIds.length} selected):
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-3 bg-slate-950 rounded-xl border border-slate-800">
-              {markets.map((m: any) => {
+              {markets.map((m) => {
                 const isSelected = selectedMarketIds.includes(m.id);
                 return (
                   <button

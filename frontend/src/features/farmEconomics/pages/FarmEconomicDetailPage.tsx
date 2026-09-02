@@ -181,9 +181,9 @@ export const FarmEconomicDetailPage: React.FC = () => {
               className="w-full px-3 py-2 bg-slate-900 border border-slate-700 text-white rounded-lg text-xs focus:outline-none focus:border-emerald-500"
             >
               <option value="">-- Choose Market --</option>
-              {markets?.map((m: any) => (
+              {markets?.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.name} ({m.location?.district})
+                  {m.name} ({m.district})
                 </option>
               ))}
             </select>
@@ -193,7 +193,7 @@ export const FarmEconomicDetailPage: React.FC = () => {
             <label className="block text-xs font-medium text-slate-300 mb-1">Price Basis</label>
             <select
               value={priceBasis}
-              onChange={(e) => setPriceBasis(e.target.value as any)}
+              onChange={(e) => setPriceBasis(e.target.value as 'MODAL' | 'MIN' | 'MAX')}
               className="w-full px-3 py-2 bg-slate-900 border border-slate-700 text-white rounded-lg text-xs focus:outline-none focus:border-emerald-500"
             >
               <option value="MODAL">MODAL Price (Recommended)</option>
@@ -206,7 +206,7 @@ export const FarmEconomicDetailPage: React.FC = () => {
             <label className="block text-xs font-medium text-slate-300 mb-1">Price Date Mode</label>
             <select
               value={priceMode}
-              onChange={(e) => setPriceMode(e.target.value as any)}
+              onChange={(e) => setPriceMode(e.target.value as 'LATEST_AVAILABLE' | 'EXACT_DATE')}
               className="w-full px-3 py-2 bg-slate-900 border border-slate-700 text-white rounded-lg text-xs focus:outline-none focus:border-emerald-500"
             >
               <option value="LATEST_AVAILABLE">Latest Available Price</option>

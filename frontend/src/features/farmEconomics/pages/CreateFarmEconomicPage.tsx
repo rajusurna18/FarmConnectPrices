@@ -53,7 +53,7 @@ export const CreateFarmEconomicPage: React.FC = () => {
     setProductionCosts((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleCostChange = (index: number, field: keyof ProductionCostItem, value: any) => {
+  const handleCostChange = (index: number, field: keyof ProductionCostItem, value: string | number) => {
     setProductionCosts((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
@@ -107,8 +107,9 @@ export const CreateFarmEconomicPage: React.FC = () => {
         },
       });
       navigate('/farm-economics');
-    } catch (err: any) {
-      setErrorMsg(err.response?.data || err.message || 'Failed to save economic record.');
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: string }; message?: string };
+      setErrorMsg(errorObj.response?.data || errorObj.message || 'Failed to save economic record.');
     }
   };
 
@@ -185,7 +186,7 @@ export const CreateFarmEconomicPage: React.FC = () => {
               <label className="block text-xs font-medium text-slate-300 mb-1">Crop Season *</label>
               <select
                 value={season}
-                onChange={(e) => setSeason(e.target.value as any)}
+                onChange={(e) => setSeason(e.target.value as 'KHARIF' | 'RABI' | 'ZAID')}
                 className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700 text-white rounded-lg text-sm focus:outline-none focus:border-emerald-500"
               >
                 <option value="KHARIF">KHARIF (Monsoon)</option>
@@ -211,7 +212,7 @@ export const CreateFarmEconomicPage: React.FC = () => {
                 <label className="block text-xs font-medium text-slate-300 mb-1">Area Unit</label>
                 <select
                   value={cultivatedAreaUnit}
-                  onChange={(e) => setCultivatedAreaUnit(e.target.value as any)}
+                  onChange={(e) => setCultivatedAreaUnit(e.target.value as 'ACRE' | 'HECTARE')}
                   className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700 text-white rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                 >
                   <option value="ACRE">ACRE</option>
@@ -237,7 +238,7 @@ export const CreateFarmEconomicPage: React.FC = () => {
                 <label className="block text-xs font-medium text-slate-300 mb-1">Yield Unit *</label>
                 <select
                   value={yieldUnit}
-                  onChange={(e) => setYieldUnit(e.target.value as any)}
+                  onChange={(e) => setYieldUnit(e.target.value as 'QUINTAL' | 'KG' | 'TON')}
                   className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700 text-white rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                 >
                   <option value="QUINTAL">QUINTAL (100 kg)</option>

@@ -22,19 +22,22 @@ public class AiDecisionContextBuilder {
     private final MarketPriceService marketPriceService;
     private final DecisionSupportService decisionSupportService;
     private final FarmEconomicsService farmEconomicsService;
+    private final MarketIntelligenceService marketIntelligenceService;
 
     public AiDecisionContextBuilder(FarmService farmService,
                                     CropMasterService cropMasterService,
                                     MarketService marketService,
                                     MarketPriceService marketPriceService,
                                     DecisionSupportService decisionSupportService,
-                                    FarmEconomicsService farmEconomicsService) {
+                                    FarmEconomicsService farmEconomicsService,
+                                    MarketIntelligenceService marketIntelligenceService) {
         this.farmService = farmService;
         this.cropMasterService = cropMasterService;
         this.marketService = marketService;
         this.marketPriceService = marketPriceService;
         this.decisionSupportService = decisionSupportService;
         this.farmEconomicsService = farmEconomicsService;
+        this.marketIntelligenceService = marketIntelligenceService;
     }
 
     public AiDecisionContext buildContext(String farmerUid, AiDecisionRequest request) {
@@ -146,6 +149,22 @@ public class AiDecisionContextBuilder {
                 }
             }
             context.setMarketEvaluations(evaluations);
+
+            // Fetch Module 08 Market Intelligence
+            if (context.getCrop() != null && !candidateMarkets.isEmpty()) {
+                try {
+                    String primaryMktId = candidateMarkets.get(0).getId();
+                    MarketIntelligenceSummaryResponse intelSummary = marketIntelligenceService.getSummary(
+                            context.getCrop().getId(),
+                            primaryMktId,
+                            null, null, null, null,
+                            context.getQuantityUnit()
+                    );
+                    context.setMarketIntelligence(intelSummary);
+                } catch (Exception e) {
+                    log.warn("Could not fetch Market Intelligence summary: {}", e.getMessage());
+                }
+            }
         }
 
         // 6. Evaluate Farm Profitability via FarmEconomicsService (Module 10)

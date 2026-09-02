@@ -139,6 +139,10 @@ public class RuleBasedAiDecisionEngine implements AiDecisionEngine {
             BigDecimal diff = best.getEstimatedNetRealization().subtract(runnerUp.getEstimatedNetRealization());
             reasoning.add("Outperforms " + runnerUpName + " by an estimated net realization advantage of ₹" + diff + ".");
         }
+        if (context.getMarketIntelligence() != null && context.getMarketIntelligence().getTrendDirection() != null) {
+            reasoning.add("Market Intelligence Trend: " + context.getMarketIntelligence().getTrendDirection() +
+                    " (Latest Modal Price: ₹" + context.getMarketIntelligence().getLatestModalPrice() + " on " + context.getMarketIntelligence().getLatestObservationDate() + ")");
+        }
         response.setReasoning(reasoning);
 
         // Risks

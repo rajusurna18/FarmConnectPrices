@@ -29,6 +29,8 @@ class AiDecisionContextBuilderTest {
     private DecisionSupportService decisionSupportService;
     @Mock
     private FarmEconomicsService farmEconomicsService;
+    @Mock
+    private MarketIntelligenceService marketIntelligenceService;
 
     private AiDecisionContextBuilder contextBuilder;
 
@@ -37,7 +39,8 @@ class AiDecisionContextBuilderTest {
         MockitoAnnotations.openMocks(this);
         contextBuilder = new AiDecisionContextBuilder(
                 farmService, cropMasterService, marketService,
-                marketPriceService, decisionSupportService, farmEconomicsService
+                marketPriceService, decisionSupportService, farmEconomicsService,
+                marketIntelligenceService
         );
     }
 

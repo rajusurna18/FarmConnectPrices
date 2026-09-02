@@ -66,6 +66,17 @@ public class AiDecisionValidator {
         return response;
     }
 
+    public boolean isValidSchema(AiDecisionResponse response) {
+        if (response == null) return false;
+        if (response.getDecisionType() == null) return false;
+        if (response.getSummary() == null || response.getSummary().isBlank()) return false;
+        if (response.getVerifiedFacts() == null) return false;
+        if (response.getReasoning() == null) return false;
+        if (response.getRisks() == null) return false;
+        if (response.getNextSteps() == null) return false;
+        return true;
+    }
+
     private String sanitizeString(String text) {
         if (text == null) return "";
         String result = text;

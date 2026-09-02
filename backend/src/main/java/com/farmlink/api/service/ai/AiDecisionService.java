@@ -37,6 +37,12 @@ public class AiDecisionService {
         AiDecisionResponse response;
         try {
             response = decisionEngine.generateDecision(request, context);
+            if (response == null || !validator.isValidSchema(response)) {
+                log.warn("AI Decision Engine returned invalid schema. Triggering RuleBased fallback engine.");
+                RuleBasedAiDecisionEngine fallbackEngine = new RuleBasedAiDecisionEngine();
+                response = fallbackEngine.generateDecision(request, context);
+                response.getLimitations().add("AI provider response failed schema validation; fallback rule engine was utilized.");
+            }
         } catch (Exception e) {
             log.error("AI Decision Engine error: {}. Falling back to rule-based evaluation.", e.getMessage());
             RuleBasedAiDecisionEngine fallbackEngine = new RuleBasedAiDecisionEngine();
@@ -58,6 +64,15 @@ public class AiDecisionService {
             return AiConfidenceLevel.LOW;
         }
 
+        if (request.getDecisionType() == AiDecisionType.PROFITABILITY_EXPLANATION && context.getProfitabilityEvaluation() == null) {
+            return AiConfidenceLevel.LOW;
+        }
+
+        if (request.getDecisionType() == AiDecisionType.MARKET_COMPARISON_EXPLANATION 
+                && (context.getCandidateMarkets() == null || context.getCandidateMarkets().size() < 2)) {
+            return AiConfidenceLevel.LOW;
+        }
+
         if (context.isHasStalePrice()) {
             return AiConfidenceLevel.MEDIUM;
         }
@@ -65,12 +80,8 @@ public class AiDecisionService {
         boolean hasQuantity = context.getQuantity() != null && context.getQuantity().compareTo(BigDecimal.ZERO) > 0;
         boolean hasCrop = context.getCrop() != null;
         boolean hasMarkets = context.getCandidateMarkets() != null && !context.getCandidateMarkets().isEmpty();
-        boolean hasEconomics = context.getEconomicRecord() != null || context.getProfitabilityEvaluation() != null;
 
         if (hasCrop && hasMarkets && hasQuantity) {
-            if (request.getDecisionType() == AiDecisionType.PROFITABILITY_EXPLANATION && !hasEconomics) {
-                return AiConfidenceLevel.MEDIUM;
-            }
             return AiConfidenceLevel.HIGH;
         }
 
