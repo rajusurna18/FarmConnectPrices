@@ -36,6 +36,9 @@ const EditFarmEconomicPage = lazy(() => import('./features/farmEconomics/pages/E
 const FarmEconomicDetailPage = lazy(() => import('./features/farmEconomics/pages/FarmEconomicDetailPage').then((m) => ({ default: m.FarmEconomicDetailPage })));
 const FarmMarketComparisonPage = lazy(() => import('./features/farmEconomics/pages/FarmMarketComparisonPage').then((m) => ({ default: m.FarmMarketComparisonPage })));
 
+// Module 11 — AI Decision Intelligence routes
+const AiDecisionPage = lazy(() => import('./features/aiDecision/pages/AiDecisionPage').then((m) => ({ default: m.AiDecisionPage })));
+
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
     <div className="flex flex-col items-center space-y-4">
@@ -88,6 +91,7 @@ export const App: React.FC = () => {
                   <Route path="/farm-economics/compare" element={<FarmMarketComparisonPage />} />
                   <Route path="/farm-economics/:id" element={<FarmEconomicDetailPage />} />
                   <Route path="/farm-economics/:id/edit" element={<EditFarmEconomicPage />} />
+                  <Route path="/ai-decisions" element={<AiDecisionPage />} />
                 </Route>
               </Route>
             </Routes>
