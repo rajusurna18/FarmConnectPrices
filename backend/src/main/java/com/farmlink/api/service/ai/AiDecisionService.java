@@ -1,5 +1,6 @@
 package com.farmlink.api.service.ai;
 
+import com.farmlink.api.dto.MarketTrendResponse;
 import com.farmlink.api.dto.ai.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +72,20 @@ public class AiDecisionService {
         if (request.getDecisionType() == AiDecisionType.MARKET_COMPARISON_EXPLANATION 
                 && (context.getCandidateMarkets() == null || context.getCandidateMarkets().size() < 2)) {
             return AiConfidenceLevel.LOW;
+        }
+
+        if (request.getDecisionType() == AiDecisionType.MARKET_TREND_EXPLANATION) {
+            MarketTrendResponse trend = context.getMarketTrend();
+            if (trend == null || trend.getObservationCount() < 2 || "INSUFFICIENT".equalsIgnoreCase(trend.getDataQuality())) {
+                return AiConfidenceLevel.LOW;
+            }
+            if ("STALE".equalsIgnoreCase(trend.getFreshnessStatus()) || "LIMITED".equalsIgnoreCase(trend.getDataQuality())) {
+                return AiConfidenceLevel.MEDIUM;
+            }
+            if ("GOOD".equalsIgnoreCase(trend.getDataQuality()) && "FRESH".equalsIgnoreCase(trend.getFreshnessStatus())) {
+                return AiConfidenceLevel.HIGH;
+            }
+            return AiConfidenceLevel.MEDIUM;
         }
 
         if (context.isHasStalePrice()) {

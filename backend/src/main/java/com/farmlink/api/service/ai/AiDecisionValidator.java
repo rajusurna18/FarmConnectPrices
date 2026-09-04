@@ -19,6 +19,10 @@ public class AiDecisionValidator {
             Pattern.compile("(?i)guaranteed\\s+profit"),
             Pattern.compile("(?i)price\\s+will\\s+rise"),
             Pattern.compile("(?i)price\\s+will\\s+drop"),
+            Pattern.compile("(?i)price\\s+will\\s+fall"),
+            Pattern.compile("(?i)price\\s+will\\s+reach"),
+            Pattern.compile("(?i)guaranteed\\s+price"),
+            Pattern.compile("(?i)will\\s+increase\\s+tomorrow"),
             Pattern.compile("(?i)guaranteed\\s+to\\s+give"),
             Pattern.compile("(?i)100%\\s+certain")
     );

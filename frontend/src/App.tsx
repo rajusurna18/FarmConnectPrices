@@ -25,6 +25,7 @@ const MarketDetailPage = lazy(() => import('./features/markets/pages/MarketDetai
 const MarketPriceListPage = lazy(() => import('./features/prices/pages/MarketPriceListPage').then((m) => ({ default: m.MarketPriceListPage })));
 const MarketPriceDetailPage = lazy(() => import('./features/prices/pages/MarketPriceDetailPage').then((m) => ({ default: m.MarketPriceDetailPage })));
 const MarketIntelligencePage = lazy(() => import('./features/intelligence/pages/MarketIntelligencePage').then((m) => ({ default: m.MarketIntelligencePage })));
+const MarketTrendsPage = lazy(() => import('./features/intelligence/pages/MarketTrendsPage').then((m) => ({ default: m.MarketTrendsPage })));
 const DecisionSupportOverviewPage = lazy(() => import('./features/decisionSupport/pages/DecisionSupportOverviewPage').then((m) => ({ default: m.DecisionSupportOverviewPage })));
 const SingleMarketEvaluationPage = lazy(() => import('./features/decisionSupport/pages/SingleMarketEvaluationPage').then((m) => ({ default: m.SingleMarketEvaluationPage })));
 const MarketComparisonPage = lazy(() => import('./features/decisionSupport/pages/MarketComparisonPage').then((m) => ({ default: m.MarketComparisonPage })));
@@ -75,6 +76,7 @@ export const App: React.FC = () => {
                 <Route path="/market-prices" element={<MarketPriceListPage />} />
                 <Route path="/market-prices/:priceId" element={<MarketPriceDetailPage />} />
                 <Route path="/market-intelligence" element={<MarketIntelligencePage />} />
+                <Route path="/market-trends" element={<MarketTrendsPage />} />
 
                 {/* FARMER Role Restricted Routes */}
                 <Route element={<FarmerRoute />}>

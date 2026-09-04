@@ -3,6 +3,7 @@ package com.farmlink.api.service.ai;
 import com.farmlink.api.dto.*;
 import com.farmlink.api.dto.ai.AiDecisionContext;
 import com.farmlink.api.dto.ai.AiDecisionRequest;
+import com.farmlink.api.dto.ai.AiDecisionType;
 import com.farmlink.api.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,7 @@ public class AiDecisionContextBuilder {
     private final DecisionSupportService decisionSupportService;
     private final FarmEconomicsService farmEconomicsService;
     private final MarketIntelligenceService marketIntelligenceService;
+    private final MarketTrendService marketTrendService;
 
     public AiDecisionContextBuilder(FarmService farmService,
                                     CropMasterService cropMasterService,
@@ -31,6 +33,19 @@ public class AiDecisionContextBuilder {
                                     DecisionSupportService decisionSupportService,
                                     FarmEconomicsService farmEconomicsService,
                                     MarketIntelligenceService marketIntelligenceService) {
+        this(farmService, cropMasterService, marketService, marketPriceService, decisionSupportService, farmEconomicsService, marketIntelligenceService,
+                new MarketTrendService(marketPriceService, marketService, cropMasterService, new PriceUnitConversionService()));
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AiDecisionContextBuilder(FarmService farmService,
+                                    CropMasterService cropMasterService,
+                                    MarketService marketService,
+                                    MarketPriceService marketPriceService,
+                                    DecisionSupportService decisionSupportService,
+                                    FarmEconomicsService farmEconomicsService,
+                                    MarketIntelligenceService marketIntelligenceService,
+                                    @org.springframework.beans.factory.annotation.Autowired(required = false) MarketTrendService marketTrendService) {
         this.farmService = farmService;
         this.cropMasterService = cropMasterService;
         this.marketService = marketService;
@@ -38,6 +53,8 @@ public class AiDecisionContextBuilder {
         this.decisionSupportService = decisionSupportService;
         this.farmEconomicsService = farmEconomicsService;
         this.marketIntelligenceService = marketIntelligenceService;
+        this.marketTrendService = (marketTrendService != null) ? marketTrendService :
+                new MarketTrendService(marketPriceService, marketService, cropMasterService, new PriceUnitConversionService());
     }
 
     public AiDecisionContext buildContext(String farmerUid, AiDecisionRequest request) {
@@ -207,6 +224,26 @@ public class AiDecisionContextBuilder {
                 } catch (Exception e) {
                     log.warn("Could not compare markets for record {}: {}", context.getEconomicRecord().getId(), e.getMessage());
                 }
+            }
+        }
+
+        // 7. Market Trend Lookup (Module 12)
+        if (request.getDecisionType() == AiDecisionType.MARKET_TREND_EXPLANATION || request.getCropId() != null) {
+            try {
+                String mktId = (!candidateMarkets.isEmpty()) ? candidateMarkets.get(0).getId() : null;
+                MarketTrendResponse trendRes = marketTrendService.calculateTrend(
+                        request.getCropId(),
+                        mktId,
+                        "30D",
+                        null, null,
+                        context.getQuantityUnit()
+                );
+                context.setMarketTrend(trendRes);
+                if (trendRes != null && "FRESH".equalsIgnoreCase(trendRes.getFreshnessStatus())) {
+                    context.setHasVerifiedPrice(true);
+                }
+            } catch (Exception e) {
+                log.warn("Could not fetch Market Trend intelligence context: {}", e.getMessage());
             }
         }
 

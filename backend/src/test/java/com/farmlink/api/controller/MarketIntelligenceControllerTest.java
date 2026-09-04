@@ -3,8 +3,10 @@ package com.farmlink.api.controller;
 import com.farmlink.api.dto.CropResponse;
 import com.farmlink.api.dto.MarketComparisonResponse;
 import com.farmlink.api.dto.MarketIntelligenceSummaryResponse;
+import com.farmlink.api.dto.MarketTrendResponse;
 import com.farmlink.api.dto.PriceTrendResponse;
 import com.farmlink.api.service.MarketIntelligenceService;
+import com.farmlink.api.service.MarketTrendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +19,14 @@ import static org.mockito.Mockito.*;
 class MarketIntelligenceControllerTest {
 
     private MarketIntelligenceService intelligenceService;
+    private MarketTrendService trendService;
     private MarketIntelligenceController controller;
 
     @BeforeEach
     void setUp() {
         intelligenceService = mock(MarketIntelligenceService.class);
-        controller = new MarketIntelligenceController(intelligenceService);
+        trendService = mock(MarketTrendService.class);
+        controller = new MarketIntelligenceController(intelligenceService, trendService, null);
     }
 
     @Test
@@ -73,13 +77,18 @@ class MarketIntelligenceControllerTest {
 
     @Test
     void getTrends_returnsOkResponse() {
-        PriceTrendResponse mockTrend = new PriceTrendResponse(
-                "crop-cotton", "Cotton", null, "All Markets", "INR", "KG", List.of(), "INSUFFICIENT_DATA", 0.0, null
-        );
-        when(intelligenceService.getTrends(eq("crop-cotton"), any(), any(), any(), eq("KG")))
+        MarketTrendResponse mockTrend = new MarketTrendResponse();
+        mockTrend.setCropId("crop-cotton");
+        mockTrend.setCropName("Cotton");
+        mockTrend.setTrendDirection("INSUFFICIENT_DATA");
+        mockTrend.setUnit("KG");
+
+        when(trendService.calculateTrend(eq("crop-cotton"), any(), any(), any(), any(), eq("KG")))
                 .thenReturn(mockTrend);
 
-        ResponseEntity<PriceTrendResponse> response = controller.getTrends("crop-cotton", null, null, null, null, "KG");
+        ResponseEntity<MarketTrendResponse> response = controller.getTrends(
+                "crop-cotton", null, null, null, null, null, null, null, "KG", false, null
+        );
 
         assertNotNull(response.getBody());
         assertEquals("INSUFFICIENT_DATA", response.getBody().getTrendDirection());

@@ -51,6 +51,9 @@ public class RuleBasedAiDecisionEngine implements AiDecisionEngine {
             case SELLING_DECISION_SUPPORT:
                 handleSellingDecisionSupport(request, context, response);
                 break;
+            case MARKET_TREND_EXPLANATION:
+                handleMarketTrendExplanation(request, context, response);
+                break;
             default:
                 handleMarketSelection(request, context, response);
                 break;
@@ -325,6 +328,57 @@ public class RuleBasedAiDecisionEngine implements AiDecisionEngine {
         nextSteps.add("Compare prices across 2-3 nearby mandis.");
         nextSteps.add("Negotiate transport costs upfront with local logistics providers.");
         nextSteps.add("Ensure produce meets mandi quality and moisture standards.");
+        response.setNextSteps(nextSteps);
+    }
+
+    private void handleMarketTrendExplanation(AiDecisionRequest request, AiDecisionContext context, AiDecisionResponse response) {
+        MarketTrendResponse trend = context.getMarketTrend();
+        String cropName = context.getCrop() != null ? context.getCrop().getName() : (trend != null ? trend.getCropName() : "Crop");
+        String marketName = trend != null && trend.getMarketName() != null ? trend.getMarketName() : "All Markets";
+
+        if (trend == null || trend.getObservationCount() == 0) {
+            response.setSummary("Insufficient verified price observations to evaluate market trends for " + cropName + " at " + marketName + ".");
+            response.setRecommendation("Verify current market prices directly with local mandis.");
+            response.getVerifiedFacts().add("No verified historical price observations found matching criteria.");
+            response.getRisks().add("Trend calculations require verified historical price observations.");
+            response.getNextSteps().add("Check back when new mandi price records are ingested or select a broader date range.");
+            return;
+        }
+
+        String dir = trend.getTrendDirection() != null ? trend.getTrendDirection() : "STABLE";
+        String vol = trend.getVolatility() != null ? trend.getVolatility() : "INSUFFICIENT_DATA";
+        String qual = trend.getDataQuality() != null ? trend.getDataQuality() : "INSUFFICIENT";
+        String unit = trend.getUnit() != null ? trend.getUnit() : "QUINTAL";
+
+        response.setSummary("Historical market trend for " + cropName + " at " + marketName + " shows a " + dir + " movement over " + trend.getPeriod() + " with " + vol + " volatility (" + qual + " data quality).");
+        response.setRecommendation(trend.getCurrentVsAverageStatement() != null ? trend.getCurrentVsAverageStatement() : ("Historical " + dir + " trend"));
+
+        List<String> facts = new ArrayList<>();
+        facts.add("Latest verified modal price: ₹" + String.format("%,.2f", trend.getLatestPrice()) + " / " + unit + " (Observed: " + trend.getLatestObservationDate() + ")");
+        facts.add("Selected period average price: ₹" + String.format("%,.2f", trend.getAvgPrice()) + " / " + unit + " (Min: ₹" + String.format("%,.2f", trend.getMinPrice()) + ", Max: ₹" + String.format("%,.2f", trend.getMaxPrice()) + ")");
+        if (trend.getAbsoluteChange() != null) {
+            String sign = trend.getAbsoluteChange() >= 0 ? "+" : "";
+            String pctStr = trend.getPercentageChange() != null ? String.format("%.2f%%", trend.getPercentageChange()) : "N/A";
+            facts.add("Historical price change over period: " + sign + "₹" + String.format("%,.2f", trend.getAbsoluteChange()) + " (" + pctStr + ")");
+        }
+        facts.add("Deterministic classification: Trend = " + dir + ", Volatility = " + vol + ", Data Quality = " + qual + " (" + trend.getObservationCount() + " observations)");
+        response.setVerifiedFacts(facts);
+
+        List<String> reasoning = new ArrayList<>();
+        reasoning.add("Trend direction (" + dir + ") is determined deterministically from verified historical observations without predictive modeling.");
+        if (trend.getCurrentVsAverageStatement() != null) {
+            reasoning.add(trend.getCurrentVsAverageStatement());
+        }
+        response.setReasoning(reasoning);
+
+        List<String> risks = new ArrayList<>();
+        risks.add("Historical trend analysis reflects past verified market records and does not guarantee future price movements.");
+        risks.add("Local daily arrivals, weather, and mandi trading demand can cause sudden price changes.");
+        response.setRisks(risks);
+
+        List<String> nextSteps = new ArrayList<>();
+        nextSteps.add("Verify today's live modal rate at " + marketName + " before dispatching produce.");
+        nextSteps.add("Compare prices across alternate mandis to maximize net realization after transport costs.");
         response.setNextSteps(nextSteps);
     }
 }

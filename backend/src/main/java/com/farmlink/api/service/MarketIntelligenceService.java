@@ -16,6 +16,7 @@ public class MarketIntelligenceService {
     private final MarketService marketService;
     private final CropMasterService cropMasterService;
     private final PriceUnitConversionService conversionService;
+    private final MarketTrendService marketTrendService;
 
     public MarketIntelligenceService(
             MarketPriceService marketPriceService,
@@ -23,10 +24,24 @@ public class MarketIntelligenceService {
             CropMasterService cropMasterService,
             PriceUnitConversionService conversionService
     ) {
+        this(marketPriceService, marketService, cropMasterService, conversionService,
+                new MarketTrendService(marketPriceService, marketService, cropMasterService, conversionService));
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public MarketIntelligenceService(
+            MarketPriceService marketPriceService,
+            MarketService marketService,
+            CropMasterService cropMasterService,
+            PriceUnitConversionService conversionService,
+            MarketTrendService marketTrendService
+    ) {
         this.marketPriceService = marketPriceService;
         this.marketService = marketService;
         this.cropMasterService = cropMasterService;
         this.conversionService = conversionService;
+        this.marketTrendService = (marketTrendService != null) ? marketTrendService :
+                new MarketTrendService(marketPriceService, marketService, cropMasterService, conversionService);
     }
 
     public MarketComparisonResponse compareMarkets(
@@ -258,105 +273,34 @@ public class MarketIntelligenceService {
     public PriceTrendResponse getTrends(
             String cropId, String marketId, String fromDate, String toDate, String unit
     ) {
-        String targetCropId = (cropId != null && !cropId.trim().isEmpty()) ? cropId.trim() : null;
-        String targetUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : MarketPriceService.UNIT_QUINTAL;
+        String period = (fromDate != null || toDate != null) ? "CUSTOM" : "30D";
+        MarketTrendResponse res = marketTrendService.calculateTrend(cropId, marketId, period, fromDate, toDate, unit);
 
-        CropResponse crop = null;
-        if (targetCropId != null) {
-            try {
-                crop = cropMasterService.getCropById(targetCropId);
-            } catch (Exception ignored) {
-            }
-        }
-
-        MarketResponse market = null;
-        if (marketId != null && !marketId.trim().isEmpty()) {
-            try {
-                market = marketService.getMarketById(marketId);
-            } catch (Exception ignored) {
-            }
-        }
-
-        List<MarketPriceSummaryResponse> summaries = marketPriceService.getMarketPrices(
-                marketId,
-                targetCropId,
-                null,
-                fromDate,
-                toDate,
-                MarketPriceService.QUALITY_VERIFIED,
-                targetUnit,
-                null,
-                null,
-                100
-        );
-
-        if (summaries == null) {
-            summaries = Collections.emptyList();
-        }
-
-        List<MarketPriceSummaryResponse> normalized = new ArrayList<>();
-        for (MarketPriceSummaryResponse s : summaries) {
-            if (s.getPriceDate() == null) continue;
-            if (s.getCurrency() != null && !s.getCurrency().equalsIgnoreCase(MarketPriceService.CURRENCY_INR)) continue;
-
-            String srcUnit = s.getSourceUnit() != null ? s.getSourceUnit() : s.getUnit();
-            PriceUnitConversionService.ConvertedPriceResult conv = conversionService.convert(
-                    s.getMinPrice(), s.getModalPrice(), s.getMaxPrice(), srcUnit, targetUnit
-            );
-            if (conversionService.isSupportedUnit(targetUnit) && !conversionService.isSupportedUnit(srcUnit) && !srcUnit.equalsIgnoreCase(targetUnit)) {
-                continue;
-            }
-
-            s.setMinPrice(conv.getMinPrice());
-            s.setModalPrice(conv.getModalPrice());
-            s.setMaxPrice(conv.getMaxPrice());
-            s.setUnit(conv.getDisplayUnit());
-            s.setSourceUnit(conv.getSourceUnit());
-            s.setConversionApplied(conv.isConversionApplied());
-            s.setConversionFactor(conv.getConversionFactor());
-            normalized.add(s);
-        }
-
-        normalized.sort(Comparator.comparing(MarketPriceSummaryResponse::getPriceDate));
-
-        List<PriceTrendPointDto> points = new ArrayList<>();
-        for (MarketPriceSummaryResponse s : normalized) {
-            points.add(new PriceTrendPointDto(s.getPriceDate(), s.getModalPrice(), s.getMinPrice(), s.getMaxPrice()));
-        }
-
-        int count = points.size();
-        String trend = "STABLE";
-        double absChange = 0.0;
-        Double pctChange = null;
-
-        if (count < 2) {
-            trend = "INSUFFICIENT_DATA";
-        } else {
-            double firstModal = points.get(0).getModalPrice();
-            double latestModal = points.get(count - 1).getModalPrice();
-            absChange = latestModal - firstModal;
-            if (firstModal > 0.0) {
-                pctChange = (absChange / firstModal) * 100.0;
-            }
-            if (latestModal > firstModal) {
-                trend = "INCREASING";
-            } else if (latestModal < firstModal) {
-                trend = "DECREASING";
-            }
+        String legacyTrend = res.getTrendDirection();
+        if ("RISING".equalsIgnoreCase(legacyTrend)) {
+            legacyTrend = "INCREASING";
+        } else if ("FALLING".equalsIgnoreCase(legacyTrend)) {
+            legacyTrend = "DECREASING";
         }
 
         return new PriceTrendResponse(
-                targetCropId,
-                crop != null ? crop.getName() : targetCropId,
-                marketId,
-                market != null ? market.getName() : "All Markets",
-                MarketPriceService.CURRENCY_INR,
-                targetUnit,
-                points,
-                trend,
-                absChange,
-                pctChange
+                res.getCropId(),
+                res.getCropName(),
+                res.getMarketId(),
+                res.getMarketName(),
+                res.getCurrency(),
+                res.getUnit(),
+                res.getPoints(),
+                legacyTrend,
+                res.getAbsoluteChange() != null ? res.getAbsoluteChange() : 0.0,
+                res.getPercentageChange()
         );
+    }
+
+    public MarketTrendResponse getMarketTrendIntelligence(
+            String cropId, String marketId, String period, String fromDate, String toDate, String unit
+    ) {
+        return marketTrendService.calculateTrend(cropId, marketId, period, fromDate, toDate, unit);
     }
 
     private MarketSummaryResponse findMarket(String marketId) {

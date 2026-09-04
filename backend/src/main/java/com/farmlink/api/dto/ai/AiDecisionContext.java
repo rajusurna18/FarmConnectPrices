@@ -19,6 +19,7 @@ public class AiDecisionContext {
     private FarmProfitabilityEvaluationResponse profitabilityEvaluation;
     private FarmMarketComparisonResponse marketComparison;
     private MarketIntelligenceSummaryResponse marketIntelligence;
+    private MarketTrendResponse marketTrend;
 
     private BigDecimal quantity;
     private String quantityUnit = "QUINTAL";
@@ -110,6 +111,14 @@ public class AiDecisionContext {
 
     public void setMarketIntelligence(MarketIntelligenceSummaryResponse marketIntelligence) {
         this.marketIntelligence = marketIntelligence;
+    }
+
+    public MarketTrendResponse getMarketTrend() {
+        return marketTrend;
+    }
+
+    public void setMarketTrend(MarketTrendResponse marketTrend) {
+        this.marketTrend = marketTrend;
     }
 
     public BigDecimal getQuantity() {

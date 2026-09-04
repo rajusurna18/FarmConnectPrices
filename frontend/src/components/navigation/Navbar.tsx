@@ -35,6 +35,7 @@ export const Navbar: React.FC = () => {
     { label: 'Markets', href: '/markets' },
     { label: 'Market Prices', href: '/market-prices' },
     { label: 'Intelligence', href: '/market-intelligence' },
+    { label: 'Trends', href: '/market-trends' },
     ...(isFarmer ? [{ label: 'Profitability', href: '/decision-support' }] : []),
     { label: 'About', href: '/#ecosystem' },
   ];

@@ -57,3 +57,8 @@ farmconnectprices:
     cache:
       enabled: ${DISCOVERY_CACHE_ENABLED:true}
       ttl-minutes: ${DISCOVERY_CACHE_TTL_MINUTES:60}
+
+trend:
+  rising-threshold-percent: ${TREND_RISING_THRESHOLD_PERCENT:2.0}
+  falling-threshold-percent: ${TREND_FALLING_THRESHOLD_PERCENT:2.0}
+

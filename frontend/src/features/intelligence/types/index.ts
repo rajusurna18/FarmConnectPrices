@@ -70,12 +70,67 @@ export interface PriceTrendData {
   percentageChange?: number | null;
 }
 
+export interface MarketTrendData {
+  cropId?: string;
+  cropName?: string;
+  marketId?: string;
+  marketName?: string;
+  currency: string;
+  unit: string;
+  period: string;
+  startDate?: string;
+  endDate?: string;
+
+  observationCount: number;
+  earliestPrice?: number | null;
+  latestPrice?: number | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  avgPrice?: number | null;
+  priceRange?: number | null;
+  absoluteChange?: number | null;
+  percentageChange?: number | null;
+
+  trendDirection: 'RISING' | 'FALLING' | 'STABLE' | 'INSUFFICIENT_DATA';
+  volatility: 'LOW' | 'MEDIUM' | 'HIGH' | 'INSUFFICIENT_DATA';
+  volatilityCvPercent?: number | null;
+  dataQuality: 'GOOD' | 'LIMITED' | 'INSUFFICIENT';
+  freshnessStatus: 'FRESH' | 'STALE' | 'UNAVAILABLE';
+  latestObservationDate?: string;
+
+  currentVsAverageStatement?: string;
+  currentVsAveragePctDiff?: number | null;
+
+  points: PriceTrendPoint[];
+  aiExplanation?: {
+    summary?: string;
+    recommendation?: string;
+    confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+    verifiedFacts?: string[];
+    reasoning?: string[];
+    risks?: string[];
+    nextSteps?: string[];
+    engine?: string;
+    aiGenerated?: boolean;
+    dataFreshness?: {
+      status?: string;
+      staleMessage?: string;
+      marketPriceDate?: string;
+    };
+  } | null;
+}
+
 export interface IntelligenceFilterState {
   cropId?: string;
+  marketId?: string;
+  period?: '7D' | '30D' | '90D' | '6M' | '1Y' | 'CUSTOM';
+  startDate?: string;
+  endDate?: string;
   state?: string;
   district?: string;
   mandal?: string;
   unit?: string;
   fromDate?: string;
   toDate?: string;
+  includeAiExplanation?: boolean;
 }
