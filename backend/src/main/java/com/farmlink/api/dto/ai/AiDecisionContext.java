@@ -20,6 +20,7 @@ public class AiDecisionContext {
     private FarmMarketComparisonResponse marketComparison;
     private MarketIntelligenceSummaryResponse marketIntelligence;
     private MarketTrendResponse marketTrend;
+    private com.farmlink.api.dto.forecast.ForecastResponse priceForecast;
 
     private BigDecimal quantity;
     private String quantityUnit = "QUINTAL";
@@ -183,5 +184,13 @@ public class AiDecisionContext {
 
     public void setDataGaps(List<String> dataGaps) {
         this.dataGaps = dataGaps != null ? dataGaps : new ArrayList<>();
+    }
+
+    public com.farmlink.api.dto.forecast.ForecastResponse getPriceForecast() {
+        return priceForecast;
+    }
+
+    public void setPriceForecast(com.farmlink.api.dto.forecast.ForecastResponse priceForecast) {
+        this.priceForecast = priceForecast;
     }
 }

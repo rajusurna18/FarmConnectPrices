@@ -54,6 +54,9 @@ public class RuleBasedAiDecisionEngine implements AiDecisionEngine {
             case MARKET_TREND_EXPLANATION:
                 handleMarketTrendExplanation(request, context, response);
                 break;
+            case PRICE_FORECAST_EXPLANATION:
+                handlePriceForecastExplanation(request, context, response);
+                break;
             default:
                 handleMarketSelection(request, context, response);
                 break;
@@ -379,6 +382,68 @@ public class RuleBasedAiDecisionEngine implements AiDecisionEngine {
         List<String> nextSteps = new ArrayList<>();
         nextSteps.add("Verify today's live modal rate at " + marketName + " before dispatching produce.");
         nextSteps.add("Compare prices across alternate mandis to maximize net realization after transport costs.");
+        response.setNextSteps(nextSteps);
+    }
+
+    private void handlePriceForecastExplanation(AiDecisionRequest request, AiDecisionContext context, AiDecisionResponse response) {
+        com.farmlink.api.dto.forecast.ForecastResponse fc = context.getPriceForecast();
+
+        String cropName = context.getCrop() != null ? context.getCrop().getName() : (request.getCropId() != null ? request.getCropId() : "Selected Crop");
+        String reqMktId = (request.getMarketIds() != null && !request.getMarketIds().isEmpty()) ? request.getMarketIds().get(0) : "Selected Market";
+        String marketName = (!context.getCandidateMarkets().isEmpty()) ? context.getCandidateMarkets().get(0).getName() : reqMktId;
+
+        if (fc == null || fc.getForecastPrice() == null) {
+            response.setSummary("Price forecast is currently unavailable for " + cropName + " at " + marketName + " due to insufficient historical verified market price data.");
+            response.setRecommendation("Verify current market prices directly with local mandis before making selling decisions.");
+            response.getVerifiedFacts().add("Insufficient historical price records found within the requested lookback window.");
+            response.getRisks().add("Forecast models require a minimum threshold of verified observations to generate empirical estimates.");
+            response.getNextSteps().add("Verify current live prices directly with market representatives.");
+            return;
+        }
+
+        String dir = fc.getDirection() != null ? fc.getDirection().name() : "UNCERTAIN";
+        String conf = fc.getConfidence() != null ? fc.getConfidence().name() : "LOW";
+        String horizon = fc.getHorizon() != null ? fc.getHorizon() : "7_DAYS";
+        String unit = fc.getUnit() != null ? fc.getUnit() : "QUINTAL";
+
+        String rangeStr = (fc.getForecastLowerBound() != null && fc.getForecastUpperBound() != null) ?
+                ("₹" + String.format("%,.2f", fc.getForecastLowerBound()) + " – ₹" + String.format("%,.2f", fc.getForecastUpperBound())) :
+                "Uncertainty interval unavailable";
+
+        response.setSummary("Based on historical verified market-price data, the model estimates a price of approximately ₹" +
+                String.format("%,.2f", fc.getForecastPrice()) + " / " + unit + " for " + cropName + " at " + marketName +
+                " over a " + horizon + " horizon (Estimated Range: " + rangeStr + ").");
+
+        response.setRecommendation("The model indicates an estimated " + dir + " trajectory with " + conf + " confidence. Verify current market prices before making a selling decision.");
+
+        List<String> facts = new ArrayList<>();
+        facts.add("Current verified price: ₹" + String.format("%,.2f", fc.getCurrentVerifiedPrice()) + " / " + unit + " (Observed: " + fc.getLatestObservationDate() + ")");
+        facts.add("Point forecast: ₹" + String.format("%,.2f", fc.getForecastPrice()) + " / " + unit);
+        if (fc.getForecastLowerBound() != null && fc.getForecastUpperBound() != null) {
+            facts.add("Empirical uncertainty range: " + rangeStr + " / " + unit + " (derived from historical walk-forward backtest error)");
+        } else {
+            facts.add("Uncertainty range: Unavailable (fewer than 5 historical backtest residuals)");
+        }
+        facts.add("Model: " + fc.getModel() + " (" + fc.getObservationsUsed() + " verified observations used)");
+        if (fc.getBacktest() != null && fc.getBacktest().getMae() != null) {
+            String mapeStr = fc.getBacktest().getMape() != null ? String.format("%.2f%%", fc.getBacktest().getMape()) : "N/A";
+            facts.add("Historical model accuracy: MAE = ₹" + String.format("%.2f", fc.getBacktest().getMae()) + ", MAPE = " + mapeStr + " (" + fc.getBacktest().getSampleCount() + " backtest samples)");
+        }
+        response.setVerifiedFacts(facts);
+
+        List<String> reasoning = new ArrayList<>();
+        reasoning.add("The forecast is calculated deterministically using a pure recursive Weighted Moving Average baseline giving higher weights to recent verified observations.");
+        reasoning.add("Confidence (" + conf + ") is evaluated deterministically based on observation completeness, data freshness gap, historical backtest error, and price volatility.");
+        response.setReasoning(reasoning);
+
+        List<String> risks = new ArrayList<>();
+        risks.add("A price forecast is a statistical estimate based on historical patterns, NOT a guarantee.");
+        risks.add("Future market conditions, arrival surges, weather, and demand shifts may cause actual prices to differ from historical estimates.");
+        response.setRisks(risks);
+
+        List<String> nextSteps = new ArrayList<>();
+        nextSteps.add("Verify today's verified market price before concluding a sale.");
+        nextSteps.add("Evaluate potential price changes against your current storage and transport costs.");
         response.setNextSteps(nextSteps);
     }
 }

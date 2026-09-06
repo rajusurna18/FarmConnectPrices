@@ -25,6 +25,7 @@ public class AiDecisionContextBuilder {
     private final FarmEconomicsService farmEconomicsService;
     private final MarketIntelligenceService marketIntelligenceService;
     private final MarketTrendService marketTrendService;
+    private final com.farmlink.api.service.forecast.ForecastService forecastService;
 
     public AiDecisionContextBuilder(FarmService farmService,
                                     CropMasterService cropMasterService,
@@ -34,7 +35,18 @@ public class AiDecisionContextBuilder {
                                     FarmEconomicsService farmEconomicsService,
                                     MarketIntelligenceService marketIntelligenceService) {
         this(farmService, cropMasterService, marketService, marketPriceService, decisionSupportService, farmEconomicsService, marketIntelligenceService,
-                new MarketTrendService(marketPriceService, marketService, cropMasterService, new PriceUnitConversionService()));
+                new MarketTrendService(marketPriceService, marketService, cropMasterService, new PriceUnitConversionService()), null);
+    }
+
+    public AiDecisionContextBuilder(FarmService farmService,
+                                    CropMasterService cropMasterService,
+                                    MarketService marketService,
+                                    MarketPriceService marketPriceService,
+                                    DecisionSupportService decisionSupportService,
+                                    FarmEconomicsService farmEconomicsService,
+                                    MarketIntelligenceService marketIntelligenceService,
+                                    MarketTrendService marketTrendService) {
+        this(farmService, cropMasterService, marketService, marketPriceService, decisionSupportService, farmEconomicsService, marketIntelligenceService, marketTrendService, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -45,7 +57,8 @@ public class AiDecisionContextBuilder {
                                     DecisionSupportService decisionSupportService,
                                     FarmEconomicsService farmEconomicsService,
                                     MarketIntelligenceService marketIntelligenceService,
-                                    @org.springframework.beans.factory.annotation.Autowired(required = false) MarketTrendService marketTrendService) {
+                                    @org.springframework.beans.factory.annotation.Autowired(required = false) MarketTrendService marketTrendService,
+                                    @org.springframework.beans.factory.annotation.Autowired(required = false) com.farmlink.api.service.forecast.ForecastService forecastService) {
         this.farmService = farmService;
         this.cropMasterService = cropMasterService;
         this.marketService = marketService;
@@ -55,6 +68,7 @@ public class AiDecisionContextBuilder {
         this.marketIntelligenceService = marketIntelligenceService;
         this.marketTrendService = (marketTrendService != null) ? marketTrendService :
                 new MarketTrendService(marketPriceService, marketService, cropMasterService, new PriceUnitConversionService());
+        this.forecastService = forecastService;
     }
 
     public AiDecisionContext buildContext(String farmerUid, AiDecisionRequest request) {
@@ -244,6 +258,22 @@ public class AiDecisionContextBuilder {
                 }
             } catch (Exception e) {
                 log.warn("Could not fetch Market Trend intelligence context: {}", e.getMessage());
+            }
+        }
+
+        // 8. Price Forecast Lookup (Module 13)
+        if ((request.getDecisionType() == AiDecisionType.PRICE_FORECAST_EXPLANATION || request.getCropId() != null) && forecastService != null) {
+            try {
+                String mktId = (!candidateMarkets.isEmpty()) ? candidateMarkets.get(0).getId() : (request.getMarketIds() != null && !request.getMarketIds().isEmpty() ? request.getMarketIds().get(0) : null);
+                if (request.getCropId() != null && mktId != null) {
+                    com.farmlink.api.dto.forecast.ForecastRequest fcReq = new com.farmlink.api.dto.forecast.ForecastRequest(
+                            request.getCropId(), mktId, "7_DAYS", 30, context.getQuantityUnit()
+                    );
+                    com.farmlink.api.dto.forecast.ForecastResponse fcRes = forecastService.getPriceForecast(fcReq);
+                    context.setPriceForecast(fcRes);
+                }
+            } catch (Exception e) {
+                log.warn("Could not fetch Price Forecast context: {}", e.getMessage());
             }
         }
 
