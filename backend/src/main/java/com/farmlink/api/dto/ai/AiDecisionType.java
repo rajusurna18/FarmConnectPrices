@@ -10,7 +10,8 @@ public enum AiDecisionType {
     MARKET_COMPARISON_EXPLANATION,
     SELLING_DECISION_SUPPORT,
     MARKET_TREND_EXPLANATION,
-    PRICE_FORECAST_EXPLANATION;
+    PRICE_FORECAST_EXPLANATION,
+    SMART_SELLING_EXPLANATION;
 
     private static final Set<String> VALID_NAMES = Arrays.stream(values())
             .map(Enum::name)

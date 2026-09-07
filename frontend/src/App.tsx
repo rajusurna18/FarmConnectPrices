@@ -43,6 +43,9 @@ const AiDecisionPage = lazy(() => import('./features/aiDecision/pages/AiDecision
 // Module 13 — Price Prediction & Forecasting Foundation routes
 const PriceForecastPage = lazy(() => import('./features/forecast/pages/PriceForecastPage').then((m) => ({ default: m.PriceForecastPage })));
 
+// Module 14 — Smart Selling Decision Engine route
+const SmartSellingPage = lazy(() => import('./pages/SmartSellingPage').then((m) => ({ default: m.SmartSellingPage })));
+
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
     <div className="flex flex-col items-center space-y-4">
@@ -98,6 +101,7 @@ export const App: React.FC = () => {
                   <Route path="/farm-economics/:id/edit" element={<EditFarmEconomicPage />} />
                   <Route path="/ai-decisions" element={<AiDecisionPage />} />
                   <Route path="/price-forecast" element={<PriceForecastPage />} />
+                  <Route path="/smart-selling" element={<SmartSellingPage />} />
                 </Route>
               </Route>
             </Routes>
