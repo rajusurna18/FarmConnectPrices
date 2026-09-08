@@ -105,7 +105,8 @@ export interface SmartSellingDecisionResponse {
   economicsCompleteness: string;
   primaryRecommendation: MarketCard;
   rankedMarkets: MarketCard[];
-  unavailableMarkets: any[];
+  unavailableMarkets: unknown[];
+
   tradeOffs: TradeOffItem[];
   forecastScenarios: ForecastScenarioItem[];
   aiExplanation?: AiDecisionResponse;

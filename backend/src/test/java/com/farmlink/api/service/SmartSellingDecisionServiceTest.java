@@ -176,7 +176,8 @@ public class SmartSellingDecisionServiceTest {
         p1.setMinPrice(1900.0);
         p1.setMaxPrice(2100.0);
         p1.setUnit("QUINTAL");
-        p1.setPriceDate("2026-09-07"); // Today / Fresh
+        p1.setPriceDate(java.time.LocalDate.now().toString()); // Today / Fresh
+
         p1.setQualityStatus("VERIFIED");
 
         when(marketPriceService.getMarketPrices(null, null, "market-1", "crop-1", null, "VERIFIED", null, "priceDate", "desc", 1, 10, 10))

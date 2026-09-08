@@ -32,6 +32,7 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { label: 'Home', href: '/' },
+    { label: 'Marketplace', href: '/marketplace' },
     { label: 'Markets', href: '/markets' },
     { label: 'Market Prices', href: '/market-prices' },
     { label: 'Intelligence', href: '/market-intelligence' },
@@ -42,6 +43,7 @@ export const Navbar: React.FC = () => {
     ] : []),
     { label: 'About', href: '/#ecosystem' },
   ];
+
 
   return (
     <header

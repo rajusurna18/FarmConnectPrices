@@ -46,6 +46,13 @@ const PriceForecastPage = lazy(() => import('./features/forecast/pages/PriceFore
 // Module 14 — Smart Selling Decision Engine route
 const SmartSellingPage = lazy(() => import('./pages/SmartSellingPage').then((m) => ({ default: m.SmartSellingPage })));
 
+// Module 15 — Marketplace Product Catalog & Listing Foundation routes
+const MarketplaceBrowsePage = lazy(() => import('./features/marketplace/pages/MarketplaceBrowsePage').then((m) => ({ default: m.MarketplaceBrowsePage })));
+const MarketplaceDetailPage = lazy(() => import('./features/marketplace/pages/MarketplaceDetailPage').then((m) => ({ default: m.MarketplaceDetailPage })));
+const MyListingsPage = lazy(() => import('./features/marketplace/pages/MyListingsPage').then((m) => ({ default: m.MyListingsPage })));
+const CreateListingPage = lazy(() => import('./features/marketplace/pages/CreateListingPage').then((m) => ({ default: m.CreateListingPage })));
+const EditListingPage = lazy(() => import('./features/marketplace/pages/EditListingPage').then((m) => ({ default: m.EditListingPage })));
+
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
     <div className="flex flex-col items-center space-y-4">
@@ -83,6 +90,8 @@ export const App: React.FC = () => {
                 <Route path="/market-prices/:priceId" element={<MarketPriceDetailPage />} />
                 <Route path="/market-intelligence" element={<MarketIntelligencePage />} />
                 <Route path="/market-trends" element={<MarketTrendsPage />} />
+                <Route path="/marketplace" element={<MarketplaceBrowsePage />} />
+                <Route path="/marketplace/listings/:id" element={<MarketplaceDetailPage />} />
 
                 {/* FARMER Role Restricted Routes */}
                 <Route element={<FarmerRoute />}>
@@ -102,6 +111,9 @@ export const App: React.FC = () => {
                   <Route path="/ai-decisions" element={<AiDecisionPage />} />
                   <Route path="/price-forecast" element={<PriceForecastPage />} />
                   <Route path="/smart-selling" element={<SmartSellingPage />} />
+                  <Route path="/marketplace/my-listings" element={<MyListingsPage />} />
+                  <Route path="/marketplace/listings/new" element={<CreateListingPage />} />
+                  <Route path="/marketplace/listings/:id/edit" element={<EditListingPage />} />
                 </Route>
               </Route>
             </Routes>
@@ -111,6 +123,7 @@ export const App: React.FC = () => {
     </QueryClientProvider>
   );
 };
+
 
 export default App;
 

@@ -87,10 +87,18 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Product Listings Collection: Authenticated users can read ACTIVE listings or own listings; Farmers create/update/delete own listings
+    match /productListings/{listingId} {
+      allow read: if request.auth != null && (resource.data.status == "ACTIVE" || resource.data.ownerUid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+    }
+
     // Default Deny: All other collections remain completely inaccessible until explicit rules are added
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+
 

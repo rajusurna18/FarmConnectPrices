@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import {
-  evaluateSmartSelling,
+import { evaluateSmartSelling } from '../services/smartSellingApi';
+
+import type {
   SmartSellingDecisionResponse,
   MarketCard,
   TradeOffItem,
   ForecastScenarioItem,
 } from '../services/smartSellingApi';
+
 
 export const SmartSellingPage: React.FC = () => {
   const [cropId, setCropId] = useState('crop-1');
@@ -51,10 +53,12 @@ export const SmartSellingPage: React.FC = () => {
         forecastHorizon,
       });
       setResult(res);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.response?.data || err?.message || 'Failed to evaluate Smart Selling decision.');
+      const errorObj = err as { response?: { data?: string }; message?: string };
+      setError(errorObj?.response?.data || errorObj?.message || 'Failed to evaluate Smart Selling decision.');
     } finally {
+
       setLoading(false);
     }
   };
