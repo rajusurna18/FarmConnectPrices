@@ -1,5 +1,7 @@
 package com.farmlink.api.dto;
 
+import java.math.BigDecimal;
+
 public class OfferRoundResponse {
     private int roundNumber;
     private String senderUid;
@@ -7,7 +9,7 @@ public class OfferRoundResponse {
     private String action;
     private Double quantity;
     private String quantityUnit;
-    private Double price;
+    private BigDecimal price;
     private String priceUnit;
     private String message;
     private String timestamp;
@@ -15,7 +17,7 @@ public class OfferRoundResponse {
     public OfferRoundResponse() {}
 
     public OfferRoundResponse(int roundNumber, String senderUid, String senderRole, String action,
-                              Double quantity, String quantityUnit, Double price, String priceUnit,
+                              Double quantity, String quantityUnit, BigDecimal price, String priceUnit,
                               String message, String timestamp) {
         this.roundNumber = roundNumber;
         this.senderUid = senderUid;
@@ -77,11 +79,11 @@ public class OfferRoundResponse {
         this.quantityUnit = quantityUnit;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

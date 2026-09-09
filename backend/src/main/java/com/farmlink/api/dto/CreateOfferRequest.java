@@ -1,17 +1,19 @@
 package com.farmlink.api.dto;
 
+import java.math.BigDecimal;
+
 public class CreateOfferRequest {
     private String listingId;
     private Double offeredQuantity;
     private String quantityUnit;
-    private Double offeredPrice;
+    private BigDecimal offeredPrice;
     private String priceUnit;
     private String message;
 
     public CreateOfferRequest() {}
 
     public CreateOfferRequest(String listingId, Double offeredQuantity, String quantityUnit,
-                              Double offeredPrice, String priceUnit, String message) {
+                              BigDecimal offeredPrice, String priceUnit, String message) {
         this.listingId = listingId;
         this.offeredQuantity = offeredQuantity;
         this.quantityUnit = quantityUnit;
@@ -44,11 +46,11 @@ public class CreateOfferRequest {
         this.quantityUnit = quantityUnit;
     }
 
-    public Double getOfferedPrice() {
+    public BigDecimal getOfferedPrice() {
         return offeredPrice;
     }
 
-    public void setOfferedPrice(Double offeredPrice) {
+    public void setOfferedPrice(BigDecimal offeredPrice) {
         this.offeredPrice = offeredPrice;
     }
 

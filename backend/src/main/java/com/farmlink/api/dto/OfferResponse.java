@@ -1,5 +1,6 @@
 package com.farmlink.api.dto;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class OfferResponse {
@@ -15,10 +16,10 @@ public class OfferResponse {
     private Double offeredQuantity;
     private String quantityUnit;
 
-    private Double offeredPrice;
+    private BigDecimal offeredPrice;
     private String priceUnit;
 
-    private Double askingPriceReference;
+    private BigDecimal askingPriceReference;
 
     private String message;
     private String status;
@@ -27,7 +28,7 @@ public class OfferResponse {
     private String currentResponderUid;
 
     private Double agreedQuantity;
-    private Double agreedPrice;
+    private BigDecimal agreedPrice;
     private String agreedPriceUnit;
 
     private List<OfferRoundResponse> rounds;
@@ -46,9 +47,9 @@ public class OfferResponse {
 
     public OfferResponse(String offerId, String listingId, String farmerId, String buyerUid, String buyerRole,
                          String cropId, String cropName, Double offeredQuantity, String quantityUnit,
-                         Double offeredPrice, String priceUnit, Double askingPriceReference, String message,
+                         BigDecimal offeredPrice, String priceUnit, BigDecimal askingPriceReference, String message,
                          String status, int roundNumber, String currentResponderUid, Double agreedQuantity,
-                         Double agreedPrice, String agreedPriceUnit, List<OfferRoundResponse> rounds,
+                         BigDecimal agreedPrice, String agreedPriceUnit, List<OfferRoundResponse> rounds,
                          String createdAt, String updatedAt, String expiresAt, String respondedAt,
                          boolean canAccept, boolean canReject, boolean canCounter, boolean canCancel) {
         this.offerId = offerId;
@@ -153,11 +154,11 @@ public class OfferResponse {
         this.quantityUnit = quantityUnit;
     }
 
-    public Double getOfferedPrice() {
+    public BigDecimal getOfferedPrice() {
         return offeredPrice;
     }
 
-    public void setOfferedPrice(Double offeredPrice) {
+    public void setOfferedPrice(BigDecimal offeredPrice) {
         this.offeredPrice = offeredPrice;
     }
 
@@ -169,11 +170,11 @@ public class OfferResponse {
         this.priceUnit = priceUnit;
     }
 
-    public Double getAskingPriceReference() {
+    public BigDecimal getAskingPriceReference() {
         return askingPriceReference;
     }
 
-    public void setAskingPriceReference(Double askingPriceReference) {
+    public void setAskingPriceReference(BigDecimal askingPriceReference) {
         this.askingPriceReference = askingPriceReference;
     }
 
@@ -217,11 +218,11 @@ public class OfferResponse {
         this.agreedQuantity = agreedQuantity;
     }
 
-    public Double getAgreedPrice() {
+    public BigDecimal getAgreedPrice() {
         return agreedPrice;
     }
 
-    public void setAgreedPrice(Double agreedPrice) {
+    public void setAgreedPrice(BigDecimal agreedPrice) {
         this.agreedPrice = agreedPrice;
     }
 

@@ -1,15 +1,17 @@
 package com.farmlink.api.dto;
 
+import java.math.BigDecimal;
+
 public class CounterOfferRequest {
     private Double counterQuantity;
     private String quantityUnit;
-    private Double counterPrice;
+    private BigDecimal counterPrice;
     private String priceUnit;
     private String message;
 
     public CounterOfferRequest() {}
 
-    public CounterOfferRequest(Double counterQuantity, String quantityUnit, Double counterPrice, String priceUnit, String message) {
+    public CounterOfferRequest(Double counterQuantity, String quantityUnit, BigDecimal counterPrice, String priceUnit, String message) {
         this.counterQuantity = counterQuantity;
         this.quantityUnit = quantityUnit;
         this.counterPrice = counterPrice;
@@ -33,11 +35,11 @@ public class CounterOfferRequest {
         this.quantityUnit = quantityUnit;
     }
 
-    public Double getCounterPrice() {
+    public BigDecimal getCounterPrice() {
         return counterPrice;
     }
 
-    public void setCounterPrice(Double counterPrice) {
+    public void setCounterPrice(BigDecimal counterPrice) {
         this.counterPrice = counterPrice;
     }
 

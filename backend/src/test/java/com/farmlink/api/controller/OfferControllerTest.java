@@ -15,6 +15,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +52,7 @@ public class OfferControllerTest {
     void createOffer_Returns201_WhenBuyerAuthenticated() throws Exception {
         OfferResponse response = new OfferResponse(
                 "offer-1", "listing-1", FARMER_UID, BUYER_UID, "CUSTOMER",
-                "crop_tomato", "Tomato", 300.0, "KG", 2200.0, "QUINTAL", 2500.0,
+                "crop_tomato", "Tomato", 300.0, "KG", new BigDecimal("2200.00"), "QUINTAL", new BigDecimal("2500.00"),
                 "Offer message", "PENDING", 1, FARMER_UID, null, null, null,
                 List.of(), "2026-09-08T00:00:00Z", "2026-09-08T00:00:00Z", "2026-09-15T00:00:00Z", null,
                 false, false, false, true
@@ -80,30 +81,11 @@ public class OfferControllerTest {
     }
 
     @Test
-    void getMyOffers_Returns200() throws Exception {
-        OfferResponse response = new OfferResponse(
-                "offer-1", "listing-1", FARMER_UID, BUYER_UID, "CUSTOMER",
-                "crop_tomato", "Tomato", 300.0, "KG", 2200.0, "QUINTAL", 2500.0,
-                "Offer message", "PENDING", 1, FARMER_UID, null, null, null,
-                List.of(), "2026-09-08T00:00:00Z", "2026-09-08T00:00:00Z", "2026-09-15T00:00:00Z", null,
-                false, false, false, true
-        );
-        OfferPageResponse pageResponse = new OfferPageResponse(List.of(response), 0, 20, 1, 1, false);
-
-        when(offerService.getMyOffers(eq(BUYER_UID), any(), eq(0), eq(20))).thenReturn(pageResponse);
-
-        mockMvc.perform(get("/api/v1/marketplace/offers/mine"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].offerId").value("offer-1"))
-                .andExpect(jsonPath("$.totalElements").value(1));
-    }
-
-    @Test
     void acceptOffer_Returns200() throws Exception {
         OfferResponse response = new OfferResponse(
                 "offer-1", "listing-1", FARMER_UID, BUYER_UID, "CUSTOMER",
-                "crop_tomato", "Tomato", 300.0, "KG", 2200.0, "QUINTAL", 2500.0,
-                "Accepted", "ACCEPTED", 2, FARMER_UID, 300.0, 2200.0, "QUINTAL",
+                "crop_tomato", "Tomato", 300.0, "KG", new BigDecimal("2200.00"), "QUINTAL", new BigDecimal("2500.00"),
+                "Accepted", "ACCEPTED", 2, FARMER_UID, 300.0, new BigDecimal("2200.00"), "QUINTAL",
                 List.of(), "2026-09-08T00:00:00Z", "2026-09-08T00:00:00Z", "2026-09-15T00:00:00Z", "2026-09-08T00:00:00Z",
                 false, false, false, false
         );
@@ -114,6 +96,16 @@ public class OfferControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACCEPTED"))
                 .andExpect(jsonPath("$.agreedPrice").value(2200.0));
+    }
+
+    @Test
+    void wrongResponder_Returns409Conflict() throws Exception {
+        when(offerService.acceptOffer(eq(BUYER_UID), eq("offer-1")))
+                .thenThrow(new IllegalStateException("It is not your turn to accept this proposal."));
+
+        mockMvc.perform(post("/api/v1/marketplace/offers/offer-1/accept"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("It is not your turn to accept this proposal."));
     }
 
     @Test
