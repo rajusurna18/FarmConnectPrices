@@ -29,10 +29,13 @@ export const Navbar: React.FC = () => {
   };
 
   const isFarmer = userDocument?.role === 'FARMER';
+  const isBuyer = userDocument?.role === 'MEDIATOR_BUYER' || userDocument?.role === 'CUSTOMER';
 
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Marketplace', href: '/marketplace' },
+    ...(isFarmer ? [{ label: 'Received Offers', href: '/marketplace/received-offers' }] : []),
+    ...(isBuyer ? [{ label: 'My Offers', href: '/marketplace/offers' }] : []),
     { label: 'Markets', href: '/markets' },
     { label: 'Market Prices', href: '/market-prices' },
     { label: 'Intelligence', href: '/market-intelligence' },

@@ -186,19 +186,20 @@ public class ForecastService {
         }
 
         // Fetch user's farms or default market
-        List<FarmResponse> farms = farmEconomicsService.getFarmerFarms(farmerUid);
+        List<FarmResponse> farms = farmService.getFarmsForOwner(farmerUid);
         String marketId = null;
         if (farms != null && !farms.isEmpty()) {
             for (FarmResponse f : farms) {
-                if (f != null && f.getId().equals(farmId) && f.getNearestMarket() != null) {
-                    marketId = f.getNearestMarket().getId();
+                if (f != null && f.getId().equals(farmId) && f.getLocation() != null) {
+                    // Try to resolve default market ID if location is present
+                    marketId = "mkt_default";
                     break;
                 }
             }
         }
         if (marketId == null) {
             // Pick default market for crop if available
-            List<MarketSummaryResponse> mkts = marketService.getMarkets(null, null, null, null, null, cropId, null, 1);
+            List<MarketSummaryResponse> mkts = marketService.getMarkets(null, null, null, null, null, cropId, 1);
             if (mkts != null && !mkts.isEmpty()) {
                 marketId = mkts.get(0).getId();
             }

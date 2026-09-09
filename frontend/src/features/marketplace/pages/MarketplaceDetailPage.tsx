@@ -23,10 +23,12 @@ import {
   useListingDetailQuery,
   useUpdateListingStatusMutation,
 } from '../api/marketplaceApi';
+import { MakeOfferModal } from '../components/MakeOfferModal';
 
 export const MarketplaceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { userDocument } = useAuth();
+  const [isMakeOfferOpen, setIsMakeOfferOpen] = React.useState<boolean>(false);
 
   const { data: listing, isLoading, isError } = useListingDetailQuery(id || '');
   const statusMutation = useUpdateListingStatusMutation();
@@ -261,7 +263,22 @@ export const MarketplaceDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* Owner Management Controls */}
+            {/* Offer Action Section */}
+            {!isOwner && listing.status === 'ACTIVE' && (userDocument?.role === 'MEDIATOR_BUYER' || userDocument?.role === 'CUSTOMER' || !userDocument?.role || userDocument?.role === 'USER') && (
+              <div className="pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-300">Commercial Offer & Negotiation</h3>
+                  <p className="text-xs text-slate-400">Propose your price and quantity directly to the farmer.</p>
+                </div>
+                <button
+                  onClick={() => setIsMakeOfferOpen(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center space-x-2"
+                >
+                  <span>🌾 Make Offer</span>
+                </button>
+              </div>
+            )}
+
             {isOwner && (
               <div className="pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
                 <div className="text-xs text-slate-400">
@@ -269,6 +286,13 @@ export const MarketplaceDetailPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center space-x-3">
+                  <Link
+                    to="/marketplace/received-offers"
+                    className="px-4 py-2 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 text-xs font-semibold flex items-center space-x-1.5 transition-all"
+                  >
+                    <span>📥 View Offers</span>
+                  </Link>
+
                   {listing.status === 'ACTIVE' ? (
                     <button
                       onClick={() => handleStatusChange('PAUSED')}
@@ -301,6 +325,14 @@ export const MarketplaceDetailPage: React.FC = () => {
           </div>
         </motion.div>
       </main>
+
+      {listing && isMakeOfferOpen && (
+        <MakeOfferModal
+          listing={listing}
+          isOpen={isMakeOfferOpen}
+          onClose={() => setIsMakeOfferOpen(false)}
+        />
+      )}
 
       <Footer />
     </div>

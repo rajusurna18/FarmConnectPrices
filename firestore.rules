@@ -94,6 +94,14 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
     }
 
+    // Offers Collection: Authenticated participants (buyer or listing farmer) can read/update own offers
+    match /offers/{offerId} {
+      allow read: if request.auth != null && (resource.data.buyerUid == request.auth.uid || resource.data.farmerId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.buyerUid == request.auth.uid;
+      allow update: if request.auth != null && (resource.data.buyerUid == request.auth.uid || resource.data.farmerId == request.auth.uid);
+      allow delete: if false;
+    }
+
     // Default Deny: All other collections remain completely inaccessible until explicit rules are added
     match /{document=**} {
       allow read, write: if false;

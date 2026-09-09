@@ -53,6 +53,11 @@ const MyListingsPage = lazy(() => import('./features/marketplace/pages/MyListing
 const CreateListingPage = lazy(() => import('./features/marketplace/pages/CreateListingPage').then((m) => ({ default: m.CreateListingPage })));
 const EditListingPage = lazy(() => import('./features/marketplace/pages/EditListingPage').then((m) => ({ default: m.EditListingPage })));
 
+// Module 16 — Offers & Negotiation Foundation routes
+const MyOffersPage = lazy(() => import('./features/marketplace/pages/MyOffersPage').then((m) => ({ default: m.MyOffersPage })));
+const ReceivedOffersPage = lazy(() => import('./features/marketplace/pages/ReceivedOffersPage').then((m) => ({ default: m.ReceivedOffersPage })));
+const OfferDetailPage = lazy(() => import('./features/marketplace/pages/OfferDetailPage').then((m) => ({ default: m.OfferDetailPage })));
+
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
     <div className="flex flex-col items-center space-y-4">
@@ -92,6 +97,9 @@ export const App: React.FC = () => {
                 <Route path="/market-trends" element={<MarketTrendsPage />} />
                 <Route path="/marketplace" element={<MarketplaceBrowsePage />} />
                 <Route path="/marketplace/listings/:id" element={<MarketplaceDetailPage />} />
+                <Route path="/marketplace/offers" element={<MyOffersPage />} />
+                <Route path="/marketplace/offers/:offerId" element={<OfferDetailPage />} />
+                <Route path="/marketplace/received-offers" element={<ReceivedOffersPage />} />
 
                 {/* FARMER Role Restricted Routes */}
                 <Route element={<FarmerRoute />}>
