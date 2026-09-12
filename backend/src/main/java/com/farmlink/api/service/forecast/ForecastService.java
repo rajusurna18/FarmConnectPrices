@@ -27,6 +27,7 @@ public class ForecastService {
     private final ForecastBacktestService backtestService;
     private final ForecastConfidenceService confidenceService;
     private final FarmEconomicsService farmEconomicsService;
+    private final FarmService farmService;
 
     public ForecastService(
             MarketPriceService marketPriceService,
@@ -39,6 +40,22 @@ public class ForecastService {
             ForecastConfidenceService confidenceService,
             FarmEconomicsService farmEconomicsService
     ) {
+        this(marketPriceService, cropMasterService, marketService, dataPreparerService, wmaModel, smaModel, backtestService, confidenceService, farmEconomicsService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ForecastService(
+            MarketPriceService marketPriceService,
+            CropMasterService cropMasterService,
+            MarketService marketService,
+            ForecastDataPreparerService dataPreparerService,
+            WeightedMovingAverageForecastModel wmaModel,
+            SimpleMovingAverageForecastModel smaModel,
+            ForecastBacktestService backtestService,
+            ForecastConfidenceService confidenceService,
+            FarmEconomicsService farmEconomicsService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) FarmService farmService
+    ) {
         this.marketPriceService = marketPriceService;
         this.cropMasterService = cropMasterService;
         this.marketService = marketService;
@@ -48,6 +65,7 @@ public class ForecastService {
         this.backtestService = backtestService;
         this.confidenceService = confidenceService;
         this.farmEconomicsService = farmEconomicsService;
+        this.farmService = farmService;
     }
 
     @Cacheable(value = "priceForecasts", key = "(#request.cropId != null ? #request.cropId : '') + '_' + (#request.marketId != null ? #request.marketId : '') + '_' + (#request.horizon != null ? #request.horizon : '') + '_' + (#request.unit != null ? #request.unit : 'QUINTAL')", unless = "#result == null || #result.confidence == T(com.farmlink.api.dto.forecast.ForecastConfidence).INSUFFICIENT_DATA")

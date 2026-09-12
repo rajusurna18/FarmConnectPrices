@@ -100,6 +100,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Orders Collection: Authenticated participants (buyer or farmer) can read; writes mediated exclusively via Spring Boot backend / Admin SDK
+    match /orders/{orderId} {
+      allow read: if request.auth != null && (resource.data.buyerUid == request.auth.uid || resource.data.farmerId == request.auth.uid);
+      allow write: if false;
+    }
+
     // Default Deny: All other collections remain completely inaccessible until explicit rules are added
     match /{document=**} {
       allow read, write: if false;

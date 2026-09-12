@@ -58,6 +58,11 @@ const MyOffersPage = lazy(() => import('./features/marketplace/pages/MyOffersPag
 const ReceivedOffersPage = lazy(() => import('./features/marketplace/pages/ReceivedOffersPage').then((m) => ({ default: m.ReceivedOffersPage })));
 const OfferDetailPage = lazy(() => import('./features/marketplace/pages/OfferDetailPage').then((m) => ({ default: m.OfferDetailPage })));
 
+// Module 17 — Order & Inventory Foundation routes
+const MyOrdersPage = lazy(() => import('./features/marketplace/pages/MyOrdersPage').then((m) => ({ default: m.MyOrdersPage })));
+const ReceivedOrdersPage = lazy(() => import('./features/marketplace/pages/ReceivedOrdersPage').then((m) => ({ default: m.ReceivedOrdersPage })));
+const OrderDetailPage = lazy(() => import('./features/marketplace/pages/OrderDetailPage').then((m) => ({ default: m.OrderDetailPage })));
+
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
     <div className="flex flex-col items-center space-y-4">
@@ -100,6 +105,9 @@ export const App: React.FC = () => {
                 <Route path="/marketplace/offers" element={<MyOffersPage />} />
                 <Route path="/marketplace/offers/:offerId" element={<OfferDetailPage />} />
                 <Route path="/marketplace/received-offers" element={<ReceivedOffersPage />} />
+                <Route path="/marketplace/orders" element={<MyOrdersPage />} />
+                <Route path="/marketplace/orders/:orderId" element={<OrderDetailPage />} />
+                <Route path="/marketplace/received-orders" element={<ReceivedOrdersPage />} />
 
                 {/* FARMER Role Restricted Routes */}
                 <Route element={<FarmerRoute />}>

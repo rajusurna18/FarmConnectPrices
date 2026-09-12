@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   useOfferDetailQuery,
   useOfferHistoryQuery,
@@ -7,11 +7,13 @@ import {
   useRejectOfferMutation,
   useCancelOfferMutation,
 } from '../api/marketplaceOffersApi';
+import { useCreateOrderFromOfferMutation } from '../api/marketplaceOrdersApi';
 import { NegotiationTimeline } from '../components/NegotiationTimeline';
 import { CounterOfferModal } from '../components/CounterOfferModal';
 
 export const OfferDetailPage: React.FC = () => {
   const { offerId } = useParams<{ offerId: string }>();
+  const navigate = useNavigate();
 
   const [isCounterOpen, setIsCounterOpen] = useState<boolean>(false);
 
@@ -21,6 +23,7 @@ export const OfferDetailPage: React.FC = () => {
   const acceptMutation = useAcceptOfferMutation();
   const rejectMutation = useRejectOfferMutation();
   const cancelMutation = useCancelOfferMutation();
+  const createOrderMutation = useCreateOrderFromOfferMutation();
 
   if (isLoading) {
     return <div className="min-h-screen bg-slate-950 text-emerald-400 text-center py-16 text-sm">Loading offer details...</div>;
@@ -58,6 +61,18 @@ export const OfferDetailPage: React.FC = () => {
     if (window.confirm('Are you sure you want to cancel your offer?')) {
       await cancelMutation.mutateAsync(offer.offerId);
       refetch();
+    }
+  };
+
+  const handleCreateOrder = async () => {
+    if (window.confirm('Are you sure you want to create an order from this accepted proposal?')) {
+      try {
+        const order = await createOrderMutation.mutateAsync(offer.offerId);
+        navigate(`/marketplace/orders/${order.orderId}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to create order.';
+        alert(message);
+      }
     }
   };
 
@@ -109,6 +124,17 @@ export const OfferDetailPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              {offer.status === 'ACCEPTED' && (
+                <button
+                  onClick={handleCreateOrder}
+                  disabled={createOrderMutation.isPending}
+                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-xl shadow-xl transition-all flex items-center gap-1.5"
+                >
+                  <span>🛍️</span>
+                  <span>{createOrderMutation.isPending ? 'Creating Order...' : 'Create Order from Proposal'}</span>
+                </button>
+              )}
+
               {offer.canAccept && (
                 <button
                   onClick={handleAccept}

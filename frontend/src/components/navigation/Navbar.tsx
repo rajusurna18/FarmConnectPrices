@@ -34,8 +34,14 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Marketplace', href: '/marketplace' },
-    ...(isFarmer ? [{ label: 'Received Offers', href: '/marketplace/received-offers' }] : []),
-    ...(isBuyer ? [{ label: 'My Offers', href: '/marketplace/offers' }] : []),
+    ...(isFarmer ? [
+      { label: 'Received Offers', href: '/marketplace/received-offers' },
+      { label: 'Received Orders', href: '/marketplace/received-orders' }
+    ] : []),
+    ...(isBuyer ? [
+      { label: 'My Offers', href: '/marketplace/offers' },
+      { label: 'My Orders', href: '/marketplace/orders' }
+    ] : []),
     { label: 'Markets', href: '/markets' },
     { label: 'Market Prices', href: '/market-prices' },
     { label: 'Intelligence', href: '/market-intelligence' },
