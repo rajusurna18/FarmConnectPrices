@@ -40,7 +40,8 @@ export const Navbar: React.FC = () => {
     ] : []),
     ...(isBuyer ? [
       { label: 'My Offers', href: '/marketplace/offers' },
-      { label: 'My Orders', href: '/marketplace/orders' }
+      { label: 'My Orders', href: '/marketplace/orders' },
+      { label: 'My Payments', href: '/marketplace/payments' }
     ] : []),
     { label: 'Markets', href: '/markets' },
     { label: 'Market Prices', href: '/market-prices' },

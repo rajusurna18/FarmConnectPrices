@@ -127,6 +127,15 @@ export const OrderDetailPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              {order.status === 'CONFIRMED' && (
+                <Link
+                  to={`/marketplace/orders/${order.orderId}/payment`}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition-colors flex items-center gap-1.5"
+                >
+                  💳 Pay Now (₹{order.totalAmount.toLocaleString('en-IN')})
+                </Link>
+              )}
+
               {order.canConfirm && (
                 <button
                   onClick={handleConfirm}
@@ -170,12 +179,14 @@ export const OrderDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Future Module Placeholder Notice */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-xs text-slate-400 flex items-center gap-3">
+        {/* Module 18 Payment Information Notice */}
+        <div className="bg-emerald-950/40 border border-emerald-800/60 rounded-2xl p-4 text-xs text-emerald-200 flex items-center gap-3">
           <span className="text-xl">💳</span>
           <div>
-            <span className="font-semibold text-slate-300 block">Payment & Logistics Notice</span>
-            <span>Payment integration and shipment tracking will be available in future modules. Commercial agreement and order inventory allocation are locked.</span>
+            <span className="font-semibold text-emerald-100 block">Module 18 Payments Foundation Active</span>
+            <span>
+              Confirmed orders are eligible for backend-authoritative payment initiation. Click &quot;Pay Now&quot; to open the payment checkout session.
+            </span>
           </div>
         </div>
 
