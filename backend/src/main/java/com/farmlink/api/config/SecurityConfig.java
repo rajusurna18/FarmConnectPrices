@@ -67,7 +67,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/health", "/api/v1/health/firebase", "/actuator/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/locations/**", "/api/v1/crops/**", "/api/v1/markets/**", "/api/v1/market-prices/**", "/api/v1/market-intelligence/**").permitAll()
                 .requestMatchers("/api/v1/marketplace/payments/webhook/**").permitAll()
-                .requestMatchers("/api/v1/users/**", "/api/v1/profile/**", "/api/v1/farms/**", "/api/v1/internal/**", "/api/v1/marketplace/payments/**").authenticated()
+                .requestMatchers("/api/v1/users/**", "/api/v1/profile/**", "/api/v1/farms/**", "/api/v1/internal/**", "/api/v1/marketplace/payments/**", "/api/v1/marketplace/deliveries/**").authenticated()
                 .anyRequest().permitAll()
             )
             .addFilterBefore(new FirebaseAuthFilter(firebaseApp), UsernamePasswordAuthenticationFilter.class);

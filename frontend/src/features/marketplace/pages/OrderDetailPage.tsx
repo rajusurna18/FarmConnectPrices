@@ -7,16 +7,22 @@ import {
   useCompleteOrderMutation,
   useCancelOrderMutation,
 } from '../api/marketplaceOrdersApi';
+import {
+  useOrderDeliveryQuery,
+  useCreateDeliveryMutation,
+} from '../api/marketplaceDeliveriesApi';
 
 export const OrderDetailPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
 
   const { data: order, isLoading, isError, refetch } = useOrderDetailQuery(orderId || '');
+  const { data: delivery, refetch: refetchDelivery } = useOrderDeliveryQuery(orderId || '');
 
   const confirmMutation = useConfirmOrderMutation();
   const processMutation = useProcessOrderMutation();
   const completeMutation = useCompleteOrderMutation();
   const cancelMutation = useCancelOrderMutation();
+  const createDeliveryMutation = useCreateDeliveryMutation();
 
   if (isLoading) {
     return <div className="min-h-screen bg-slate-950 text-emerald-400 text-center py-16 text-sm">Loading order details...</div>;
@@ -127,6 +133,35 @@ export const OrderDetailPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              {delivery ? (
+                <Link
+                  to={`/marketplace/deliveries/${delivery.deliveryId}`}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition-colors flex items-center gap-1.5"
+                >
+                  🚚 Track Delivery ({delivery.status.replace(/_/g, ' ')})
+                </Link>
+              ) : (
+                order.status !== 'CANCELLED' && order.status !== 'PENDING' && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await createDeliveryMutation.mutateAsync({ orderId: order.orderId });
+                        refetchDelivery();
+                      } catch (err) {
+                        const errorMsg = (err as { response?: { data?: string }; message?: string })?.response?.data ||
+                                         (err as { message?: string })?.message ||
+                                         'Failed to request delivery';
+                        alert(errorMsg);
+                      }
+                    }}
+                    disabled={createDeliveryMutation.isPending}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-xl shadow-lg transition-colors flex items-center gap-1.5"
+                  >
+                    📦 Request Delivery
+                  </button>
+                )
+              )}
+
               {order.status === 'CONFIRMED' && (
                 <Link
                   to={`/marketplace/orders/${order.orderId}/payment`}

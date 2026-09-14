@@ -68,6 +68,11 @@ const PaymentCheckoutPage = lazy(() => import('./features/marketplace/pages/Paym
 const MyPaymentsPage = lazy(() => import('./features/marketplace/pages/MyPaymentsPage').then((m) => ({ default: m.MyPaymentsPage })));
 const PaymentDetailPage = lazy(() => import('./features/marketplace/pages/PaymentDetailPage').then((m) => ({ default: m.PaymentDetailPage })));
 
+// Module 19 — Delivery & Logistics Foundation routes
+const MyDeliveriesPage = lazy(() => import('./features/marketplace/pages/MyDeliveriesPage').then((m) => ({ default: m.MyDeliveriesPage })));
+const ReceivedDeliveriesPage = lazy(() => import('./features/marketplace/pages/ReceivedDeliveriesPage').then((m) => ({ default: m.ReceivedDeliveriesPage })));
+const DeliveryDetailPage = lazy(() => import('./features/marketplace/pages/DeliveryDetailPage').then((m) => ({ default: m.DeliveryDetailPage })));
+
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
     <div className="flex flex-col items-center space-y-4">
@@ -116,6 +121,9 @@ export const App: React.FC = () => {
                 <Route path="/marketplace/payments" element={<MyPaymentsPage />} />
                 <Route path="/marketplace/payments/:paymentId" element={<PaymentDetailPage />} />
                 <Route path="/marketplace/received-orders" element={<ReceivedOrdersPage />} />
+                <Route path="/marketplace/deliveries" element={<MyDeliveriesPage />} />
+                <Route path="/marketplace/deliveries/:deliveryId" element={<DeliveryDetailPage />} />
+                <Route path="/marketplace/received-deliveries" element={<ReceivedDeliveriesPage />} />
 
                 {/* FARMER Role Restricted Routes */}
                 <Route element={<FarmerRoute />}>
