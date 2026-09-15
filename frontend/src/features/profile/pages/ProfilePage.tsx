@@ -20,6 +20,9 @@ import { ROLE_DISPLAY_NAMES } from '../types';
 import { GlassCard } from '../../../components/ui/GlassCard';
 import { Navbar } from '../../../components/navigation/Navbar';
 import { Footer } from '../../../components/navigation/Footer';
+import { RatingSummaryCard } from '../../marketplace/components/RatingSummaryCard';
+import { ReviewList } from '../../marketplace/components/ReviewList';
+import { useUserReviewsQuery } from '../../marketplace/api/marketplaceReviewsApi';
 
 // Helper to compute initials from display name or email
 function getInitials(displayName?: string | null, email?: string | null): string {
@@ -38,6 +41,7 @@ function getInitials(displayName?: string | null, email?: string | null): string
 
 export const ProfilePage: React.FC = () => {
   const { profile, isLoadingProfile, profileError, refetchProfile } = useProfile();
+  const { data: userReviews, isLoading: isLoadingReviews } = useUserReviewsQuery(profile?.uid || '');
 
   // Skeleton Loading State
   if (isLoadingProfile) {
@@ -437,6 +441,27 @@ export const ProfilePage: React.FC = () => {
                   )}
                 </div>
               </div>
+            </GlassCard>
+
+            {/* 5. MODULE 20 TRUST & REVIEWS SECTION */}
+            <RatingSummaryCard userId={profile.uid} userName={profile.displayName} />
+
+            <GlassCard className="p-6 border-slate-800 shadow-2xl space-y-4">
+              <h2 className="text-base font-bold text-white border-b border-slate-900 pb-3 flex items-center justify-between">
+                <span>⭐ Received Marketplace Reviews</span>
+                {userReviews?.items && userReviews.items.length > 0 && (
+                  <span className="text-xs text-amber-400 font-mono">
+                    {userReviews.totalElements} {userReviews.totalElements === 1 ? 'review' : 'reviews'}
+                  </span>
+                )}
+              </h2>
+
+              <ReviewList
+                reviews={userReviews?.items || []}
+                isLoading={isLoadingReviews}
+                emptyTitle="No Public Reviews Yet"
+                emptySubtitle="Verified reviews from completed commercial orders will be displayed here."
+              />
             </GlassCard>
 
             {/* BOTTOM ACTION AREA */}

@@ -118,6 +118,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Reviews Collection: Authenticated users can read published reviews; writes mediated exclusively via Spring Boot backend / Admin SDK
+    match /reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Rating Summaries Collection: Authenticated users can read public rating summaries; writes mediated exclusively via Spring Boot backend / Admin SDK
+    match /ratingSummaries/{userId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     // Default Deny: All other collections remain completely inaccessible until explicit rules are added
     match /{document=**} {
       allow read, write: if false;

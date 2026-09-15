@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   useOrderDetailQuery,
@@ -11,12 +11,22 @@ import {
   useOrderDeliveryQuery,
   useCreateDeliveryMutation,
 } from '../api/marketplaceDeliveriesApi';
+import {
+  useReviewEligibilityQuery,
+  useOrderReviewsQuery,
+} from '../api/marketplaceReviewsApi';
+import { ReviewForm } from '../components/ReviewForm';
+import { ReviewList } from '../components/ReviewList';
 
 export const OrderDetailPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   const { data: order, isLoading, isError, refetch } = useOrderDetailQuery(orderId || '');
   const { data: delivery, refetch: refetchDelivery } = useOrderDeliveryQuery(orderId || '');
+
+  const { data: eligibility, refetch: refetchEligibility } = useReviewEligibilityQuery(orderId || '');
+  const { data: orderReviews, isLoading: isLoadingReviews, refetch: refetchReviews } = useOrderReviewsQuery(orderId || '');
 
   const confirmMutation = useConfirmOrderMutation();
   const processMutation = useProcessOrderMutation();
@@ -68,6 +78,13 @@ export const OrderDetailPage: React.FC = () => {
     if (reason !== null) {
       await cancelMutation.mutateAsync({ orderId: order.orderId, reason });
       refetch();
+    }
+  };
+
+  const handleCreateDelivery = async () => {
+    if (window.confirm('Create delivery request for this confirmed order?')) {
+      await createDeliveryMutation.mutateAsync({ orderId: order.orderId });
+      refetchDelivery();
     }
   };
 
@@ -128,56 +145,17 @@ export const OrderDetailPage: React.FC = () => {
           {/* Action Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-emerald-900/40">
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-400">Current Status:</span>
               {getStatusBadge(order.status)}
             </div>
 
-            <div className="flex items-center gap-2">
-              {delivery ? (
-                <Link
-                  to={`/marketplace/deliveries/${delivery.deliveryId}`}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition-colors flex items-center gap-1.5"
-                >
-                  🚚 Track Delivery ({delivery.status.replace(/_/g, ' ')})
-                </Link>
-              ) : (
-                order.status !== 'CANCELLED' && order.status !== 'PENDING' && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        await createDeliveryMutation.mutateAsync({ orderId: order.orderId });
-                        refetchDelivery();
-                      } catch (err) {
-                        const errorMsg = (err as { response?: { data?: string }; message?: string })?.response?.data ||
-                                         (err as { message?: string })?.message ||
-                                         'Failed to request delivery';
-                        alert(errorMsg);
-                      }
-                    }}
-                    disabled={createDeliveryMutation.isPending}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-xl shadow-lg transition-colors flex items-center gap-1.5"
-                  >
-                    📦 Request Delivery
-                  </button>
-                )
-              )}
-
-              {order.status === 'CONFIRMED' && (
-                <Link
-                  to={`/marketplace/orders/${order.orderId}/payment`}
-                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition-colors flex items-center gap-1.5"
-                >
-                  💳 Pay Now (₹{order.totalAmount.toLocaleString('en-IN')})
-                </Link>
-              )}
-
+            <div className="flex flex-wrap items-center gap-2">
               {order.canConfirm && (
                 <button
                   onClick={handleConfirm}
                   disabled={confirmMutation.isPending}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-xl shadow-lg transition-colors"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl shadow transition-colors"
                 >
-                  Confirm Order
+                  {confirmMutation.isPending ? 'Confirming...' : 'Confirm Order'}
                 </button>
               )}
 
@@ -185,9 +163,9 @@ export const OrderDetailPage: React.FC = () => {
                 <button
                   onClick={handleProcess}
                   disabled={processMutation.isPending}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl shadow-lg transition-colors"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow transition-colors"
                 >
-                  Move to Processing
+                  {processMutation.isPending ? 'Updating...' : 'Move to Processing'}
                 </button>
               )}
 
@@ -195,9 +173,9 @@ export const OrderDetailPage: React.FC = () => {
                 <button
                   onClick={handleComplete}
                   disabled={completeMutation.isPending}
-                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition-colors"
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow transition-colors"
                 >
-                  Mark Completed
+                  {completeMutation.isPending ? 'Completing...' : 'Mark Completed'}
                 </button>
               )}
 
@@ -205,63 +183,135 @@ export const OrderDetailPage: React.FC = () => {
                 <button
                   onClick={handleCancel}
                   disabled={cancelMutation.isPending}
-                  className="px-4 py-2 bg-rose-950/80 hover:bg-rose-900 border border-rose-700/60 text-rose-300 font-medium text-xs rounded-xl transition-colors"
+                  className="px-4 py-2 bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 font-semibold text-xs rounded-xl transition-colors"
                 >
-                  Cancel Order
+                  {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Order'}
                 </button>
+              )}
+
+              {/* Module 18 Payment link */}
+              {order.status === 'CONFIRMED' && (
+                <Link
+                  to={`/marketplace/orders/${order.orderId}/payment`}
+                  className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow transition-colors"
+                >
+                  💳 Pay Now
+                </Link>
+              )}
+
+              {/* Module 19 Delivery link or action */}
+              {delivery ? (
+                <Link
+                  to={`/marketplace/deliveries/${delivery.deliveryId}`}
+                  className="px-4 py-2 bg-indigo-950 border border-indigo-800 text-indigo-300 hover:bg-indigo-900 font-semibold text-xs rounded-xl transition-colors"
+                >
+                  🚚 Track Delivery ({delivery.status})
+                </Link>
+              ) : (
+                order.status === 'CONFIRMED' && (
+                  <button
+                    onClick={handleCreateDelivery}
+                    disabled={createDeliveryMutation.isPending}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-colors"
+                  >
+                    📦 Request Delivery
+                  </button>
+                )
+              )}
+
+              {/* Module 20 Review Action Button */}
+              {order.status === 'COMPLETED' && eligibility?.eligible && !showReviewForm && (
+                <button
+                  onClick={() => setShowReviewForm(true)}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition-colors flex items-center gap-1.5"
+                >
+                  <span>⭐</span> Rate Transaction
+                </button>
+              )}
+
+              {order.status === 'COMPLETED' && eligibility?.alreadyReviewed && (
+                <span className="px-3 py-1.5 bg-amber-950/60 border border-amber-800/60 text-amber-300 font-medium text-xs rounded-xl flex items-center gap-1">
+                  <span>✓</span> Review Submitted
+                </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Module 18 Payment Information Notice */}
-        <div className="bg-emerald-950/40 border border-emerald-800/60 rounded-2xl p-4 text-xs text-emerald-200 flex items-center gap-3">
-          <span className="text-xl">💳</span>
-          <div>
-            <span className="font-semibold text-emerald-100 block">Module 18 Payments Foundation Active</span>
-            <span>
-              Confirmed orders are eligible for backend-authoritative payment initiation. Click &quot;Pay Now&quot; to open the payment checkout session.
-            </span>
-          </div>
-        </div>
+        {/* Module 20 Review Form Collapsible */}
+        {showReviewForm && (
+          <ReviewForm
+            orderId={order.orderId}
+            revieweeDisplayName={eligibility?.revieweeDisplayName}
+            revieweeRole={eligibility?.revieweeRole}
+            onSuccess={() => {
+              setShowReviewForm(false);
+              refetchEligibility();
+              refetchReviews();
+            }}
+            onCancel={() => setShowReviewForm(false)}
+          />
+        )}
 
-        {/* Detailed Financial & Item Summary */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-lg">
-          <h2 className="text-base font-bold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-3">
-            <span>📋 Order Items & Commercial Breakdown</span>
-          </h2>
-
+        {/* Order Details & Summary Card */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <h3 className="text-sm font-bold text-slate-200 border-b border-slate-800 pb-2">Order Line Items</h3>
           {order.item && (
-            <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-4 space-y-2 text-xs">
-              <div className="flex justify-between font-semibold text-slate-200">
-                <span>{order.item.cropName} ({order.item.quantity} {order.item.quantityUnit})</span>
-                <span>₹{order.item.lineTotal.toLocaleString('en-IN')}</span>
+            <div className="flex flex-wrap items-center justify-between p-4 bg-slate-950 rounded-xl border border-slate-800 text-xs">
+              <div>
+                <span className="font-bold text-slate-200 block text-sm">{order.item.cropName}</span>
+                <span className="text-slate-400">Listing ID: {order.item.listingId}</span>
               </div>
-              <div className="text-[11px] text-slate-400 flex justify-between">
-                <span>Agreed Price per Unit: ₹{order.item.agreedUnitPrice.toLocaleString('en-IN')} / {order.item.priceUnit}</span>
-                <span>Line Item ID: {order.item.orderItemId}</span>
+              <div className="text-right">
+                <span className="text-slate-300 block">
+                  {order.item.quantity} {order.item.quantityUnit} × ₹{order.item.agreedUnitPrice}
+                </span>
+                <span className="font-bold text-emerald-400 text-sm">
+                  ₹{order.item.lineTotal.toLocaleString('en-IN')}
+                </span>
               </div>
             </div>
           )}
 
-          <div className="space-y-2 text-xs pt-2 border-t border-slate-800/60">
+          <div className="pt-2 space-y-1.5 text-xs">
             <div className="flex justify-between text-slate-400">
-              <span>Subtotal:</span>
+              <span>Commercial Subtotal:</span>
               <span className="font-mono text-slate-200">₹{order.subtotal.toLocaleString('en-IN')}</span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span>Shipping & Delivery Cost:</span>
-              <span className="font-mono text-slate-200">₹{order.shippingCost.toLocaleString('en-IN')} (N/A)</span>
+              <span className="font-mono text-slate-200">₹{order.shippingCost.toLocaleString('en-IN')}</span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span>Other Costs:</span>
-              <span className="font-mono text-slate-200">₹{order.otherCost.toLocaleString('en-IN')} (N/A)</span>
+              <span className="font-mono text-slate-200">₹{order.otherCost.toLocaleString('en-IN')}</span>
             </div>
             <div className="flex justify-between font-bold text-sm text-emerald-300 pt-2 border-t border-slate-800">
               <span>Total Commercial Amount:</span>
               <span className="font-mono">₹{order.totalAmount.toLocaleString('en-IN')} {order.currency}</span>
             </div>
           </div>
+        </div>
+
+        {/* Module 20 Reviews Section on Order Page */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <h3 className="text-sm font-bold text-slate-200 border-b border-slate-800 pb-2 flex items-center justify-between">
+            <span>⭐ Order Reviews & Feedback</span>
+            {orderReviews && orderReviews.length > 0 && (
+              <span className="text-xs text-amber-400 font-mono">{orderReviews.length} {orderReviews.length === 1 ? 'review' : 'reviews'}</span>
+            )}
+          </h3>
+
+          <ReviewList
+            reviews={orderReviews || []}
+            isLoading={isLoadingReviews}
+            emptyTitle="No Order Reviews Yet"
+            emptySubtitle={
+              order.status === 'COMPLETED'
+                ? 'Rate this commercial transaction to share verified feedback.'
+                : 'Reviews will become eligible once this order reaches COMPLETED status.'
+            }
+          />
         </div>
 
         {/* Source References & Audit */}
