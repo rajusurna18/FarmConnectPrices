@@ -1,11 +1,13 @@
 package com.farmlink.api.service;
 
+import com.farmlink.api.common.event.MarketplaceDomainEvent;
 import com.farmlink.api.dto.*;
 import com.farmlink.api.model.*;
 import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -27,9 +29,21 @@ public class DeliveryService {
     private final ProductListingService listingService;
     private final ProfileService profileService;
     private final FirestoreQuotaGuard quotaGuard;
+    private final ApplicationEventPublisher eventPublisher;
 
     // In-memory fallback ONLY for isolated unit tests (when firestore is null)
     private final Map<String, Delivery> inMemoryDeliveries = new ConcurrentHashMap<>();
+
+    public DeliveryService(
+            Firestore firestore,
+            OrderService orderService,
+            PaymentService paymentService,
+            ProductListingService listingService,
+            ProfileService profileService,
+            FirestoreQuotaGuard quotaGuard
+    ) {
+        this(firestore, orderService, paymentService, listingService, profileService, quotaGuard, null);
+    }
 
     @Autowired
     public DeliveryService(
@@ -38,7 +52,8 @@ public class DeliveryService {
             PaymentService paymentService,
             ProductListingService listingService,
             ProfileService profileService,
-            @Autowired(required = false) FirestoreQuotaGuard quotaGuard
+            @Autowired(required = false) FirestoreQuotaGuard quotaGuard,
+            @Autowired(required = false) ApplicationEventPublisher eventPublisher
     ) {
         this.firestore = firestore;
         this.orderService = orderService;
@@ -46,6 +61,30 @@ public class DeliveryService {
         this.listingService = listingService;
         this.profileService = profileService;
         this.quotaGuard = quotaGuard;
+        this.eventPublisher = eventPublisher;
+    }
+
+    private void publishDeliveryNotification(Delivery delivery, NotificationType type, String title, String message) {
+        if (eventPublisher != null && delivery != null && delivery.getBuyerUid() != null && !delivery.getBuyerUid().trim().isEmpty()) {
+            try {
+                MarketplaceDomainEvent event = new MarketplaceDomainEvent(
+                        this,
+                        delivery.getBuyerUid(),
+                        delivery.getBuyerRole(),
+                        type,
+                        title,
+                        message,
+                        "DELIVERY",
+                        delivery.getDeliveryId(),
+                        "/marketplace/deliveries/" + delivery.getDeliveryId(),
+                        Map.of("orderId", delivery.getOrderId()),
+                        "event_delivery_" + type.name().toLowerCase() + "_" + delivery.getDeliveryId()
+                );
+                eventPublisher.publishEvent(event);
+            } catch (Exception e) {
+                logger.warn("Failed to publish delivery notification event for {}: {}", type, e.getMessage());
+            }
+        }
     }
 
     /**
@@ -665,6 +704,7 @@ public class DeliveryService {
                 }).get();
 
                 if (quotaGuard != null) quotaGuard.recordSuccess();
+                publishDeliveryStatusTransitionNotification(updatedDelivery, targetStatus);
                 return toResponse(updatedDelivery, callerUid);
 
             } catch (Exception e) {
@@ -696,7 +736,29 @@ public class DeliveryService {
         delivery.setUpdatedAt(nowIso);
 
         inMemoryDeliveries.put(deliveryId, delivery);
+        publishDeliveryStatusTransitionNotification(delivery, targetStatus);
         return toResponse(delivery, callerUid);
+    }
+
+    private void publishDeliveryStatusTransitionNotification(Delivery delivery, DeliveryStatus targetStatus) {
+        NotificationType type = switch (targetStatus) {
+            case ASSIGNED -> NotificationType.DELIVERY_ASSIGNED;
+            case READY_FOR_PICKUP -> NotificationType.DELIVERY_READY_FOR_PICKUP;
+            case PICKED_UP -> NotificationType.DELIVERY_PICKED_UP;
+            case IN_TRANSIT -> NotificationType.DELIVERY_IN_TRANSIT;
+            case OUT_FOR_DELIVERY -> NotificationType.DELIVERY_OUT_FOR_DELIVERY;
+            case DELIVERED -> NotificationType.DELIVERY_DELIVERED;
+            case CANCELLED -> NotificationType.DELIVERY_CANCELLED;
+            default -> null;
+        };
+        if (type != null && delivery != null) {
+            publishDeliveryNotification(
+                    delivery,
+                    type,
+                    "Delivery " + targetStatus.name(),
+                    String.format("Delivery for order #%s status is now %s.", delivery.getOrderId(), targetStatus.name())
+            );
+        }
     }
 
     private Delivery fetchDeliveryFromFirestoreOrMemory(String deliveryId) {

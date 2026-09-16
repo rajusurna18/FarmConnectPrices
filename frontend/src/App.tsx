@@ -73,6 +73,9 @@ const MyDeliveriesPage = lazy(() => import('./features/marketplace/pages/MyDeliv
 const ReceivedDeliveriesPage = lazy(() => import('./features/marketplace/pages/ReceivedDeliveriesPage').then((m) => ({ default: m.ReceivedDeliveriesPage })));
 const DeliveryDetailPage = lazy(() => import('./features/marketplace/pages/DeliveryDetailPage').then((m) => ({ default: m.DeliveryDetailPage })));
 
+// Module 21 — Notifications & Communication Foundation route
+const NotificationCenterPage = lazy(() => import('./pages/NotificationCenterPage').then((m) => ({ default: m.NotificationCenterPage })));
+
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
     <div className="flex flex-col items-center space-y-4">
@@ -100,6 +103,7 @@ export const App: React.FC = () => {
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
+                <Route path="/notifications" element={<NotificationCenterPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/profile/edit" element={<EditProfilePage />} />

@@ -1,6 +1,8 @@
 package com.farmlink.api.service;
 
+import com.farmlink.api.common.event.MarketplaceDomainEvent;
 import com.farmlink.api.dto.*;
+import com.farmlink.api.model.NotificationType;
 import com.farmlink.api.model.Offer;
 import com.farmlink.api.model.OfferRound;
 import com.farmlink.api.model.OfferStatus;
@@ -9,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -37,21 +40,33 @@ public class OfferService {
     private final ProductListingService listingService;
     private final ProfileService profileService;
     private final FirestoreQuotaGuard quotaGuard;
+    private final ApplicationEventPublisher eventPublisher;
 
     // In-memory fallback ONLY for isolated offline unit tests (when firestore is null)
     private final Map<String, Offer> inMemoryOffers = new ConcurrentHashMap<>();
+
+    public OfferService(
+            Firestore firestore,
+            ProductListingService listingService,
+            ProfileService profileService,
+            FirestoreQuotaGuard quotaGuard
+    ) {
+        this(firestore, listingService, profileService, quotaGuard, null);
+    }
 
     @Autowired
     public OfferService(
             @Autowired(required = false) Firestore firestore,
             ProductListingService listingService,
             ProfileService profileService,
-            @Autowired(required = false) FirestoreQuotaGuard quotaGuard
+            @Autowired(required = false) FirestoreQuotaGuard quotaGuard,
+            @Autowired(required = false) ApplicationEventPublisher eventPublisher
     ) {
         this.firestore = firestore;
         this.listingService = listingService;
         this.profileService = profileService;
         this.quotaGuard = quotaGuard;
+        this.eventPublisher = eventPublisher;
     }
 
     public int getMaxNegotiationRounds() {
@@ -68,6 +83,22 @@ public class OfferService {
 
     public void setDefaultExpirationDays(int defaultExpirationDays) {
         this.defaultExpirationDays = defaultExpirationDays;
+    }
+
+    private void publishNotificationEvent(String recipientUid, String recipientRole, NotificationType type,
+                                         String title, String message, String relatedEntityId,
+                                         String relatedRoute, String sourceEventId) {
+        if (eventPublisher != null && recipientUid != null && !recipientUid.trim().isEmpty()) {
+            try {
+                MarketplaceDomainEvent event = new MarketplaceDomainEvent(
+                        this, recipientUid, recipientRole, type, title, message,
+                        "OFFER", relatedEntityId, relatedRoute, Map.of(), sourceEventId
+                );
+                eventPublisher.publishEvent(event);
+            } catch (Exception e) {
+                logger.warn("Failed to publish notification event for {}: {}", type, e.getMessage());
+            }
+        }
     }
 
     /**
@@ -196,6 +227,18 @@ public class OfferService {
         if (firestore == null) {
             inMemoryOffers.put(offerId, offer);
         }
+
+        publishNotificationEvent(
+                offer.getFarmerId(),
+                "FARMER",
+                NotificationType.NEW_OFFER,
+                "New Offer Received",
+                String.format("You received a new offer of ₹%s for %s %s of %s.",
+                        offer.getOfferedPrice(), offer.getOfferedQuantity(), offer.getQuantityUnit(), offer.getCropName()),
+                offer.getOfferId(),
+                "/marketplace/offers/" + offer.getOfferId(),
+                "event_offer_new_" + offer.getOfferId()
+        );
 
         return toResponse(offer, buyerUid);
     }
@@ -408,6 +451,19 @@ public class OfferService {
                 }).get();
 
                 if (quotaGuard != null) quotaGuard.recordSuccess();
+                String recipientUid = callerUid.equals(updatedOffer.getFarmerId()) ? updatedOffer.getBuyerUid() : updatedOffer.getFarmerId();
+                String recipientRole = recipientUid.equals(updatedOffer.getFarmerId()) ? "FARMER" : updatedOffer.getBuyerRole();
+                publishNotificationEvent(
+                        recipientUid,
+                        recipientRole,
+                        NotificationType.COUNTER_OFFER_RECEIVED,
+                        "Counter Offer Received",
+                        String.format("Counter offer received: ₹%s for %s %s of %s.",
+                                updatedOffer.getOfferedPrice(), updatedOffer.getOfferedQuantity(), updatedOffer.getQuantityUnit(), updatedOffer.getCropName()),
+                        updatedOffer.getOfferId(),
+                        "/marketplace/offers/" + updatedOffer.getOfferId(),
+                        "event_offer_counter_" + updatedOffer.getOfferId() + "_" + updatedOffer.getRoundNumber()
+                );
                 return toResponse(updatedOffer, callerUid);
 
             } catch (Exception e) {
@@ -494,6 +550,19 @@ public class OfferService {
         offer.setRespondedAt(nowIso);
 
         inMemoryOffers.put(offerId, offer);
+        String recipientUid = callerUid.equals(offer.getFarmerId()) ? offer.getBuyerUid() : offer.getFarmerId();
+        String recipientRole = recipientUid.equals(offer.getFarmerId()) ? "FARMER" : offer.getBuyerRole();
+        publishNotificationEvent(
+                recipientUid,
+                recipientRole,
+                NotificationType.COUNTER_OFFER_RECEIVED,
+                "Counter Offer Received",
+                String.format("Counter offer received: ₹%s for %s %s of %s.",
+                        offer.getOfferedPrice(), offer.getOfferedQuantity(), offer.getQuantityUnit(), offer.getCropName()),
+                offer.getOfferId(),
+                "/marketplace/offers/" + offer.getOfferId(),
+                "event_offer_counter_" + offer.getOfferId() + "_" + offer.getRoundNumber()
+        );
         return toResponse(offer, callerUid);
     }
 
@@ -574,6 +643,16 @@ public class OfferService {
                 }).get();
 
                 if (quotaGuard != null) quotaGuard.recordSuccess();
+                publishNotificationEvent(
+                        updatedOffer.getBuyerUid(),
+                        updatedOffer.getBuyerRole(),
+                        NotificationType.OFFER_ACCEPTED,
+                        "Offer Accepted",
+                        String.format("Your offer for %s has been accepted!", updatedOffer.getCropName()),
+                        updatedOffer.getOfferId(),
+                        "/marketplace/offers/" + updatedOffer.getOfferId(),
+                        "event_offer_accept_" + updatedOffer.getOfferId()
+                );
                 return toResponse(updatedOffer, callerUid);
 
             } catch (Exception e) {
@@ -640,6 +719,16 @@ public class OfferService {
         offer.setRespondedAt(nowIso);
 
         inMemoryOffers.put(offerId, offer);
+        publishNotificationEvent(
+                offer.getBuyerUid(),
+                offer.getBuyerRole(),
+                NotificationType.OFFER_ACCEPTED,
+                "Offer Accepted",
+                String.format("Your offer for %s has been accepted!", offer.getCropName()),
+                offer.getOfferId(),
+                "/marketplace/offers/" + offer.getOfferId(),
+                "event_offer_accept_" + offer.getOfferId()
+        );
         return toResponse(offer, callerUid);
     }
 
@@ -697,6 +786,17 @@ public class OfferService {
         if (firestore == null) {
             inMemoryOffers.put(offerId, offer);
         }
+
+        publishNotificationEvent(
+                offer.getBuyerUid(),
+                offer.getBuyerRole(),
+                NotificationType.OFFER_REJECTED,
+                "Offer Declined",
+                String.format("Your offer for %s was declined.", offer.getCropName()),
+                offer.getOfferId(),
+                "/marketplace/offers/" + offer.getOfferId(),
+                "event_offer_reject_" + offer.getOfferId()
+        );
 
         return toResponse(offer, callerUid);
     }
@@ -756,6 +856,17 @@ public class OfferService {
         if (firestore == null) {
             inMemoryOffers.put(offerId, offer);
         }
+
+        publishNotificationEvent(
+                offer.getFarmerId(),
+                "FARMER",
+                NotificationType.OFFER_CANCELLED,
+                "Offer Cancelled",
+                String.format("Offer for %s was cancelled by buyer.", offer.getCropName()),
+                offer.getOfferId(),
+                "/marketplace/offers/" + offer.getOfferId(),
+                "event_offer_cancel_" + offer.getOfferId()
+        );
 
         return toResponse(offer, buyerUid);
     }

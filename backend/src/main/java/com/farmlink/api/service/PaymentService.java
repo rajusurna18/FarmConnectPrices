@@ -1,5 +1,6 @@
 package com.farmlink.api.service;
 
+import com.farmlink.api.common.event.MarketplaceDomainEvent;
 import com.farmlink.api.config.PaymentEnvironmentGuard;
 import com.farmlink.api.dto.*;
 import com.farmlink.api.model.*;
@@ -8,6 +9,7 @@ import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -31,9 +33,20 @@ public class PaymentService {
     private final PaymentProvider paymentProvider;
     private final FirestoreQuotaGuard quotaGuard;
     private final PaymentEnvironmentGuard environmentGuard;
+    private final ApplicationEventPublisher eventPublisher;
 
     // In-memory fallback ONLY for isolated unit tests (when firestore is null)
     private final Map<String, Payment> inMemoryPayments = new ConcurrentHashMap<>();
+
+    public PaymentService(
+            Firestore firestore,
+            OrderService orderService,
+            PaymentProvider paymentProvider,
+            FirestoreQuotaGuard quotaGuard,
+            PaymentEnvironmentGuard environmentGuard
+    ) {
+        this(firestore, orderService, paymentProvider, quotaGuard, environmentGuard, null);
+    }
 
     @Autowired
     public PaymentService(
@@ -41,13 +54,31 @@ public class PaymentService {
             OrderService orderService,
             PaymentProvider paymentProvider,
             @Autowired(required = false) FirestoreQuotaGuard quotaGuard,
-            @Autowired(required = false) PaymentEnvironmentGuard environmentGuard
+            @Autowired(required = false) PaymentEnvironmentGuard environmentGuard,
+            @Autowired(required = false) ApplicationEventPublisher eventPublisher
     ) {
         this.firestore = firestore;
         this.orderService = orderService;
         this.paymentProvider = paymentProvider;
         this.quotaGuard = quotaGuard;
         this.environmentGuard = environmentGuard;
+        this.eventPublisher = eventPublisher;
+    }
+
+    private void publishNotificationEvent(String recipientUid, String recipientRole, NotificationType type,
+                                         String title, String message, String relatedEntityId,
+                                         String relatedRoute, String sourceEventId) {
+        if (eventPublisher != null && recipientUid != null && !recipientUid.trim().isEmpty()) {
+            try {
+                MarketplaceDomainEvent event = new MarketplaceDomainEvent(
+                        this, recipientUid, recipientRole, type, title, message,
+                        "PAYMENT", relatedEntityId, relatedRoute, Map.of(), sourceEventId
+                );
+                eventPublisher.publishEvent(event);
+            } catch (Exception e) {
+                logger.warn("Failed to publish notification event for {}: {}", type, e.getMessage());
+            }
+        }
     }
 
     /**
@@ -312,6 +343,30 @@ public class PaymentService {
             }
         } else {
             inMemoryPayments.put(paymentId, payment);
+        }
+
+        if (PaymentStatus.SUCCESS.name().equalsIgnoreCase(payment.getStatus())) {
+            publishNotificationEvent(
+                    payment.getBuyerUid(),
+                    payment.getBuyerRole(),
+                    NotificationType.PAYMENT_SUCCESS,
+                    "Payment Successful",
+                    String.format("Your payment of ₹%s for order #%s succeeded.", payment.getAmount(), payment.getOrderId()),
+                    payment.getPaymentId(),
+                    "/marketplace/payments/" + payment.getPaymentId(),
+                    "event_payment_success_" + payment.getPaymentId()
+            );
+        } else if (PaymentStatus.FAILED.name().equalsIgnoreCase(payment.getStatus())) {
+            publishNotificationEvent(
+                    payment.getBuyerUid(),
+                    payment.getBuyerRole(),
+                    NotificationType.PAYMENT_FAILED,
+                    "Payment Failed",
+                    String.format("Payment of ₹%s for order #%s failed.", payment.getAmount(), payment.getOrderId()),
+                    payment.getPaymentId(),
+                    "/marketplace/payments/" + payment.getPaymentId(),
+                    "event_payment_failed_" + payment.getPaymentId()
+            );
         }
 
         return toResponse(payment);

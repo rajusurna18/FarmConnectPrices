@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ChevronRight, User, LayoutDashboard, LogOut } from 'lucide-react';
+import { Menu, X, ChevronRight, User, LayoutDashboard, LogOut, Bell } from 'lucide-react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
+import { useUnreadNotificationCount } from '../../hooks/useNotifications';
 
 export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated, userDocument, logout } = useAuth();
+  const { data: unreadData } = useUnreadNotificationCount();
+  const unreadCount = unreadData?.count || 0;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -101,6 +104,18 @@ export const Navbar: React.FC = () => {
         <div className="hidden md:flex items-center space-x-3">
           {isAuthenticated ? (
             <div className="flex items-center space-x-3">
+              <Link
+                to="/notifications"
+                className="relative p-2 text-slate-300 hover:text-emerald-400 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl transition-all flex items-center justify-center"
+                title="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-emerald-500 text-slate-950 font-extrabold text-[10px] rounded-full flex items-center justify-center animate-pulse">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
               <Link
                 to="/dashboard"
                 className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/50 transition-all flex items-center space-x-1.5"

@@ -1,11 +1,13 @@
 package com.farmlink.api.service;
 
+import com.farmlink.api.common.event.MarketplaceDomainEvent;
 import com.farmlink.api.dto.*;
 import com.farmlink.api.model.*;
 import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -29,9 +31,20 @@ public class OrderService {
     private final ProductListingService listingService;
     private final ProfileService profileService;
     private final FirestoreQuotaGuard quotaGuard;
+    private final ApplicationEventPublisher eventPublisher;
 
     // In-memory fallback ONLY for isolated unit tests (when firestore is null)
     private final Map<String, Order> inMemoryOrders = new ConcurrentHashMap<>();
+
+    public OrderService(
+            Firestore firestore,
+            OfferService offerService,
+            ProductListingService listingService,
+            ProfileService profileService,
+            FirestoreQuotaGuard quotaGuard
+    ) {
+        this(firestore, offerService, listingService, profileService, quotaGuard, null);
+    }
 
     @Autowired
     public OrderService(
@@ -39,13 +52,31 @@ public class OrderService {
             OfferService offerService,
             ProductListingService listingService,
             ProfileService profileService,
-            @Autowired(required = false) FirestoreQuotaGuard quotaGuard
+            @Autowired(required = false) FirestoreQuotaGuard quotaGuard,
+            @Autowired(required = false) ApplicationEventPublisher eventPublisher
     ) {
         this.firestore = firestore;
         this.offerService = offerService;
         this.listingService = listingService;
         this.profileService = profileService;
         this.quotaGuard = quotaGuard;
+        this.eventPublisher = eventPublisher;
+    }
+
+    private void publishNotificationEvent(String recipientUid, String recipientRole, NotificationType type,
+                                         String title, String message, String relatedEntityId,
+                                         String relatedRoute, String sourceEventId) {
+        if (eventPublisher != null && recipientUid != null && !recipientUid.trim().isEmpty()) {
+            try {
+                MarketplaceDomainEvent event = new MarketplaceDomainEvent(
+                        this, recipientUid, recipientRole, type, title, message,
+                        "ORDER", relatedEntityId, relatedRoute, Map.of(), sourceEventId
+                );
+                eventPublisher.publishEvent(event);
+            } catch (Exception e) {
+                logger.warn("Failed to publish notification event for {}: {}", type, e.getMessage());
+            }
+        }
     }
 
     /**
@@ -183,6 +214,16 @@ public class OrderService {
                 }).get();
 
                 if (quotaGuard != null) quotaGuard.recordSuccess();
+                publishNotificationEvent(
+                        createdOrder.getFarmerId(),
+                        "FARMER",
+                        NotificationType.ORDER_CREATED,
+                        "New Order Created",
+                        String.format("New order #%s received for %s.", createdOrder.getOrderId(), createdOrder.getCropName()),
+                        createdOrder.getOrderId(),
+                        "/marketplace/orders/" + createdOrder.getOrderId(),
+                        "event_order_create_" + createdOrder.getOrderId()
+                );
                 return toResponse(createdOrder, callerUid);
 
             } catch (Exception e) {
@@ -292,6 +333,16 @@ public class OrderService {
         listingService.updateListing(offerResp.getFarmerId(), listing.getListingId(), ulr);
 
         inMemoryOrders.put(orderId, order);
+        publishNotificationEvent(
+                order.getFarmerId(),
+                "FARMER",
+                NotificationType.ORDER_CREATED,
+                "New Order Created",
+                String.format("New order #%s received for %s.", order.getOrderId(), order.getCropName()),
+                order.getOrderId(),
+                "/marketplace/orders/" + order.getOrderId(),
+                "event_order_create_" + order.getOrderId()
+        );
         return toResponse(order, callerUid);
     }
 
@@ -588,6 +639,7 @@ public class OrderService {
                 }).get();
 
                 if (quotaGuard != null) quotaGuard.recordSuccess();
+                publishStatusTransitionNotification(updatedOrder, targetStatus);
                 return toResponse(updatedOrder, callerUid);
 
             } catch (Exception e) {
@@ -615,7 +667,30 @@ public class OrderService {
         order.setUpdatedAt(nowIso);
 
         inMemoryOrders.put(orderId, order);
+        publishStatusTransitionNotification(order, targetStatus);
         return toResponse(order, callerUid);
+    }
+
+    private void publishStatusTransitionNotification(Order order, OrderStatus targetStatus) {
+        NotificationType type = switch (targetStatus) {
+            case CONFIRMED -> NotificationType.ORDER_CONFIRMED;
+            case PROCESSING -> NotificationType.ORDER_PROCESSING;
+            case COMPLETED -> NotificationType.ORDER_COMPLETED;
+            case CANCELLED -> NotificationType.ORDER_CANCELLED;
+            default -> null;
+        };
+        if (type != null && order != null) {
+            publishNotificationEvent(
+                    order.getBuyerUid(),
+                    order.getBuyerRole(),
+                    type,
+                    "Order " + targetStatus.name(),
+                    String.format("Your order #%s status is now %s.", order.getOrderId(), targetStatus.name()),
+                    order.getOrderId(),
+                    "/marketplace/orders/" + order.getOrderId(),
+                    "event_order_" + targetStatus.name().toLowerCase() + "_" + order.getOrderId()
+            );
+        }
     }
 
     private Order fetchOrderFromFirestoreOrMemory(String orderId) {

@@ -1,11 +1,13 @@
 package com.farmlink.api.service;
 
+import com.farmlink.api.common.event.MarketplaceDomainEvent;
 import com.farmlink.api.dto.*;
 import com.farmlink.api.model.*;
 import com.google.cloud.firestore.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -32,22 +34,64 @@ public class ReviewService {
     private final OrderService orderService;
     private final ProfileService profileService;
     private final FirestoreQuotaGuard quotaGuard;
+    private final ApplicationEventPublisher eventPublisher;
 
     // In-memory fallback ONLY for isolated unit tests (when firestore bean is null)
     private final Map<String, Review> inMemoryReviews = new ConcurrentHashMap<>();
     private final Map<String, RatingSummary> inMemoryRatingSummaries = new ConcurrentHashMap<>();
+
+    public ReviewService(
+            Firestore firestore,
+            OrderService orderService,
+            ProfileService profileService,
+            FirestoreQuotaGuard quotaGuard
+    ) {
+        this(firestore, orderService, profileService, quotaGuard, null);
+    }
 
     @Autowired
     public ReviewService(
             @Autowired(required = false) Firestore firestore,
             OrderService orderService,
             ProfileService profileService,
-            @Autowired(required = false) FirestoreQuotaGuard quotaGuard
+            @Autowired(required = false) FirestoreQuotaGuard quotaGuard,
+            @Autowired(required = false) ApplicationEventPublisher eventPublisher
     ) {
         this.firestore = firestore;
         this.orderService = orderService;
         this.profileService = profileService;
         this.quotaGuard = quotaGuard;
+        this.eventPublisher = eventPublisher;
+    }
+
+    private void publishReviewNotification(Review review) {
+        if (eventPublisher != null && review != null && review.getRevieweeUid() != null && !review.getRevieweeUid().trim().isEmpty()) {
+            try {
+                String reviewerName = review.getReviewerDisplayName() != null && !review.getReviewerDisplayName().trim().isEmpty()
+                        ? review.getReviewerDisplayName()
+                        : "A user";
+                String crop = review.getCropName() != null && !review.getCropName().trim().isEmpty()
+                        ? review.getCropName()
+                        : "your listing";
+
+                MarketplaceDomainEvent event = new MarketplaceDomainEvent(
+                        this,
+                        review.getRevieweeUid(),
+                        review.getRevieweeRole(),
+                        NotificationType.NEW_REVIEW,
+                        "New Review Received",
+                        String.format("%s gave you a %d-star review for %s.", reviewerName, review.getRating(), crop),
+                        "REVIEW",
+                        review.getReviewId(),
+                        "/profile",
+                        Map.of("rating", review.getRating(), "orderId", review.getOrderId()),
+                        "event_review_new_" + review.getReviewId()
+                );
+                eventPublisher.publishEvent(event);
+            } catch (Exception e) {
+                logger.warn("Failed to publish review notification event: {}", e.getMessage());
+            }
+        }
     }
 
     /**
@@ -206,6 +250,7 @@ public class ReviewService {
                 }).get();
 
                 if (quotaGuard != null) quotaGuard.recordSuccess();
+                publishReviewNotification(createdReview);
                 return toResponse(createdReview);
 
             } catch (Exception e) {
@@ -302,6 +347,7 @@ public class ReviewService {
 
         inMemoryReviews.put(reviewId, review);
         inMemoryRatingSummaries.put(revieweeUid, summary);
+        publishReviewNotification(review);
         return toResponse(review);
     }
 

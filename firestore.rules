@@ -130,6 +130,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Notifications Collection: Authenticated recipient users can read their own notifications; writes mediated exclusively via Spring Boot backend / Admin SDK
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && resource.data.recipientUid == request.auth.uid;
+      allow write: if false;
+    }
+
     // Default Deny: All other collections remain completely inaccessible until explicit rules are added
     match /{document=**} {
       allow read, write: if false;
