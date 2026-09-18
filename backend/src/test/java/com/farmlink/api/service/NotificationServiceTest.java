@@ -23,7 +23,7 @@ public class NotificationServiceTest {
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(null, null);
+        notificationService = new NotificationService(null, null, null);
     }
 
     @Test

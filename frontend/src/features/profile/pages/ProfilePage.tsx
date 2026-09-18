@@ -14,6 +14,8 @@ import {
   Building2,
   Home,
   RefreshCw,
+  Bell,
+  Sliders,
 } from 'lucide-react';
 import { useProfile } from '../hooks/useProfile';
 import { ROLE_DISPLAY_NAMES } from '../types';
@@ -462,6 +464,27 @@ export const ProfilePage: React.FC = () => {
                 emptyTitle="No Public Reviews Yet"
                 emptySubtitle="Verified reviews from completed commercial orders will be displayed here."
               />
+            </GlassCard>
+
+            {/* 6. MODULE 22 NOTIFICATION PREFERENCES SECTION */}
+            <GlassCard className="p-6 border-slate-800 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-900 pb-3">
+                <h2 className="text-base font-bold text-white flex items-center space-x-2">
+                  <Bell className="w-4.5 h-4.5 text-emerald-400" />
+                  <span>In-App Notification Preferences</span>
+                </h2>
+                <span className="text-xs text-slate-500 font-mono">Module 22</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Configure your event notification preferences for offers, orders, payments, delivery status, and reviews.
+              </p>
+              <Link
+                to="/notification-preferences"
+                className="w-full inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 hover:text-white text-xs font-semibold transition-colors min-h-[44px]"
+              >
+                <Sliders className="w-4 h-4 text-emerald-400" />
+                <span>Manage Notification Preferences →</span>
+              </Link>
             </GlassCard>
 
             {/* BOTTOM ACTION AREA */}

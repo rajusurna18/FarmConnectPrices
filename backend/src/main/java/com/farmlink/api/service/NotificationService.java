@@ -27,6 +27,7 @@ public class NotificationService {
 
     private final Firestore firestore;
     private final FirestoreQuotaGuard quotaGuard;
+    private final NotificationPreferenceService preferenceService;
 
     // In-memory fallback for isolated unit testing when Firestore bean is absent
     private final Map<String, Notification> inMemoryNotifications = new ConcurrentHashMap<>();
@@ -34,10 +35,12 @@ public class NotificationService {
     @Autowired
     public NotificationService(
             @Autowired(required = false) Firestore firestore,
-            @Autowired(required = false) FirestoreQuotaGuard quotaGuard
+            @Autowired(required = false) FirestoreQuotaGuard quotaGuard,
+            @Autowired(required = false) NotificationPreferenceService preferenceService
     ) {
         this.firestore = firestore;
         this.quotaGuard = quotaGuard;
+        this.preferenceService = preferenceService;
     }
 
     /**
@@ -62,6 +65,12 @@ public class NotificationService {
         }
 
         String recipientUid = request.getRecipientUid().trim();
+
+        // Check recipient notification preference
+        if (preferenceService != null && !preferenceService.isCategoryEnabled(recipientUid, request.getType())) {
+            logger.info("Notification creation suppressed for recipient {} and type {} according to user preferences", recipientUid, request.getType());
+            return null;
+        }
 
         // Idempotency check using sourceEventId if present
         if (request.getSourceEventId() != null && !request.getSourceEventId().trim().isEmpty()) {
