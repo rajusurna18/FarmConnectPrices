@@ -180,6 +180,16 @@ export const MyListingsPage: React.FC = () => {
 
                 {/* Actions Block */}
                 <div className="flex items-center space-x-2 pt-3 md:pt-0 border-t md:border-t-0 border-slate-800">
+                  {listing.status === 'ACTIVE' && (
+                    <Link
+                      to={`/marketplace/buyer-opportunities?listingId=${listing.listingId}`}
+                      className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all text-xs font-semibold flex items-center space-x-1"
+                      title="View Buyer Opportunities"
+                    >
+                      <span>🎯 Opportunities</span>
+                    </Link>
+                  )}
+
                   <Link
                     to={`/marketplace/listings/${listing.listingId}`}
                     className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all text-xs font-semibold flex items-center space-x-1"

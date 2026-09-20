@@ -52,6 +52,8 @@ const MarketplaceDetailPage = lazy(() => import('./features/marketplace/pages/Ma
 const MyListingsPage = lazy(() => import('./features/marketplace/pages/MyListingsPage').then((m) => ({ default: m.MyListingsPage })));
 const CreateListingPage = lazy(() => import('./features/marketplace/pages/CreateListingPage').then((m) => ({ default: m.CreateListingPage })));
 const EditListingPage = lazy(() => import('./features/marketplace/pages/EditListingPage').then((m) => ({ default: m.EditListingPage })));
+const BuyerOpportunitiesPage = lazy(() => import('./features/marketplace/pages/BuyerOpportunitiesPage').then((m) => ({ default: m.BuyerOpportunitiesPage })));
+
 
 // Module 16 — Offers & Negotiation Foundation routes
 const MyOffersPage = lazy(() => import('./features/marketplace/pages/MyOffersPage').then((m) => ({ default: m.MyOffersPage })));
@@ -152,6 +154,7 @@ export const App: React.FC = () => {
                   <Route path="/marketplace/my-listings" element={<MyListingsPage />} />
                   <Route path="/marketplace/listings/new" element={<CreateListingPage />} />
                   <Route path="/marketplace/listings/:id/edit" element={<EditListingPage />} />
+                  <Route path="/marketplace/buyer-opportunities" element={<BuyerOpportunitiesPage />} />
                 </Route>
               </Route>
             </Routes>

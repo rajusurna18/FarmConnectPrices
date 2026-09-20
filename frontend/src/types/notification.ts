@@ -32,7 +32,7 @@ export interface NotificationItem {
   relatedEntityType?: string;
   relatedEntityId?: string;
   relatedRoute?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   sourceEventId?: string;
   createdAt: string;
   readAt?: string | null;
