@@ -1,4 +1,3 @@
-
 package com.farmlink.api.security;
 
 import com.google.firebase.FirebaseApp;
