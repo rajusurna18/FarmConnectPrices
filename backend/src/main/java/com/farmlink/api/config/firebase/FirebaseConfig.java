@@ -16,6 +16,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+ 
 
 @Configuration
 public class FirebaseConfig {
@@ -38,6 +39,8 @@ public class FirebaseConfig {
         String projectId = (properties.getProjectId() != null && !properties.getProjectId().trim().isEmpty())
                 ? properties.getProjectId()
                 : "farmconnectprices";
+
+        
 
         // 1. Emulator Mode
         if (properties.isUseEmulator() || System.getenv("FIRESTORE_EMULATOR_HOST") != null || System.getenv("FIREBASE_AUTH_EMULATOR_HOST") != null) {
@@ -81,6 +84,25 @@ public class FirebaseConfig {
     }
 
     private GoogleCredentials resolveCredentials(String projectId) {
+
+        // 0. Check complete Firebase service-account JSON from Render
+    String serviceAccountJson = System.getenv("FIREBASE_SERVICE_ACCOUNT_JSON");
+
+    if (serviceAccountJson != null && !serviceAccountJson.trim().isEmpty()) {
+    logger.info("Loading Firebase credentials from FIREBASE_SERVICE_ACCOUNT_JSON.");
+
+      try (InputStream is = new ByteArrayInputStream(
+            serviceAccountJson.getBytes(StandardCharsets.UTF_8))) {
+        return GoogleCredentials.fromStream(is);
+        } catch (IOException e) {
+        logger.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON: {}",
+                e.getMessage());
+        throw new IllegalStateException(
+                "Invalid FIREBASE_SERVICE_ACCOUNT_JSON. Check the complete service-account JSON in Render.",
+                e);
+        }
+    } 
+
         // A. Check explicit credentials path from properties
         if (properties.getCredentialsPath() != null && !properties.getCredentialsPath().trim().isEmpty()) {
             File credFile = new File(properties.getCredentialsPath());
