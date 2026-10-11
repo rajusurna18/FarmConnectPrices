@@ -128,12 +128,15 @@ public class FirebaseConfig {
                 }
             }
         }
-
-        // D. Check inline private key and client email
         
         // D. Check inline private key and client email
         String privateKey = properties.getFormattedPrivateKey();
         String clientEmail = properties.getClientEmail();
+
+        logger.info("Firebase client email present: {}",
+               clientEmail != null && !clientEmail.trim().isEmpty());
+        logger.info("Firebase private key present: {}",
+               privateKey != null && !privateKey.trim().isEmpty());
 
         if (privateKey != null && !privateKey.trim().isEmpty()
                 && clientEmail != null && !clientEmail.trim().isEmpty()) {
