@@ -130,25 +130,38 @@ public class FirebaseConfig {
         }
 
         // D. Check inline private key and client email
+        
+        // D. Check inline private key and client email
         String privateKey = properties.getFormattedPrivateKey();
         String clientEmail = properties.getClientEmail();
-        if (privateKey != null && !privateKey.trim().isEmpty() && clientEmail != null && !clientEmail.trim().isEmpty()) {
-            logger.info("Loading Firebase credentials from inline clientEmail and privateKey for project: {}", projectId);
-            String jsonCredentials = String.format(
-                    "{\n" +
-                    "  \"type\": \"service_account\",\n" +
-                    "  \"project_id\": \"%s\",\n" +
-                    "  \"client_email\": \"%s\",\n" +
-                    "  \"private_key\": \"%s\"\n" +
-                    "}",
-                    projectId,
-                    clientEmail,
-                    privateKey.replace("\n", "\\n")
-            );
+
+        if (privateKey != null && !privateKey.trim().isEmpty()
+                && clientEmail != null && !clientEmail.trim().isEmpty()) {
+
+            logger.info("Loading Firebase credentials from environment properties.");
+
             try {
-                return GoogleCredentials.fromStream(new ByteArrayInputStream(jsonCredentials.getBytes(StandardCharsets.UTF_8)));
+                String jsonCredentials = String.format(
+                        "{\"type\":\"service_account\","
+                                + "\"project_id\":\"%s\","
+                                + "\"client_email\":\"%s\","
+                                + "\"private_key\":\"%s\"}",
+                        projectId,
+                        clientEmail,
+                        privateKey.replace("\\", "\\\\")
+                                .replace("\n", "\\n")
+                                .replace("\"", "\\\"")
+                );
+
+                return GoogleCredentials.fromStream(
+                        new ByteArrayInputStream(
+                                jsonCredentials.getBytes(StandardCharsets.UTF_8)
+                        )
+                );
+
             } catch (IOException e) {
-                logger.error("Failed to parse inline service account credentials: {}", e.getMessage());
+                logger.error("Failed to parse inline Firebase credentials: {}",
+                        e.getMessage());
             }
         }
 
