@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import com.google.auth.oauth2.ServiceAccountCredentials;
  
 
 @Configuration
@@ -60,6 +61,17 @@ public class FirebaseConfig {
 
         // 2. Real Production / Development Credentials Mode
         GoogleCredentials credentials = resolveCredentials(projectId);
+
+        if (credentials instanceof ServiceAccountCredentials) {
+           ServiceAccountCredentials serviceAccount =
+              (ServiceAccountCredentials) credentials;
+
+        logger.info("Firebase credential email: {}",
+            serviceAccount.getClientEmail());
+
+    logger.info("Firebase credential key ID: {}",
+            serviceAccount.getPrivateKeyId());
+}
 
         if (credentials == null) {
             String errorMsg = String.format(
