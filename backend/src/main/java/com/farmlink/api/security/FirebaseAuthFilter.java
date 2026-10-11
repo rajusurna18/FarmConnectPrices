@@ -1,3 +1,4 @@
+
 package com.farmlink.api.security;
 
 import com.google.firebase.FirebaseApp;
@@ -18,7 +19,8 @@ import java.io.IOException;
 
 public class FirebaseAuthFilter extends OncePerRequestFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(FirebaseAuthFilter.class);
+    private static final Logger logger =
+            LoggerFactory.getLogger(FirebaseAuthFilter.class);
 
     private final FirebaseApp firebaseApp;
 
@@ -27,10 +29,12 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
-        // Allow OPTIONS preflight requests to pass through without token verification
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
@@ -38,29 +42,48 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String idToken = authHeader.substring(7).trim();
+        // Requests without a token continue. Spring Security decides
+        // whether the requested endpoint requires authentication.
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            if (!idToken.isEmpty()) {
-                try {
-                    FirebaseToken decodedToken = FirebaseAuth.getInstance(firebaseApp).verifyIdToken(idToken);
-                    String uid = decodedToken.getUid();
-                    String email = decodedToken.getEmail();
-                    String name = decodedToken.getName();
-                    boolean emailVerified = decodedToken.isEmailVerified();
+        String idToken = authHeader.substring(7).trim();
 
-                    FirebaseAuthenticationToken authentication = new FirebaseAuthenticationToken(uid, email, name, emailVerified);
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+        if (idToken.isEmpty()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-                } catch (Exception e) {
-                    logger.warn("Firebase ID token verification failed: {}", e.getMessage());
-                    SecurityContextHolder.clearContext();
-                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    response.getWriter().write("{\"status\":\"UNAUTHORIZED\",\"message\":\"Invalid or expired Firebase ID token\"}");
-                    return;
-                }
-            }
+        try {
+            FirebaseToken decodedToken =
+                    FirebaseAuth.getInstance(firebaseApp).verifyIdToken(idToken);
+
+            FirebaseAuthenticationToken authentication =
+                    new FirebaseAuthenticationToken(
+                            decodedToken.getUid(),
+                            decodedToken.getEmail(),
+                            decodedToken.getName(),
+                            decodedToken.isEmailVerified()
+                    );
+
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authentication);
+
+        } catch (Exception e) {
+            logger.warn("Firebase ID token verification failed: {}",
+                    e.getMessage());
+
+            SecurityContextHolder.clearContext();
+
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().write(
+                    "{\"status\":\"UNAUTHORIZED\","
+                    + "\"message\":\"Invalid or expired Firebase ID token\"}"
+            );
+            return;
         }
 
         filterChain.doFilter(request, response);
