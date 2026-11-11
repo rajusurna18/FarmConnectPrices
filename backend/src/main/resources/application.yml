@@ -17,6 +17,8 @@ management:
 app:
   cors:
     allowed-origins: http://localhost:5173
+  disputes:
+    cursor-signing-secret: ${DISPUTE_CURSOR_SECRET:}
   firebase:
     project-id: ${FIREBASE_PROJECT_ID:farmconnectprices}
     credentials-path: ${FIREBASE_CREDENTIALS_PATH:}

@@ -141,6 +141,39 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Disputes Collection: Authenticated participants (buyer or farmer) can read; writes mediated exclusively via Spring Boot backend / Admin SDK
+    match /disputes/{disputeId} {
+      allow read: if request.auth != null && (resource.data.buyerUid == request.auth.uid || resource.data.farmerUid == request.auth.uid);
+      allow write: if false;
+
+      // Dispute Responses Subcollection: Authenticated participants of the dispute can read; writes server-mediated
+      match /responses/{responseId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.buyerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.farmerUid == request.auth.uid
+        );
+        allow write: if false;
+      }
+
+      // Dispute Evidence Subcollection: Authenticated participants of the dispute can read; writes server-mediated
+      match /evidence/{evidenceId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.buyerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.farmerUid == request.auth.uid
+        );
+        allow write: if false;
+      }
+
+      // Dispute History Subcollection: Authenticated participants of the dispute can read; writes server-mediated
+      match /history/{historyId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.buyerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.farmerUid == request.auth.uid
+        );
+        allow write: if false;
+      }
+    }
+
     // Default Deny: All other collections remain completely inaccessible until explicit rules are added
     match /{document=**} {
       allow read, write: if false;

@@ -33,5 +33,13 @@ public enum NotificationType {
     DELIVERY_CANCELLED,
 
     // Reviews (Module 20)
-    NEW_REVIEW
+    NEW_REVIEW,
+
+    // Disputes (Module 24)
+    DISPUTE_CREATED,
+    DISPUTE_RESPONSE_RECEIVED,
+    DISPUTE_INFORMATION_REQUESTED,
+    DISPUTE_STATUS_UPDATED,
+    DISPUTE_RESOLVED,
+    DISPUTE_CLOSED
 }

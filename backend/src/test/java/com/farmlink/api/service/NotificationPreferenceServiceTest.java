@@ -78,6 +78,12 @@ public class NotificationPreferenceServiceTest {
         assertEquals(NotificationCategory.ORDERS, NotificationCategory.fromNotificationType(NotificationType.ORDER_PROCESSING));
         assertEquals(NotificationCategory.ORDERS, NotificationCategory.fromNotificationType(NotificationType.ORDER_CANCELLED));
         assertEquals(NotificationCategory.ORDERS, NotificationCategory.fromNotificationType(NotificationType.ORDER_COMPLETED));
+        assertEquals(NotificationCategory.ORDERS, NotificationCategory.fromNotificationType(NotificationType.DISPUTE_CREATED));
+        assertEquals(NotificationCategory.ORDERS, NotificationCategory.fromNotificationType(NotificationType.DISPUTE_RESPONSE_RECEIVED));
+        assertEquals(NotificationCategory.ORDERS, NotificationCategory.fromNotificationType(NotificationType.DISPUTE_INFORMATION_REQUESTED));
+        assertEquals(NotificationCategory.ORDERS, NotificationCategory.fromNotificationType(NotificationType.DISPUTE_STATUS_UPDATED));
+        assertEquals(NotificationCategory.ORDERS, NotificationCategory.fromNotificationType(NotificationType.DISPUTE_RESOLVED));
+        assertEquals(NotificationCategory.ORDERS, NotificationCategory.fromNotificationType(NotificationType.DISPUTE_CLOSED));
 
         // PAYMENTS
         assertEquals(NotificationCategory.PAYMENTS, NotificationCategory.fromNotificationType(NotificationType.PAYMENT_CREATED));

@@ -19,7 +19,13 @@ export type NotificationType =
   | 'DELIVERY_OUT_FOR_DELIVERY'
   | 'DELIVERY_DELIVERED'
   | 'DELIVERY_CANCELLED'
-  | 'NEW_REVIEW';
+  | 'NEW_REVIEW'
+  | 'DISPUTE_CREATED'
+  | 'DISPUTE_RESPONSE_RECEIVED'
+  | 'DISPUTE_INFORMATION_REQUESTED'
+  | 'DISPUTE_STATUS_UPDATED'
+  | 'DISPUTE_RESOLVED'
+  | 'DISPUTE_CLOSED';
 
 export interface NotificationItem {
   notificationId: string;
