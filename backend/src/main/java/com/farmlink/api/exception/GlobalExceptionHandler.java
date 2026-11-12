@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
         }
         logger.error("Unhandled API exception occurred: {}", ex.getMessage(), ex);
         Map<String, String> response = new HashMap<>();
-        response.put("error", ex.getMessage() != null ? ex.getMessage() : "An unexpected server error occurred.");
+        response.put("error", "An unexpected server error occurred. Please try again later.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }

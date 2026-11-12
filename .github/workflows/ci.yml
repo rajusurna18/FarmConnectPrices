@@ -1,0 +1,60 @@
+name: FarmConnectPrices CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm --prefix frontend ci
+
+      - name: Run ESLint
+        run: npm --prefix frontend run lint
+
+      - name: Run Vitest Unit & Integration Tests
+        run: npm --prefix frontend run test -- --run
+
+      - name: Build Vite Production Bundle
+        run: npm --prefix frontend run build
+
+  backend:
+    name: Backend Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Run Spring Boot Tests
+        run: mvn -f backend/pom.xml test -Dtest=Dispute*,Health*
+        env:
+          FIREBASE_USE_EMULATOR: "true"
+
+      - name: Build Production JAR Package
+        run: mvn -f backend/pom.xml package -DskipTests

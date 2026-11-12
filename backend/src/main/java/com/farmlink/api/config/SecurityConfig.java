@@ -3,6 +3,7 @@ package com.farmlink.api.config;
 import com.farmlink.api.security.FirebaseAuthFilter;
 import com.google.firebase.FirebaseApp;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,6 +19,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
@@ -26,6 +28,9 @@ public class SecurityConfig {
 
     private final FirebaseApp firebaseApp;
 
+    @Value("${app.cors.allowed-origins:}")
+    private String allowedOrigins;
+
     public SecurityConfig(FirebaseApp firebaseApp) {
         this.firebaseApp = firebaseApp;
     }
@@ -33,11 +38,30 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
+        List<String> origins = new ArrayList<>();
+
+        if (allowedOrigins != null && !allowedOrigins.trim().isEmpty()) {
+            for (String origin : allowedOrigins.split(",")) {
+                String trimmed = origin.trim();
+                if (!trimmed.isEmpty() && !origins.contains(trimmed)) {
+                    origins.add(trimmed);
+                }
+            }
+        }
+
+        // Default development and cloud hosting patterns
+        List<String> defaultPatterns = List.of(
             "http://localhost:[*]",
             "http://127.0.0.1:[*]",
             "https://*.vercel.app"
-        ));
+        );
+        for (String pattern : defaultPatterns) {
+            if (!origins.contains(pattern)) {
+                origins.add(pattern);
+            }
+        }
+
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         configuration.setExposedHeaders(List.of("Authorization"));

@@ -1,9 +1,12 @@
 spring:
   application:
     name: farmlink-api
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
 
 server:
-  port: 8080
+  port: ${PORT:8080}
+  shutdown: graceful
 
 management:
   endpoints:
@@ -13,10 +16,12 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
 
 app:
   cors:
-    allowed-origins: http://localhost:5173
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
   disputes:
     cursor-signing-secret: ${DISPUTE_CURSOR_SECRET:}
   firebase:

@@ -1,0 +1,34 @@
+# Production Spring Boot Configuration Profile (prod / production)
+# FarmConnectPrices / FarmLink AI
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.farmlink.api: INFO
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    com.google: INFO
