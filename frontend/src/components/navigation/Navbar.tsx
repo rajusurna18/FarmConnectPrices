@@ -46,6 +46,9 @@ export const Navbar: React.FC = () => {
       { label: 'My Orders', href: '/marketplace/orders' },
       { label: 'My Payments', href: '/marketplace/payments' }
     ] : []),
+    ...(isAuthenticated ? [
+      { label: 'Disputes', href: '/marketplace/disputes' }
+    ] : []),
     { label: 'Markets', href: '/markets' },
     { label: 'Market Prices', href: '/market-prices' },
     { label: 'Intelligence', href: '/market-intelligence' },

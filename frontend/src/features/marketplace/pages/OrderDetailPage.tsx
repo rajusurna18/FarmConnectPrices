@@ -17,6 +17,9 @@ import {
 } from '../api/marketplaceReviewsApi';
 import { ReviewForm } from '../components/ReviewForm';
 import { ReviewList } from '../components/ReviewList';
+import { useOrderDisputesQuery } from '../api/marketplaceDisputesApi';
+import { DisputeStatusBadge } from '../components/disputes/DisputeStatusBadge';
+import { DISPUTE_CATEGORY_LABELS } from '../../../types/dispute';
 
 export const OrderDetailPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -27,6 +30,7 @@ export const OrderDetailPage: React.FC = () => {
 
   const { data: eligibility, refetch: refetchEligibility } = useReviewEligibilityQuery(orderId || '');
   const { data: orderReviews, isLoading: isLoadingReviews, refetch: refetchReviews } = useOrderReviewsQuery(orderId || '');
+  const { data: orderDisputes } = useOrderDisputesQuery(orderId || '');
 
   const confirmMutation = useConfirmOrderMutation();
   const processMutation = useProcessOrderMutation();
@@ -234,6 +238,14 @@ export const OrderDetailPage: React.FC = () => {
                   <span>✓</span> Review Submitted
                 </span>
               )}
+
+              {/* Module 24 Dispute / Report Issue Action */}
+              <Link
+                to={`/marketplace/disputes/new/${order.orderId}`}
+                className="px-3.5 py-2 bg-amber-950/80 hover:bg-amber-900 border border-amber-700/60 text-amber-300 font-semibold text-xs rounded-xl shadow transition-colors flex items-center gap-1.5"
+              >
+                <span>⚠️</span> Report Issue
+              </Link>
             </div>
           </div>
         </div>
@@ -312,6 +324,61 @@ export const OrderDetailPage: React.FC = () => {
                 : 'Reviews will become eligible once this order reaches COMPLETED status.'
             }
           />
+        </div>
+
+        {/* Module 24 — Order Disputes & Resolution */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-base">⚖️</span>
+              <h3 className="text-sm font-bold text-slate-200">
+                Order Disputes & Issues
+              </h3>
+              {orderDisputes && orderDisputes.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-mono bg-amber-950/60 text-amber-300 border border-amber-800/60 font-semibold">
+                  {orderDisputes.length}
+                </span>
+              )}
+            </div>
+            <Link
+              to={`/marketplace/disputes/new/${order.orderId}`}
+              className="text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors"
+            >
+              + Report Issue
+            </Link>
+          </div>
+
+          {!orderDisputes || orderDisputes.length === 0 ? (
+            <p className="text-xs text-slate-400 py-2">
+              No disputes or issues reported on this order. If produce was damaged, delayed, or mismatched, you can report an issue.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {orderDisputes.map((dispute) => (
+                <div
+                  key={dispute.disputeId}
+                  className="p-4 bg-slate-950 rounded-xl border border-slate-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-slate-400 font-semibold">{dispute.disputeId}</span>
+                      <DisputeStatusBadge status={dispute.status} />
+                      <span className="text-[11px] text-slate-400">
+                        {DISPUTE_CATEGORY_LABELS[dispute.issueCategory as keyof typeof DISPUTE_CATEGORY_LABELS] || dispute.issueCategory}
+                      </span>
+                    </div>
+                    <p className="text-slate-200 font-medium">{dispute.subject}</p>
+                  </div>
+                  <Link
+                    to={`/marketplace/disputes/${dispute.disputeId}`}
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-colors whitespace-nowrap self-start sm:self-auto"
+                  >
+                    View Dispute →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Source References & Audit */}

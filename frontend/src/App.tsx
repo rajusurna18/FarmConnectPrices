@@ -79,6 +79,12 @@ const DeliveryDetailPage = lazy(() => import('./features/marketplace/pages/Deliv
 const NotificationCenterPage = lazy(() => import('./pages/NotificationCenterPage').then((m) => ({ default: m.NotificationCenterPage })));
 const NotificationPreferencesPage = lazy(() => import('./pages/NotificationPreferencesPage').then((m) => ({ default: m.NotificationPreferencesPage })));
 
+// Module 24 — Order Issues, Disputes & Resolution Foundation routes
+const MyDisputesPage = lazy(() => import('./features/marketplace/pages/MyDisputesPage').then((m) => ({ default: m.MyDisputesPage })));
+const RelatedDisputesPage = lazy(() => import('./features/marketplace/pages/RelatedDisputesPage').then((m) => ({ default: m.RelatedDisputesPage })));
+const CreateDisputePage = lazy(() => import('./features/marketplace/pages/CreateDisputePage').then((m) => ({ default: m.CreateDisputePage })));
+const DisputeDetailPage = lazy(() => import('./features/marketplace/pages/DisputeDetailPage').then((m) => ({ default: m.DisputeDetailPage })));
+
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
     <div className="flex flex-col items-center space-y-4">
@@ -132,6 +138,10 @@ export const App: React.FC = () => {
                 <Route path="/marketplace/deliveries" element={<MyDeliveriesPage />} />
                 <Route path="/marketplace/deliveries/:deliveryId" element={<DeliveryDetailPage />} />
                 <Route path="/marketplace/received-deliveries" element={<ReceivedDeliveriesPage />} />
+                <Route path="/marketplace/disputes" element={<MyDisputesPage />} />
+                <Route path="/marketplace/disputes/related" element={<RelatedDisputesPage />} />
+                <Route path="/marketplace/disputes/new/:orderId" element={<CreateDisputePage />} />
+                <Route path="/marketplace/disputes/:disputeId" element={<DisputeDetailPage />} />
 
                 {/* FARMER Role Restricted Routes */}
                 <Route element={<FarmerRoute />}>
