@@ -1,3 +1,4 @@
+
 name: FarmConnectPrices CI
 
 on:
@@ -14,6 +15,16 @@ jobs:
   frontend:
     name: Frontend Quality Gate
     runs-on: ubuntu-latest
+
+    env:
+      VITE_API_BASE_URL: "https://api.farmconnectprices.com"
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -36,14 +47,11 @@ jobs:
 
       - name: Build Vite Production Bundle
         run: npm --prefix frontend run build
-        env:
-          VITE_API_BASE_URL: "https://api.farmconnectprices.com"
-          VITE_FIREBASE_API_KEY: "ci-build-placeholder-key"
-          VITE_FIREBASE_PROJECT_ID: "farmconnectprices"
 
   backend:
     name: Backend Quality Gate
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
