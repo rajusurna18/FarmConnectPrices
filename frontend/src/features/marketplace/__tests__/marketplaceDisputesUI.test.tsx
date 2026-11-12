@@ -322,9 +322,9 @@ describe('Module 24 — Dispute Frontend UI Components', () => {
       expect(firstCursor).toBeUndefined();
     });
 
-    it('all 7 dispute categories have descriptive human-readable labels', () => {
+    it('all 9 dispute categories have descriptive human-readable labels matching backend DisputeCategory.java', () => {
       const categories = Object.keys(DISPUTE_CATEGORY_LABELS);
-      expect(categories).toHaveLength(7);
+      expect(categories).toHaveLength(9);
       expect(DISPUTE_CATEGORY_LABELS.PRODUCT_QUALITY).toBe('Product Quality Issue');
       expect(DISPUTE_CATEGORY_LABELS.DAMAGED_PRODUCT).toBe('Damaged Product');
       expect(DISPUTE_CATEGORY_LABELS.QUANTITY_MISMATCH).toBe('Quantity Mismatch');
@@ -332,6 +332,8 @@ describe('Module 24 — Dispute Frontend UI Components', () => {
       expect(DISPUTE_CATEGORY_LABELS.DELIVERY_DELAY).toBe('Delivery Delay');
       expect(DISPUTE_CATEGORY_LABELS.DELIVERY_NOT_RECEIVED).toBe('Delivery Not Received');
       expect(DISPUTE_CATEGORY_LABELS.PAYMENT_ISSUE).toBe('Payment Issue');
+      expect(DISPUTE_CATEGORY_LABELS.ORDER_CANCELLATION).toBe('Order Cancellation Issue');
+      expect(DISPUTE_CATEGORY_LABELS.OTHER).toBe('Other Commercial Issue');
     });
 
     it('all 6 dispute lifecycle statuses have descriptive labels', () => {

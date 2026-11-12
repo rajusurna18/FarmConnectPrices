@@ -23,7 +23,9 @@ export type DisputeCategory =
   | 'WRONG_PRODUCT'
   | 'DELIVERY_DELAY'
   | 'DELIVERY_NOT_RECEIVED'
-  | 'PAYMENT_ISSUE';
+  | 'PAYMENT_ISSUE'
+  | 'ORDER_CANCELLATION'
+  | 'OTHER';
 
 /**
  * Dispute lifecycle statuses matching backend DisputeStatus.java.
@@ -209,6 +211,8 @@ export const DISPUTE_CATEGORY_LABELS: Record<DisputeCategory, string> = {
   DELIVERY_DELAY: 'Delivery Delay',
   DELIVERY_NOT_RECEIVED: 'Delivery Not Received',
   PAYMENT_ISSUE: 'Payment Issue',
+  ORDER_CANCELLATION: 'Order Cancellation Issue',
+  OTHER: 'Other Commercial Issue',
 };
 
 export const DISPUTE_STATUS_LABELS: Record<DisputeStatus, string> = {

@@ -1092,5 +1092,40 @@ class DisputeServiceTest {
             assertTrue(ex.getMessage().contains("Invalid, tampered, or forged pagination cursor signature"));
         }
     }
+
+    @Test
+    @DisplayName("Stage 4.3: Order cancellation and other dispute categories are supported and verified")
+    void testDisputeCreation_OrderCancellationAndOtherCategories() {
+        CreateDisputeRequest cancelReq = new CreateDisputeRequest(
+                ORDER_ID, "ORDER_CANCELLATION", "Order improperly cancelled", "Cancelled after payment was processed."
+        );
+        DisputeResponse cancelDisp = disputeService.createDispute(BUYER_UID, cancelReq);
+        assertNotNull(cancelDisp);
+        assertEquals("ORDER_CANCELLATION", cancelDisp.getIssueCategory());
+
+        // Close to clear lock for next test
+        disputeService.closeDispute(BUYER_UID, cancelDisp.getDisputeId());
+
+        CreateDisputeRequest otherReq = new CreateDisputeRequest(
+                ORDER_ID, "OTHER", "Unspecified packaging damage", "Unspecified commercial disagreement."
+        );
+        DisputeResponse otherDisp = disputeService.createDispute(BUYER_UID, otherReq);
+        assertNotNull(otherDisp);
+        assertEquals("OTHER", otherDisp.getIssueCategory());
+
+        // Add evidence and verify registeredBy fields are mapped cleanly
+        AddDisputeEvidenceRequest eviReq = new AddDisputeEvidenceRequest(
+                "other_proof.pdf", "application/pdf", 102400L, "Supporting contract doc"
+        );
+        DisputeEvidence evi = disputeService.addEvidence(BUYER_UID, otherDisp.getDisputeId(), eviReq);
+        assertNotNull(evi);
+        assertEquals(BUYER_UID, evi.getRegisteredByUid());
+        assertEquals("CUSTOMER", evi.getRegisteredByRole());
+
+        DisputeDetailResponse detail = disputeService.getDisputeById(BUYER_UID, otherDisp.getDisputeId());
+        assertEquals(1, detail.getEvidence().size());
+        assertEquals(BUYER_UID, detail.getEvidence().get(0).getRegisteredByUid());
+        assertEquals("CUSTOMER", detail.getEvidence().get(0).getRegisteredByRole());
+    }
 }
 

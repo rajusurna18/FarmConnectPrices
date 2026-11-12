@@ -18,6 +18,8 @@ const CATEGORY_OPTIONS: DisputeCategory[] = [
   'DELIVERY_DELAY',
   'DELIVERY_NOT_RECEIVED',
   'PAYMENT_ISSUE',
+  'ORDER_CANCELLATION',
+  'OTHER',
 ];
 
 export const CreateDisputePage: React.FC = () => {

@@ -1000,11 +1000,18 @@ public class DisputeService {
                 if (quotaGuard != null) quotaGuard.recordSuccess();
 
                 for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    String regUid = doc.getString("registeredByUid") != null
+                            ? doc.getString("registeredByUid")
+                            : doc.getString("uploadedByUid");
+                    String regRole = doc.getString("registeredByRole") != null
+                            ? doc.getString("registeredByRole")
+                            : doc.getString("uploadedByRole");
+
                     list.add(new DisputeEvidence(
                             doc.getString("evidenceId"),
                             doc.getString("disputeId"),
-                            doc.getString("uploadedByUid"),
-                            doc.getString("uploadedByRole"),
+                            regUid,
+                            regRole,
                             doc.getString("fileName"),
                             doc.getString("storagePath"),
                             doc.getString("contentType"),

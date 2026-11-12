@@ -449,7 +449,7 @@ describe('Marketplace Disputes API Service & Domain Models', () => {
       expect(isDisputeTerminal('UNDER_REVIEW')).toBe(false);
     });
 
-    it('provides human-readable labels for all 7 categories and 6 statuses', () => {
+    it('provides human-readable labels for all 9 categories and 6 statuses', () => {
       const categories: DisputeCategory[] = [
         'PRODUCT_QUALITY',
         'DAMAGED_PRODUCT',
@@ -458,6 +458,8 @@ describe('Marketplace Disputes API Service & Domain Models', () => {
         'DELIVERY_DELAY',
         'DELIVERY_NOT_RECEIVED',
         'PAYMENT_ISSUE',
+        'ORDER_CANCELLATION',
+        'OTHER',
       ];
 
       for (const cat of categories) {
