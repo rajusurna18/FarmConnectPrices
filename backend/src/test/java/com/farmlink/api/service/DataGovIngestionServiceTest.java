@@ -11,6 +11,8 @@ import com.google.cloud.firestore.Firestore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +21,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class DataGovIngestionServiceTest {
+
+    private static final String TODAY_DATE = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
     private DataGovMandiClient client;
     private MandiMappingService mappingService;
@@ -35,6 +39,7 @@ class DataGovIngestionServiceTest {
         properties.setPageSize(2);
         properties.setMaxPages(5);
         properties.setMode("INCREMENTAL");
+        properties.setLookbackDays(30);
         firestore = mock(Firestore.class);
 
         ingestionService = new DataGovIngestionService(client, mappingService, properties, firestore);
@@ -56,7 +61,7 @@ class DataGovIngestionServiceTest {
         DataGovMandiResponseDto responseDto = new DataGovMandiResponseDto();
         DataGovMandiRecordDto validRecord = new DataGovMandiRecordDto(
                 "Andhra Pradesh", "Guntur", "Guntur Mandi", "Chilli Red", "Sannam",
-                "26/08/2026", "18000", "22000", "20000"
+                TODAY_DATE, "18000", "22000", "20000"
         );
         responseDto.setRecords(List.of(validRecord));
 
@@ -76,13 +81,13 @@ class DataGovIngestionServiceTest {
     void ingestMandiPrices_handlesMultiplePagesAndEmptyPageTermination() {
         DataGovMandiResponseDto page1 = new DataGovMandiResponseDto();
         page1.setRecords(List.of(
-                new DataGovMandiRecordDto("Punjab", "Sangrur", "Sangrur Mandi", "Wheat", "Kalyan", "26/08/2026", "2000", "2400", "2200"),
-                new DataGovMandiRecordDto("Punjab", "Ludhiana", "Ludhiana Mandi", "Rice", "Basmati", "26/08/2026", "3000", "3600", "3300")
+                new DataGovMandiRecordDto("Punjab", "Sangrur", "Sangrur Mandi", "Wheat", "Kalyan", TODAY_DATE, "2000", "2400", "2200"),
+                new DataGovMandiRecordDto("Punjab", "Ludhiana", "Ludhiana Mandi", "Rice", "Basmati", TODAY_DATE, "3000", "3600", "3300")
         ));
 
         DataGovMandiResponseDto page2 = new DataGovMandiResponseDto();
         page2.setRecords(List.of(
-                new DataGovMandiRecordDto("Haryana", "Karnal", "Karnal Mandi", "Paddy", "Common", "26/08/2026", "1900", "2100", "2000")
+                new DataGovMandiRecordDto("Haryana", "Karnal", "Karnal Mandi", "Paddy", "Common", TODAY_DATE, "1900", "2100", "2000")
         ));
 
         when(client.fetchMandiPrices(anyString(), eq(2), eq(0))).thenReturn(Optional.of(page1));
@@ -101,8 +106,8 @@ class DataGovIngestionServiceTest {
     void ingestMandiPrices_handlesMaxPagesTermination() {
         DataGovMandiResponseDto page = new DataGovMandiResponseDto();
         page.setRecords(List.of(
-                new DataGovMandiRecordDto("Gujarat", "Rajkot", "Rajkot APMC", "Cotton", "Medium", "26/08/2026", "6000", "7000", "6500"),
-                new DataGovMandiRecordDto("Gujarat", "Amreli", "Amreli APMC", "Groundnut", "Bold", "26/08/2026", "5500", "6500", "6000")
+                new DataGovMandiRecordDto("Gujarat", "Rajkot", "Rajkot APMC", "Cotton", "Medium", TODAY_DATE, "6000", "7000", "6500"),
+                new DataGovMandiRecordDto("Gujarat", "Amreli", "Amreli APMC", "Groundnut", "Bold", TODAY_DATE, "5500", "6500", "6000")
         ));
 
         when(client.fetchMandiPrices(anyString(), anyInt(), anyInt())).thenReturn(Optional.of(page));
@@ -119,7 +124,7 @@ class DataGovIngestionServiceTest {
         DataGovMandiResponseDto responseDto = new DataGovMandiResponseDto();
         DataGovMandiRecordDto unmappedRecord = new DataGovMandiRecordDto(
                 "Odisha", "Kalahandi", "Bhawanipatna Mandi", "Dragon Fruit", "Red Flesh",
-                "26/08/2026", "8000", "12000", "10000"
+                TODAY_DATE, "8000", "12000", "10000"
         );
         responseDto.setRecords(List.of(unmappedRecord));
 
@@ -141,7 +146,7 @@ class DataGovIngestionServiceTest {
         // Invalid: min > modal or negative price
         DataGovMandiRecordDto invalidRecord = new DataGovMandiRecordDto(
                 "Karnataka", "Kolar", "Kolar APMC", "Tomato", "Local",
-                "26/08/2026", "5000", "3000", "4000"
+                TODAY_DATE, "5000", "3000", "4000"
         );
         responseDto.setRecords(List.of(invalidRecord));
 

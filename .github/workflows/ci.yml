@@ -36,6 +36,10 @@ jobs:
 
       - name: Build Vite Production Bundle
         run: npm --prefix frontend run build
+        env:
+          VITE_API_BASE_URL: "https://api.farmconnectprices.com"
+          VITE_FIREBASE_API_KEY: "ci-build-placeholder-key"
+          VITE_FIREBASE_PROJECT_ID: "farmconnectprices"
 
   backend:
     name: Backend Quality Gate
@@ -51,8 +55,8 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
-      - name: Run Spring Boot Tests
-        run: mvn -f backend/pom.xml test -Dtest=Dispute*,Health*
+      - name: Run Complete Spring Boot Test Suite
+        run: mvn -f backend/pom.xml test
         env:
           FIREBASE_USE_EMULATOR: "true"
 
