@@ -84,6 +84,7 @@ const MyDisputesPage = lazy(() => import('./features/marketplace/pages/MyDispute
 const RelatedDisputesPage = lazy(() => import('./features/marketplace/pages/RelatedDisputesPage').then((m) => ({ default: m.RelatedDisputesPage })));
 const CreateDisputePage = lazy(() => import('./features/marketplace/pages/CreateDisputePage').then((m) => ({ default: m.CreateDisputePage })));
 const DisputeDetailPage = lazy(() => import('./features/marketplace/pages/DisputeDetailPage').then((m) => ({ default: m.DisputeDetailPage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
 const PageFallback: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 select-none">
@@ -167,6 +168,9 @@ export const App: React.FC = () => {
                   <Route path="/marketplace/buyer-opportunities" element={<BuyerOpportunitiesPage />} />
                 </Route>
               </Route>
+
+              {/* 404 Catch-All Route for Unmatched URLs */}
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
         </BrowserRouter>

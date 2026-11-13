@@ -1,0 +1,130 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // =========================================================================
+    // HELPER FUNCTIONS
+    // =========================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isSupportedMime() {
+      return request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp'];
+    }
+
+    function isMimeAndExtensionConsistent(fileName) {
+      return (
+        ((fileName.matches('.*\\.jpe?g$')) && request.resource.contentType == 'image/jpeg') ||
+        ((fileName.matches('.*\\.png$'))   && request.resource.contentType == 'image/png')  ||
+        ((fileName.matches('.*\\.webp$'))  && request.resource.contentType == 'image/webp')
+      );
+    }
+
+    function isValidDiagnosticFileName(fileName) {
+      return fileName in [
+        'original.jpg', 'original.jpeg', 'original.png', 'original.webp',
+        'diagnostic.webp', 'diagnostic.jpg', 'diagnostic.jpeg',
+        'display.webp', 'display.jpg', 'display.jpeg'
+      ];
+    }
+
+    function isValidListingFileName(fileName) {
+      return fileName in [
+        'original.jpg', 'original.jpeg', 'original.png', 'original.webp',
+        'display.webp', 'display.jpg', 'display.jpeg'
+      ];
+    }
+
+    function isValidEvidenceFileName(fileName) {
+      return fileName in [
+        'original.jpg', 'original.jpeg', 'original.png', 'original.webp',
+        'display.webp', 'display.jpg', 'display.jpeg'
+      ];
+    }
+
+    function isDiagnosticSizeAllowed(fileName) {
+      // Display derivative capped at 2 MiB; Original and Diagnostic derivative capped at 10 MiB
+      return (fileName.matches('^display\\..*') && request.resource.size <= 2 * 1024 * 1024) ||
+             (!fileName.matches('^display\\..*') && request.resource.size <= 10 * 1024 * 1024);
+    }
+
+    function isListingSizeAllowed(fileName) {
+      // Display derivative capped at 2 MiB; Original capped at 10 MiB
+      return (fileName.matches('^display\\..*') && request.resource.size <= 2 * 1024 * 1024) ||
+             (!fileName.matches('^display\\..*') && request.resource.size <= 10 * 1024 * 1024);
+    }
+
+    function isEvidenceSizeAllowed(fileName) {
+      // Display derivative capped at 2 MiB; Original capped at 10 MiB
+      return (fileName.matches('^display\\..*') && request.resource.size <= 2 * 1024 * 1024) ||
+             (!fileName.matches('^display\\..*') && request.resource.size <= 10 * 1024 * 1024);
+    }
+
+    // =========================================================================
+    // 1. PRIVATE DIAGNOSTICS (Crop Disease & Pest Imagery)
+    // =========================================================================
+    match /users/{userId}/diagnostics/{diagnosticId}/{fileName} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+                    && isValidDiagnosticFileName(fileName)
+                    && isSupportedMime()
+                    && isMimeAndExtensionConsistent(fileName)
+                    && isDiagnosticSizeAllowed(fileName);
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
+    // =========================================================================
+    // 2. PRIVATE LISTING STAGING (Draft Images Prior to Publication)
+    // =========================================================================
+    match /users/{userId}/staging/listings/{draftId}/{imageId}/{fileName} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+                    && isValidListingFileName(fileName)
+                    && isSupportedMime()
+                    && isMimeAndExtensionConsistent(fileName)
+                    && isListingSizeAllowed(fileName);
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
+    // =========================================================================
+    // 3. PRIVATE DISPUTE EVIDENCE STAGING (Owner-Scoped Evidence)
+    // =========================================================================
+    match /users/{userId}/disputes/{disputeId}/{evidenceId}/{fileName} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+                    && isValidEvidenceFileName(fileName)
+                    && isSupportedMime()
+                    && isMimeAndExtensionConsistent(fileName)
+                    && isEvidenceSizeAllowed(fileName);
+      allow update: if false;
+      allow delete: if false; // Evidence is strictly immutable once uploaded
+    }
+
+    // =========================================================================
+    // 4. PUBLISHED MARKETPLACE ASSETS (Public/Marketplace Display)
+    // =========================================================================
+    match /marketplace/listings/{listingId}/{imageId}/{fileName} {
+      // Authenticated users can view published listing assets; unauthenticated denied
+      allow read: if isAuthenticated();
+      // Direct client writes strictly forbidden; assets promoted exclusively via Admin SDK
+      allow write: if false;
+    }
+
+    // =========================================================================
+    // 5. DEFAULT DENY
+    // =========================================================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

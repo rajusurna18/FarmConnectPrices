@@ -11,6 +11,7 @@ public class FirebaseProperties {
     private String credentialsPath;
     private String clientEmail;
     private String privateKey;
+    private String storageBucket;
     private boolean useEmulator = false;
     private String emulatorHost = "localhost:8081";
 
@@ -20,6 +21,14 @@ public class FirebaseProperties {
 
     public void setProjectId(String projectId) {
         this.projectId = projectId;
+    }
+
+    public String getStorageBucket() {
+        return storageBucket;
+    }
+
+    public void setStorageBucket(String storageBucket) {
+        this.storageBucket = storageBucket;
     }
 
     public String getCredentialsPath() {

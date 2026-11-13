@@ -29,6 +29,7 @@ app:
     credentials-path: ${FIREBASE_CREDENTIALS_PATH:}
     client-email: ${FIREBASE_CLIENT_EMAIL:}
     private-key: ${FIREBASE_PRIVATE_KEY:}
+    storage-bucket: ${FIREBASE_STORAGE_BUCKET:}
     use-emulator: ${FIREBASE_USE_EMULATOR:false}
     emulator-host: ${FIRESTORE_EMULATOR_HOST:localhost:8081}
 

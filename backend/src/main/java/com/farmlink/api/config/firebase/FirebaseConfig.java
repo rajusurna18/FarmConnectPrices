@@ -18,7 +18,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import com.google.auth.oauth2.ServiceAccountCredentials;
- 
+import com.google.cloud.NoCredentials;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 
 @Configuration
 public class FirebaseConfig {
@@ -26,9 +30,28 @@ public class FirebaseConfig {
     private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
 
     private final FirebaseProperties properties;
+    private final Environment environment;
+
+    @Autowired
+    public FirebaseConfig(FirebaseProperties properties, @Autowired(required = false) Environment environment) {
+        this.properties = properties;
+        this.environment = environment;
+    }
 
     public FirebaseConfig(FirebaseProperties properties) {
-        this.properties = properties;
+        this(properties, null);
+    }
+
+    private boolean isProductionEnvironment(Environment env) {
+        if (env != null) {
+            for (String profile : env.getActiveProfiles()) {
+                if ("production".equalsIgnoreCase(profile) || "prod".equalsIgnoreCase(profile)) {
+                    return true;
+                }
+            }
+        }
+        String envVar = System.getenv("SPRING_PROFILES_ACTIVE");
+        return envVar != null && (envVar.toLowerCase().contains("prod") || envVar.equalsIgnoreCase("production"));
     }
 
     @Bean
@@ -42,24 +65,43 @@ public class FirebaseConfig {
                 ? properties.getProjectId()
                 : "farmconnectprices";
 
-        
+        boolean isProd = isProductionEnvironment(environment);
 
         // 1. Emulator Mode
         if (properties.isUseEmulator() || System.getenv("FIRESTORE_EMULATOR_HOST") != null || System.getenv("FIREBASE_AUTH_EMULATOR_HOST") != null) {
+            if (isProd) {
+                String errorMsg = "CRITICAL SECURITY ERROR: Firebase emulator configuration is strictly forbidden in production profile. Startup aborted.";
+                logger.error(errorMsg);
+                throw new IllegalStateException(errorMsg);
+            }
+
             String emulatorHost = properties.getEmulatorHost();
             if (System.getenv("FIRESTORE_EMULATOR_HOST") != null) {
                 emulatorHost = System.getenv("FIRESTORE_EMULATOR_HOST");
             }
             logger.info("Initializing FirebaseApp in EMULATOR mode for projectId: {} at host: {}", projectId, emulatorHost);
 
-            FirebaseOptions options = FirebaseOptions.builder()
+            FirebaseOptions.Builder optionsBuilder = FirebaseOptions.builder()
                     .setProjectId(projectId)
-                    .setCredentials(GoogleCredentials.create(null))
-                    .build();
-            return FirebaseApp.initializeApp(options);
+                    .setCredentials(GoogleCredentials.create(null));
+
+            if (properties.getStorageBucket() != null && !properties.getStorageBucket().trim().isEmpty()) {
+                optionsBuilder.setStorageBucket(properties.getStorageBucket().trim());
+            }
+
+            return FirebaseApp.initializeApp(optionsBuilder.build());
         }
 
         // 2. Real Production / Development Credentials Mode
+        if (isProd) {
+            if (properties.getStorageBucket() == null || properties.getStorageBucket().trim().isEmpty()) {
+                String errorMsg = "CRITICAL CONFIGURATION ERROR: app.firebase.storage-bucket (or FIREBASE_STORAGE_BUCKET) " +
+                        "is required in production. A valid Google Cloud Storage bucket name must be configured.";
+                logger.error(errorMsg);
+                throw new IllegalStateException(errorMsg);
+            }
+        }
+
         GoogleCredentials credentials = resolveCredentials(projectId);
 
         if (credentials instanceof ServiceAccountCredentials) {
@@ -87,13 +129,16 @@ public class FirebaseConfig {
             throw new IllegalStateException(errorMsg);
         }
 
-        FirebaseOptions options = FirebaseOptions.builder()
+        FirebaseOptions.Builder optionsBuilder = FirebaseOptions.builder()
                 .setProjectId(projectId)
-                .setCredentials(credentials)
-                .build();
+                .setCredentials(credentials);
+
+        if (properties.getStorageBucket() != null && !properties.getStorageBucket().trim().isEmpty()) {
+            optionsBuilder.setStorageBucket(properties.getStorageBucket().trim());
+        }
 
         logger.info("FirebaseApp initialized successfully for projectId: {}", projectId);
-        return FirebaseApp.initializeApp(options);
+        return FirebaseApp.initializeApp(optionsBuilder.build());
     }
 
     private GoogleCredentials resolveCredentials(String projectId) {
@@ -217,5 +262,62 @@ public class FirebaseConfig {
     @Bean
     public Firestore firestore(FirebaseApp firebaseApp) {
         return FirestoreClient.getFirestore(firebaseApp);
+    }
+
+    @Bean
+    public Storage googleCloudStorage(FirebaseApp firebaseApp) {
+        boolean isProd = isProductionEnvironment(environment);
+        String storageEmulatorHost = System.getenv("STORAGE_EMULATOR_HOST");
+        if (storageEmulatorHost == null || storageEmulatorHost.trim().isEmpty()) {
+            storageEmulatorHost = System.getenv("FIREBASE_STORAGE_EMULATOR_HOST");
+        }
+
+        boolean emulatorRequested = properties.isUseEmulator() ||
+                (storageEmulatorHost != null && !storageEmulatorHost.trim().isEmpty()) ||
+                System.getenv("FIRESTORE_EMULATOR_HOST") != null;
+
+        if (isProd && emulatorRequested) {
+            String errorMsg = "CRITICAL SECURITY ERROR: Storage emulator is configured in production profile. Application startup aborted.";
+            logger.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
+        }
+
+        if (isProd) {
+            if (properties.getStorageBucket() == null || properties.getStorageBucket().trim().isEmpty()) {
+                String errorMsg = "CRITICAL CONFIGURATION ERROR: app.firebase.storage-bucket (or FIREBASE_STORAGE_BUCKET) " +
+                        "is required in production. A valid Google Cloud Storage bucket name must be configured.";
+                logger.error(errorMsg);
+                throw new IllegalStateException(errorMsg);
+            }
+        }
+
+        String projectId = (properties.getProjectId() != null && !properties.getProjectId().trim().isEmpty())
+                ? properties.getProjectId()
+                : "farmconnectprices";
+
+        if (emulatorRequested) {
+            String host = (storageEmulatorHost != null && !storageEmulatorHost.trim().isEmpty())
+                    ? storageEmulatorHost.trim()
+                    : "localhost:9199";
+            if (!host.startsWith("http://") && !host.startsWith("https://")) {
+                host = "http://" + host;
+            }
+            logger.info("Initializing Storage client in EMULATOR mode connecting to {}", host);
+            return StorageOptions.newBuilder()
+                    .setHost(host)
+                    .setProjectId(projectId)
+                    .setCredentials(NoCredentials.getInstance())
+                    .build()
+                    .getService();
+        }
+
+        logger.info("Initializing Storage client in PRODUCTION/CLOUD mode for projectId: {}", projectId);
+        StorageOptions.Builder optionsBuilder = StorageOptions.newBuilder()
+                .setProjectId(projectId);
+        GoogleCredentials credentials = resolveCredentials(projectId);
+        if (credentials != null) {
+            optionsBuilder.setCredentials(credentials);
+        }
+        return optionsBuilder.build().getService();
     }
 }

@@ -4,6 +4,9 @@ import { useMarkets } from '../../markets/hooks/useMarkets';
 import { useFarmEconomics } from '../../farmEconomics/hooks/useFarmEconomics';
 import { useAiDecision } from '../hooks/useAiDecision';
 import type { AiDecisionType, AiDecisionResponse } from '../types';
+import { VoiceInputButton, AudioNarrationButton } from '../../voice';
+import { SUPPORTED_VOICE_LANGUAGES } from '../../voice/types';
+import type { VoiceLanguage } from '../../voice/types';
 import {
   Brain,
   ShoppingBag,
@@ -17,6 +20,9 @@ import {
   DollarSign,
   ShieldCheck,
   RotateCcw,
+  Sparkles,
+  Check,
+  X,
 } from 'lucide-react';
 
 export const AiDecisionPage: React.FC = () => {
@@ -37,10 +43,52 @@ export const AiDecisionPage: React.FC = () => {
   const [result, setResult] = useState<AiDecisionResponse | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Voice AI States
+  const [voiceLang, setVoiceLang] = useState<VoiceLanguage>('en-IN');
+  const [pendingTranscript, setPendingTranscript] = useState<string>('');
+  const [targetField, setTargetField] = useState<'quantity' | 'transportationCost' | 'otherSellingCosts'>('quantity');
+  const [voiceSuccessMessage, setVoiceSuccessMessage] = useState<string | null>(null);
+
   const toggleMarketSelection = (id: string) => {
     setSelectedMarketIds((prev) =>
       prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
     );
+  };
+
+  const handleVoiceTranscript = (text: string) => {
+    if (text && text.trim()) {
+      setPendingTranscript(text.trim());
+      setVoiceSuccessMessage(null);
+    }
+  };
+
+  const handleApplyVoiceValue = () => {
+    if (!pendingTranscript) return;
+
+    // Extract numerical value from recognized speech
+    const numbersMatch = pendingTranscript.match(/[-+]?[0-9]*\.?[0-9]+/);
+    const parsedNumber = numbersMatch ? parseFloat(numbersMatch[0]) : null;
+
+    if (parsedNumber !== null && !isNaN(parsedNumber) && parsedNumber >= 0) {
+      if (targetField === 'quantity') {
+        setQuantity(parsedNumber);
+        setVoiceSuccessMessage(`Applied ${parsedNumber} to Target Quantity.`);
+      } else if (targetField === 'transportationCost') {
+        setTransportationCost(parsedNumber);
+        setVoiceSuccessMessage(`Applied ₹${parsedNumber} to Est. Transport Cost.`);
+      } else if (targetField === 'otherSellingCosts') {
+        setOtherSellingCosts(parsedNumber);
+        setVoiceSuccessMessage(`Applied ₹${parsedNumber} to Other Selling Costs.`);
+      }
+      setPendingTranscript('');
+    } else {
+      setFormError(`Could not detect a valid numeric value from "${pendingTranscript}". Please edit the text or enter manually.`);
+    }
+  };
+
+  const handleDiscardVoice = () => {
+    setPendingTranscript('');
+    setVoiceSuccessMessage(null);
   };
 
   const handleRunDecision = async (e: React.FormEvent) => {
@@ -162,6 +210,143 @@ export const AiDecisionPage: React.FC = () => {
           <p className="text-xs text-slate-400">What factors should I check before selling today?</p>
         </button>
       </div>
+
+      {/* Voice AI Dictation Header & Language Control */}
+      <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              Voice Dictation Assistant
+            </h3>
+            <p className="text-xs text-slate-400">
+              Speak your quantity or transportation costs in your regional language.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Language Selector */}
+          <div className="flex items-center gap-1.5 bg-slate-950 p-1 border border-slate-800 rounded-xl">
+            {SUPPORTED_VOICE_LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => setVoiceLang(lang.code)}
+                aria-pressed={voiceLang === lang.code}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                  voiceLang === lang.code
+                    ? 'bg-emerald-500 text-slate-950 font-bold shadow'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {lang.nativeLabel}
+              </button>
+            ))}
+          </div>
+
+          <VoiceInputButton
+            onTranscript={handleVoiceTranscript}
+            language={voiceLang}
+            label="Speak Numbers"
+          />
+        </div>
+      </div>
+
+      {/* Voice Transcript Confirmation Card (Safe Review Flow) */}
+      {pendingTranscript && (
+        <div
+          role="region"
+          aria-label="Voice input confirmation"
+          className="bg-slate-900 border-2 border-emerald-500/40 rounded-2xl p-5 space-y-4 shadow-xl animate-fade-in"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-4 h-4" />
+              <span>Voice Recognized — Review Before Applying</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDiscardVoice}
+              aria-label="Discard recognized speech"
+              className="text-slate-400 hover:text-rose-400 p-1 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-300">
+              Recognized Speech (You may edit before applying):
+            </label>
+            <input
+              type="text"
+              value={pendingTranscript}
+              onChange={(e) => setPendingTranscript(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 font-medium"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Target Field:</span>
+              <select
+                value={targetField}
+                onChange={(e) => setTargetField(e.target.value as 'quantity' | 'transportationCost' | 'otherSellingCosts')}
+                className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-200 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+              >
+                <option value="quantity">Target Quantity ({quantityUnit})</option>
+                <option value="transportationCost">Est. Transport Cost (₹)</option>
+                <option value="otherSellingCosts">Other Selling Costs (₹)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDiscardVoice}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-colors"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyVoiceValue}
+                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Confirm & Apply to Form</span>
+              </button>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-slate-500 italic">
+            * Note: Voice input updates form values only. It will never submit your decision request automatically.
+          </p>
+        </div>
+      )}
+
+      {/* Voice Applied Success Toast/Banner */}
+      {voiceSuccessMessage && (
+        <div
+          role="status"
+          className="p-3 bg-emerald-950/60 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs flex items-center justify-between animate-fade-in"
+        >
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-400" />
+            <span>{voiceSuccessMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setVoiceSuccessMessage(null)}
+            className="text-emerald-400/80 hover:text-emerald-200 text-xs font-bold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Input Form */}
       <form onSubmit={handleRunDecision} className="bg-slate-900/80 rounded-2xl border border-slate-800 p-6 space-y-6">
@@ -335,11 +520,19 @@ export const AiDecisionPage: React.FC = () => {
             </div>
           </div>
 
-          {/* AI Decision Summary Banner */}
+          {/* AI Decision Summary Banner with Voice Narration */}
           <div className="bg-emerald-950/40 border border-emerald-500/30 p-5 rounded-xl space-y-2">
-            <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4" /> AI Recommendation Summary
-            </h3>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4" /> AI Recommendation Summary
+              </h3>
+              <AudioNarrationButton
+                text={`${result.summary}. Recommended Action: ${result.recommendation || 'Proceed with current market assessment.'}`}
+                language={voiceLang}
+                size="sm"
+                label="Read Summary"
+              />
+            </div>
             <p className="text-base font-medium text-white">{result.summary}</p>
             {result.recommendation && (
               <div className="pt-2 text-xs text-emerald-300">
@@ -387,9 +580,17 @@ export const AiDecisionPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Verified Facts */}
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2.5">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Verified Market Facts
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Verified Market Facts
+                </h4>
+                <AudioNarrationButton
+                  text={result.verifiedFacts.join('. ')}
+                  language={voiceLang}
+                  size="sm"
+                  label="Read Facts"
+                />
+              </div>
               <ul className="space-y-1.5 text-xs text-slate-300">
                 {result.verifiedFacts.map((fact, idx) => (
                   <li key={idx} className="flex items-start gap-2">
@@ -402,9 +603,17 @@ export const AiDecisionPage: React.FC = () => {
 
             {/* AI Reasoning */}
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2.5">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Brain className="w-4 h-4 text-emerald-400" /> AI Decision Reasoning
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Brain className="w-4 h-4 text-emerald-400" /> AI Decision Reasoning
+                </h4>
+                <AudioNarrationButton
+                  text={result.reasoning.join('. ')}
+                  language={voiceLang}
+                  size="sm"
+                  label="Read Reasoning"
+                />
+              </div>
               <ul className="space-y-1.5 text-xs text-slate-300">
                 {result.reasoning.map((reason, idx) => (
                   <li key={idx} className="flex items-start gap-2">
@@ -420,9 +629,17 @@ export const AiDecisionPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Risks */}
             <div className="bg-amber-950/20 p-4 rounded-xl border border-amber-500/20 space-y-2.5">
-              <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-amber-400" /> Risks & Factors to Watch
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Risks & Factors to Watch
+                </h4>
+                <AudioNarrationButton
+                  text={result.risks.join('. ')}
+                  language={voiceLang}
+                  size="sm"
+                  label="Read Risks"
+                />
+              </div>
               <ul className="space-y-1.5 text-xs text-amber-200/80">
                 {result.risks.map((risk, idx) => (
                   <li key={idx} className="flex items-start gap-2">
@@ -435,9 +652,17 @@ export const AiDecisionPage: React.FC = () => {
 
             {/* Next Steps */}
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2.5">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <ArrowRight className="w-4 h-4 text-emerald-400" /> Recommended Next Steps
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <ArrowRight className="w-4 h-4 text-emerald-400" /> Recommended Next Steps
+                </h4>
+                <AudioNarrationButton
+                  text={result.nextSteps.join('. ')}
+                  language={voiceLang}
+                  size="sm"
+                  label="Read Steps"
+                />
+              </div>
               <ul className="space-y-1.5 text-xs text-slate-300">
                 {result.nextSteps.map((step, idx) => (
                   <li key={idx} className="flex items-start gap-2">

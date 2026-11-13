@@ -37,8 +37,7 @@ public class MarketPriceService {
             Firestore firestore,
             MarketService marketService,
             CropMasterService cropMasterService,
-            PriceUnitConversionService conversionService
-    ) {
+            PriceUnitConversionService conversionService) {
         this(firestore, marketService, cropMasterService, conversionService, null);
     }
 
@@ -48,8 +47,7 @@ public class MarketPriceService {
             MarketService marketService,
             CropMasterService cropMasterService,
             PriceUnitConversionService conversionService,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) FirestoreQuotaGuard quotaGuard
-    ) {
+            @org.springframework.beans.factory.annotation.Autowired(required = false) FirestoreQuotaGuard quotaGuard) {
         this.firestore = firestore;
         this.marketService = marketService;
         this.cropMasterService = cropMasterService;
@@ -69,12 +67,13 @@ public class MarketPriceService {
             String sortDirection,
             Integer page,
             Integer pageSize,
-            Integer limit
-    ) {
-        List<MarketPriceResponse> fullPrices = fetchTargetedMarketPrices(marketId, cropId, priceDate, state, district, limit);
+            Integer limit) {
+        List<MarketPriceResponse> fullPrices = fetchTargetedMarketPrices(marketId, cropId, priceDate, state, district,
+                limit);
 
         List<MarketPriceResponse> filtered = fullPrices.stream().filter(p -> {
-            if (p == null) return false;
+            if (p == null)
+                return false;
             MarketSummaryResponse mkt = p.getMarket();
             CropResponse crp = p.getCrop();
 
@@ -124,7 +123,8 @@ public class MarketPriceService {
         boolean asc = "asc".equalsIgnoreCase(sortDirection);
         Comparator<MarketPriceResponse> comp = (a, b) -> {
             int cmpDate = Objects.toString(b.getPriceDate(), "").compareTo(Objects.toString(a.getPriceDate(), ""));
-            if (cmpDate != 0) return cmpDate;
+            if (cmpDate != 0)
+                return cmpDate;
             return Objects.toString(b.getObservedAt(), "").compareTo(Objects.toString(a.getObservedAt(), ""));
         };
         if (asc) {
@@ -132,7 +132,8 @@ public class MarketPriceService {
         }
         converted.sort(comp);
 
-        int pSize = (pageSize != null && pageSize > 0 && pageSize <= 100) ? pageSize : (limit != null && limit > 0 ? limit : 50);
+        int pSize = (pageSize != null && pageSize > 0 && pageSize <= 100) ? pageSize
+                : (limit != null && limit > 0 ? limit : 50);
         int pNum = (page != null && page >= 1) ? page : 1;
         int fromIdx = (pNum - 1) * pSize;
         if (fromIdx >= converted.size()) {
@@ -160,13 +161,15 @@ public class MarketPriceService {
                 .collect(Collectors.toList());
 
         if (matching.isEmpty()) {
-            throw new NoSuchElementException("No verified or unverified market price record found for marketId: " + marketId + " and cropId: " + cropId);
+            throw new NoSuchElementException("No verified or unverified market price record found for marketId: "
+                    + marketId + " and cropId: " + cropId);
         }
 
         // Deterministic sort: priceDate desc, observedAt desc
         matching.sort((a, b) -> {
             int cmpDate = b.getPriceDate().compareTo(a.getPriceDate());
-            if (cmpDate != 0) return cmpDate;
+            if (cmpDate != 0)
+                return cmpDate;
             return b.getObservedAt().compareTo(a.getObservedAt());
         });
 
@@ -177,8 +180,7 @@ public class MarketPriceService {
             String marketId,
             String cropId,
             String fromDate,
-            String toDate
-    ) {
+            String toDate) {
         if (marketId == null || marketId.trim().isEmpty()) {
             throw new IllegalArgumentException("Market ID is required.");
         }
@@ -193,7 +195,8 @@ public class MarketPriceService {
                         && p.getCrop().getId().equalsIgnoreCase(cropId.trim())
                         && !QUALITY_REJECTED.equalsIgnoreCase(p.getQualityStatus()))
                 .filter(p -> {
-                    if (fromDate != null && !fromDate.trim().isEmpty() && p.getPriceDate().compareTo(fromDate.trim()) < 0) {
+                    if (fromDate != null && !fromDate.trim().isEmpty()
+                            && p.getPriceDate().compareTo(fromDate.trim()) < 0) {
                         return false;
                     }
                     if (toDate != null && !toDate.trim().isEmpty() && p.getPriceDate().compareTo(toDate.trim()) > 0) {
@@ -206,7 +209,8 @@ public class MarketPriceService {
         // Deterministic Sort: newest to oldest (priceDate desc, observedAt desc)
         matching.sort((a, b) -> {
             int cmpDate = b.getPriceDate().compareTo(a.getPriceDate());
-            if (cmpDate != 0) return cmpDate;
+            if (cmpDate != 0)
+                return cmpDate;
             return b.getObservedAt().compareTo(a.getObservedAt());
         });
 
@@ -230,15 +234,15 @@ public class MarketPriceService {
             String unit,
             String state,
             String district,
-            Integer limit
-    ) {
+            Integer limit) {
         List<MarketPriceResponse> responses = getMarketPrices(
-                state, district, marketId, cropId, priceDate, qualityStatus, unit, "priceDate", "desc", 1, limit, limit
-        );
+                state, district, marketId, cropId, priceDate, qualityStatus, unit, "priceDate", "desc", 1, limit,
+                limit);
 
         List<MarketPriceSummaryResponse> summaries = new ArrayList<>();
         for (MarketPriceResponse p : responses) {
-            if (p == null) continue;
+            if (p == null)
+                continue;
             if (fromDate != null && !fromDate.trim().isEmpty() && p.getPriceDate().compareTo(fromDate.trim()) < 0) {
                 continue;
             }
@@ -281,8 +285,7 @@ public class MarketPriceService {
         PriceUnitConversionService.ConvertedPriceResult result = conversionService.convert(
                 p.getMinPrice(), p.getModalPrice(), p.getMaxPrice(),
                 srcUnit,
-                targetUnit
-        );
+                targetUnit);
         return new MarketPriceResponse(
                 p.getId(),
                 p.getMarket(),
@@ -301,8 +304,7 @@ public class MarketPriceService {
                 p.getQualityStatus(),
                 p.getStatus(),
                 p.getCreatedAt(),
-                p.getUpdatedAt()
-        );
+                p.getUpdatedAt());
     }
 
     // ==========================================
@@ -315,8 +317,7 @@ public class MarketPriceService {
             String priceDate,
             String state,
             String district,
-            Integer limit
-    ) {
+            Integer limit) {
         if (quotaGuard != null) {
             quotaGuard.checkQuotaAvailability();
         }
@@ -379,7 +380,8 @@ public class MarketPriceService {
     }
 
     private boolean isQuotaExhaustedError(Throwable t) {
-        if (t == null) return false;
+        if (t == null)
+            return false;
         String msg = t.getMessage();
         if (msg != null && (msg.contains("RESOURCE_EXHAUSTED") || msg.contains("Quota exceeded"))) {
             return true;
@@ -390,7 +392,6 @@ public class MarketPriceService {
     private List<MarketPriceResponse> fetchAllMarketPrices() {
         return fetchTargetedMarketPrices(null, null, null, null, null, 50);
     }
-
 
     private MarketPriceResponse mapDocToMarketPriceResponse(DocumentSnapshot doc) {
         String id = doc.getId();
@@ -406,15 +407,15 @@ public class MarketPriceService {
         String currency = doc.getString("currency") != null ? doc.getString("currency") : CURRENCY_INR;
         String unit = doc.getString("unit") != null ? doc.getString("unit") : UNIT_QUINTAL;
         String sourceUnit = doc.getString("sourceUnit") != null ? doc.getString("sourceUnit") : unit;
-        String qualityStatus = doc.getString("qualityStatus") != null ? doc.getString("qualityStatus") : QUALITY_UNVERIFIED;
+        String qualityStatus = doc.getString("qualityStatus") != null ? doc.getString("qualityStatus")
+                : QUALITY_UNVERIFIED;
         String status = doc.getString("status") != null ? doc.getString("status") : STATUS_ACTIVE;
 
         Map<String, Object> srcMap = (Map<String, Object>) doc.get("source");
         MarketPriceSourceDto source = srcMap != null ? new MarketPriceSourceDto(
                 (String) srcMap.get("type"),
                 (String) srcMap.get("name"),
-                (String) srcMap.get("reference")
-        ) : new MarketPriceSourceDto("OTHER", "Unknown Source", null);
+                (String) srcMap.get("reference")) : new MarketPriceSourceDto("OTHER", "Unknown Source", null);
 
         String createdAt = doc.get("createdAt") != null ? doc.get("createdAt").toString() : Instant.now().toString();
         String updatedAt = doc.get("updatedAt") != null ? doc.get("updatedAt").toString() : Instant.now().toString();
@@ -426,16 +427,16 @@ public class MarketPriceService {
             mSummary = new MarketSummaryResponse(
                     m.getId(), m.getName(), m.getCode(), m.getType(),
                     m.getLocation().getState(), m.getLocation().getDistrict(), m.getLocation().getMandal(),
-                    m.getStatus(), 0
-            );
+                    m.getStatus(), 0);
         } catch (Exception e) {
             String obsState = doc.getString("observedState") != null ? doc.getString("observedState") : "Unknown State";
-            String obsDistrict = doc.getString("observedDistrict") != null ? doc.getString("observedDistrict") : "Unknown District";
-            String obsMarketName = doc.getString("observedMarketName") != null ? doc.getString("observedMarketName") : marketId;
+            String obsDistrict = doc.getString("observedDistrict") != null ? doc.getString("observedDistrict")
+                    : "Unknown District";
+            String obsMarketName = doc.getString("observedMarketName") != null ? doc.getString("observedMarketName")
+                    : marketId;
             mSummary = new MarketSummaryResponse(
                     marketId, obsMarketName, "OBS-" + Math.abs(marketId.hashCode()), "OBSERVED_MANDI",
-                    obsState, obsDistrict, null, STATUS_ACTIVE, 0
-            );
+                    obsState, obsDistrict, null, STATUS_ACTIVE, 0);
         }
 
         // Safe Crop mapping (Canonical or Observed)
@@ -443,7 +444,9 @@ public class MarketPriceService {
         try {
             crop = cropMasterService.getCropById(cropId);
         } catch (Exception e) {
-            String obsCommodity = doc.getString("observedCommodityName") != null ? doc.getString("observedCommodityName") : cropId;
+            String obsCommodity = doc.getString("observedCommodityName") != null
+                    ? doc.getString("observedCommodityName")
+                    : cropId;
             crop = new CropResponse(cropId, obsCommodity, "AGRICULTURAL_COMMODITY", null, STATUS_ACTIVE);
         }
 
@@ -453,10 +456,8 @@ public class MarketPriceService {
                 maxPrice != null ? maxPrice : 0.0,
                 modalPrice != null ? modalPrice : 0.0,
                 currency, unit, sourceUnit, false, 1.0, source, qualityStatus, status,
-                createdAt, updatedAt
-        );
+                createdAt, updatedAt);
     }
-
 
     private MarketPriceSummaryResponse mapToSummary(MarketPriceResponse p) {
         return new MarketPriceSummaryResponse(
@@ -477,7 +478,6 @@ public class MarketPriceService {
                 p.getSource() != null ? p.getSource().getType() : "OTHER",
                 p.getSource() != null ? p.getSource().getName() : "Unknown",
                 p.getQualityStatus(),
-                p.getStatus()
-        );
+                p.getStatus());
     }
 }
