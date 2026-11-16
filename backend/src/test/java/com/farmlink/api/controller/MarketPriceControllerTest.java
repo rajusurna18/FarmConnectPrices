@@ -39,6 +39,10 @@ class MarketPriceControllerTest {
 
     @BeforeEach
     void setUp() {
+        authenticate();
+    }
+
+    private void authenticate() {
         FirebaseAuthenticationToken token = new FirebaseAuthenticationToken("test-uid", "user@example.com", "Test User", true);
         SecurityContextHolder.getContext().setAuthentication(token);
     }
@@ -131,16 +135,19 @@ class MarketPriceControllerTest {
 
     @Test
     void clientWriteRequests_areForbidden_andReturn405() throws Exception {
+        authenticate();
         mockMvc.perform(post("/api/v1/market-prices")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"minPrice\":100}"))
                 .andExpect(status().isMethodNotAllowed());
 
+        authenticate();
         mockMvc.perform(put("/api/v1/market-prices/prc-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"minPrice\":100}"))
                 .andExpect(status().isMethodNotAllowed());
 
+        authenticate();
         mockMvc.perform(delete("/api/v1/market-prices/prc-1"))
                 .andExpect(status().isMethodNotAllowed());
     }
