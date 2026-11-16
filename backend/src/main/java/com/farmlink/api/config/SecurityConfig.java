@@ -2,6 +2,7 @@ package com.farmlink.api.config;
 
 import com.farmlink.api.security.FirebaseAuthFilter;
 import com.google.firebase.FirebaseApp;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,8 +17,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.DeferredSecurityContext;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpRequestResponseHolder;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.CorsUtils;
@@ -132,8 +139,62 @@ public class SecurityConfig {
     }
 
     @Bean
+    public SecurityContextRepository securityContextRepository() {
+        if (isProductionEnvironment(environment)) {
+            return new RequestAttributeSecurityContextRepository();
+        }
+
+        return new SecurityContextRepository() {
+            private final SecurityContextRepository delegate = new RequestAttributeSecurityContextRepository();
+
+            @Override
+            public SecurityContext loadContext(HttpRequestResponseHolder requestResponseHolder) {
+                SecurityContext current = SecurityContextHolder.getContext();
+                if (current != null && current.getAuthentication() != null && current.getAuthentication().isAuthenticated()) {
+                    return current;
+                }
+                return delegate.loadContext(requestResponseHolder);
+            }
+
+            @Override
+            public DeferredSecurityContext loadDeferredContext(HttpServletRequest request) {
+                SecurityContext current = SecurityContextHolder.getContext();
+                if (current != null && current.getAuthentication() != null && current.getAuthentication().isAuthenticated()) {
+                    return new DeferredSecurityContext() {
+                        @Override
+                        public SecurityContext get() {
+                            return current;
+                        }
+
+                        @Override
+                        public boolean isGenerated() {
+                            return false;
+                        }
+                    };
+                }
+                return delegate.loadDeferredContext(request);
+            }
+
+            @Override
+            public void saveContext(SecurityContext context, HttpServletRequest request, HttpServletResponse response) {
+                delegate.saveContext(context, request, response);
+            }
+
+            @Override
+            public boolean containsContext(HttpServletRequest request) {
+                SecurityContext current = SecurityContextHolder.getContext();
+                if (current != null && current.getAuthentication() != null && current.getAuthentication().isAuthenticated()) {
+                    return true;
+                }
+                return delegate.containsContext(request);
+            }
+        };
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .securityContext(context -> context.securityContextRepository(securityContextRepository()))
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -151,13 +212,20 @@ public class SecurityConfig {
                     "/api/v1/health/firebase",
                     "/actuator/health",
                     "/actuator/health/liveness",
-                    "/actuator/health/readiness"
+                    "/actuator/health/readiness",
+                    "/error"
                 ).permitAll()
                 .requestMatchers("/actuator/**").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/v1/locations/**", "/api/v1/crops/**", "/api/v1/markets/**", "/api/v1/market-prices/**", "/api/v1/market-intelligence/**").permitAll()
+                .requestMatchers(HttpMethod.GET,
+                    "/api/v1/locations/**",
+                    "/api/v1/crops/**",
+                    "/api/v1/markets/**",
+                    "/api/v1/market-prices/**",
+                    "/api/v1/market-intelligence/**",
+                    "/api/v1/marketplace/listings/**"
+                ).permitAll()
                 .requestMatchers("/api/v1/marketplace/payments/webhook/**").permitAll()
-                .requestMatchers("/api/v1/users/**", "/api/v1/profile/**", "/api/v1/farms/**", "/api/v1/internal/**", "/api/v1/diagnostics/**", "/api/v1/marketplace/payments/**", "/api/v1/marketplace/deliveries/**", "/api/v1/marketplace/disputes/**", "/api/v1/router/**", "/api/v1/images/**").authenticated()
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
             )
             .addFilterBefore(new FirebaseAuthFilter(firebaseApp), UsernamePasswordAuthenticationFilter.class);
 

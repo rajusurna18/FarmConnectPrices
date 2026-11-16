@@ -77,7 +77,7 @@ function parseInline(text: string): React.ReactNode[] {
     }
 
     // 5. Plain character chunk up to next special delimiter
-    const nextSpecial = remaining.search(/[`*_\[]/);
+    const nextSpecial = remaining.search(/[`*_\x5b]/);
     if (nextSpecial === -1) {
       elements.push(remaining);
       break;

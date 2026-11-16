@@ -153,11 +153,39 @@ export const apiClient = axios.create({
   timeout: 10000,
 });
 
+/**
+ * Safely extracts an abort reason message from an AbortSignal/GenericAbortSignal without using `any`.
+ */
+function getAbortReasonMessage(signal?: unknown): string | undefined {
+  if (!signal || typeof signal !== 'object') {
+    return undefined;
+  }
+
+  if (!('reason' in signal)) {
+    return undefined;
+  }
+
+  const reason = (signal as { reason: unknown }).reason;
+
+  if (typeof reason === 'string') {
+    return reason;
+  }
+
+  if (reason && typeof reason === 'object' && 'message' in reason) {
+    const message = (reason as { message: unknown }).message;
+    if (typeof message === 'string') {
+      return message;
+    }
+  }
+
+  return undefined;
+}
+
 apiClient.interceptors.request.use(
   async (config) => {
     // 1. Check if request signal was already aborted before dispatch
     if (config.signal?.aborted) {
-      throw new axios.CanceledError(config.signal.reason?.message || 'Request was aborted before dispatch');
+      throw new axios.CanceledError(getAbortReasonMessage(config.signal) || 'Request was aborted before dispatch');
     }
 
     const expectedUid = config.expectedUid;
@@ -202,7 +230,7 @@ apiClient.interceptors.request.use(
 
     // 7. Final check for cancellation before network dispatch
     if (config.signal?.aborted) {
-      throw new axios.CanceledError(config.signal.reason?.message || 'Request was aborted before dispatch');
+      throw new axios.CanceledError(getAbortReasonMessage(config.signal) || 'Request was aborted before dispatch');
     }
 
     return config;
@@ -235,7 +263,7 @@ apiClient.interceptors.response.use(
       // Abort if request signal was aborted
       if (originalRequest.signal?.aborted) {
         return Promise.reject(
-          new axios.CanceledError(originalRequest.signal.reason?.message || 'Request aborted prior to 401 replay')
+          new axios.CanceledError(getAbortReasonMessage(originalRequest.signal) || 'Request aborted prior to 401 replay')
         );
       }
 

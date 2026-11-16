@@ -9,7 +9,6 @@ import type {
   ChatSessionState,
   RouterTurnRequest,
   RouterTurnResponse,
-  ChatError,
 } from '../types';
 
 export interface UseAgriChatbotReturn {
@@ -210,8 +209,7 @@ export function useAgriChatbot(): UseAgriChatbotReturn {
       turnReq: RouterTurnRequest,
       generation: number,
       requestOwnerUid: string | undefined,
-      signal?: AbortSignal,
-      isRetry: boolean = false
+      signal?: AbortSignal
     ): Promise<void> => {
       // Pre-dispatch guard: check live auth identity, generation, and session validity
       if (
@@ -295,7 +293,7 @@ export function useAgriChatbot(): UseAgriChatbotReturn {
             // Guard conditions before executing retry
             if (isRequestAuthorized(generation, requestOwnerUid, turnReq.sessionId)) {
               const retrySignal = abortControllerRef.current?.signal;
-              executeTurn(turnReq, generation, requestOwnerUid, retrySignal, true);
+              executeTurn(turnReq, generation, requestOwnerUid, retrySignal);
             }
           }, 2000);
           return;
@@ -499,7 +497,7 @@ export function useAgriChatbot(): UseAgriChatbotReturn {
       return;
     }
 
-    await executeTurn(pending, currentGen, requestUid, signal, true);
+    await executeTurn(pending, currentGen, requestUid, signal);
   }, [clearRetryTimer, abortActiveOperations, executeTurn, isRequestAuthorized]);
 
   /**

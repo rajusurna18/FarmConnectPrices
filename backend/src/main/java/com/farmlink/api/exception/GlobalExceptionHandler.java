@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -31,6 +32,18 @@ public class GlobalExceptionHandler {
         logger.warn("Invalid API request argument: {}", ex.getMessage());
         Map<String, String> response = new HashMap<>();
         response.put("error", ex.getMessage() != null ? ex.getMessage() : "Invalid parameter supplied.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        logger.warn("Validation error on request: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .reduce((a, b) -> a + "; " + b)
+                .orElse("Validation failed");
+        response.put("error", message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 

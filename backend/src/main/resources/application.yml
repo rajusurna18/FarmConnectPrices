@@ -28,6 +28,9 @@ management:
       show-details: always
       probes:
         enabled: true
+  health:
+    redis:
+      enabled: ${MANAGEMENT_HEALTH_REDIS_ENABLED:false}
 
 app:
   cors:

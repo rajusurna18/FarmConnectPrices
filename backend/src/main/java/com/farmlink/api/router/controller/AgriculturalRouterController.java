@@ -84,6 +84,10 @@ public class AgriculturalRouterController {
             @Valid @RequestBody RouterTurnRequest request,
             Authentication authentication) {
 
+        if (request.turnIndex() == null || request.turnIndex() < 1) {
+            throw new IllegalArgumentException("turnIndex must be >= 1");
+        }
+
         String uid = extractUid(authentication);
 
         // Resolve current role fresh from Firestore on every turn (zero caching)
