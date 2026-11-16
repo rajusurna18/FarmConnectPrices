@@ -101,16 +101,22 @@ export async function executeSingleFlightTokenRefresh(expectedUid?: string): Pro
     await auth.authStateReady();
 
     // 3. Terminal condition: confirmed absence of user ONLY after successful auth initialization
-    if (!auth.currentUser || (targetUid && auth.currentUser.uid !== targetUid)) {
+    if (!auth.currentUser) {
       if (!targetUid) {
         await handleTerminalLogout();
       }
+      throw new Error('Authentication session ended: no active user.');
+    }
+
+    if (targetUid && auth.currentUser.uid !== targetUid) {
       throw new Error('Authentication session ended: active user mismatch during token refresh.');
     }
 
     // 4. Request forced token refresh tied to targetUid
     try {
-      const freshToken = await getCurrentIdToken(true, targetUid);
+      const freshToken = targetUid
+        ? await getCurrentIdToken(true, targetUid)
+        : await getCurrentIdToken(true);
       if (!freshToken) {
         // Null token alone when user exists is non-terminal: do NOT log out
         throw new Error('Failed to acquire refreshed token: token is null.');
@@ -206,7 +212,14 @@ apiClient.interceptors.request.use(
 
     // 5. Otherwise acquire the identity-bound token
     try {
-      const token = await getCurrentIdToken(false, expectedUid);
+      let token: string | null = null;
+      if (refreshPromise && refreshPromiseUid === expectedUid) {
+        token = await refreshPromise;
+      } else {
+        token = expectedUid
+          ? await getCurrentIdToken(false, expectedUid)
+          : await getCurrentIdToken(false);
+      }
 
       // 6. Post-token acquisition identity verification for owner-bound requests
       if (expectedUid) {
