@@ -157,33 +157,29 @@ public class CropDiagnosticServiceTest {
     // =========================================================================
 
     @Test
-    @DisplayName("CropDiagnosticService throws IllegalStateException when storageBucket is null")
-    void initializeStorageBucket_ThrowsIllegalStateException_WhenBucketNull() {
+    @DisplayName("CropDiagnosticService defaults to Cloudinary when storageBucket is null")
+    void initializeStorageBucket_DefaultsToCloudinary_WhenBucketNull() {
         FirebaseProperties props = new FirebaseProperties();
         props.setProjectId("farmconnectprices");
         props.setStorageBucket(null);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            new CropDiagnosticService(
-                    firestore, storage, props, cropMasterService, farmService, quotaGuard, TEST_SECRET, environment
-            );
-        });
-        assertTrue(ex.getMessage().contains("app.firebase.storage-bucket") || ex.getMessage().contains("FIREBASE_STORAGE_BUCKET"));
+        CropDiagnosticService customService = new CropDiagnosticService(
+                firestore, storage, props, cropMasterService, farmService, quotaGuard, TEST_SECRET, environment
+        );
+        assertEquals("cloudinary", customService.resolveStorageBucket());
     }
 
     @Test
-    @DisplayName("CropDiagnosticService throws IllegalStateException when storageBucket is blank")
-    void initializeStorageBucket_ThrowsIllegalStateException_WhenBucketBlank() {
+    @DisplayName("CropDiagnosticService defaults to Cloudinary when storageBucket is blank")
+    void initializeStorageBucket_DefaultsToCloudinary_WhenBucketBlank() {
         FirebaseProperties props = new FirebaseProperties();
         props.setProjectId("farmconnectprices");
         props.setStorageBucket("   ");
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            new CropDiagnosticService(
-                    firestore, storage, props, cropMasterService, farmService, quotaGuard, TEST_SECRET, environment
-            );
-        });
-        assertTrue(ex.getMessage().contains("app.firebase.storage-bucket") || ex.getMessage().contains("FIREBASE_STORAGE_BUCKET"));
+        CropDiagnosticService customService = new CropDiagnosticService(
+                firestore, storage, props, cropMasterService, farmService, quotaGuard, TEST_SECRET, environment
+        );
+        assertEquals("cloudinary", customService.resolveStorageBucket());
     }
 
     @Test
@@ -200,8 +196,8 @@ public class CropDiagnosticServiceTest {
     }
 
     @Test
-    @DisplayName("CropDiagnosticService fails startup in production profile when storageBucket is missing")
-    void initializeStorageBucket_ThrowsIllegalStateException_WhenBucketMissingInProduction() {
+    @DisplayName("CropDiagnosticService defaults to Cloudinary in production profile when storageBucket is missing")
+    void initializeStorageBucket_DefaultsToCloudinary_WhenBucketMissingInProduction() {
         FirebaseProperties props = new FirebaseProperties();
         props.setProjectId("farmconnectprices");
         props.setStorageBucket(null);
@@ -209,12 +205,10 @@ public class CropDiagnosticServiceTest {
         MockEnvironment prodEnv = new MockEnvironment();
         prodEnv.setActiveProfiles("production");
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            new CropDiagnosticService(
-                    firestore, storage, props, cropMasterService, farmService, quotaGuard, "01234567890123456789012345678901", prodEnv
-            );
-        });
-        assertTrue(ex.getMessage().contains("app.firebase.storage-bucket") || ex.getMessage().contains("FIREBASE_STORAGE_BUCKET"));
+        CropDiagnosticService customService = new CropDiagnosticService(
+                firestore, storage, props, cropMasterService, farmService, quotaGuard, "01234567890123456789012345678901", prodEnv
+        );
+        assertEquals("cloudinary", customService.resolveStorageBucket());
     }
 
     // =========================================================================

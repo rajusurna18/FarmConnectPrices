@@ -265,6 +265,13 @@ public class FirebaseConfig {
     public Storage googleCloudStorage(FirebaseApp firebaseApp) {
         boolean isProd = isProductionEnvironment(environment);
         if (isProd) {
+            if (properties.isUseEmulator() ||
+                    System.getenv("STORAGE_EMULATOR_HOST") != null ||
+                    System.getenv("FIREBASE_STORAGE_EMULATOR_HOST") != null) {
+                String errorMsg = "CRITICAL SECURITY ERROR: Storage emulator is configured in production profile. Application startup aborted.";
+                logger.error(errorMsg);
+                throw new IllegalStateException(errorMsg);
+            }
             logger.info("Cloudinary is the sole active image-file storage provider. Google Cloud Storage client is disabled in production.");
             return null;
         }

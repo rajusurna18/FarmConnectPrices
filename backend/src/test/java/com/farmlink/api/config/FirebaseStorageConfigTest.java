@@ -4,7 +4,6 @@ import com.farmlink.api.config.firebase.FirebaseConfig;
 import com.farmlink.api.config.firebase.FirebaseProperties;
 import com.google.cloud.storage.Storage;
 import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -67,8 +66,8 @@ public class FirebaseStorageConfigTest {
     }
 
     @Test
-    @DisplayName("Storage client throws IllegalStateException in production profile if storage-bucket is missing")
-    void googleCloudStorage_RequiresStorageBucketInProduction() {
+    @DisplayName("Storage client is disabled (null) in production profile when storage-bucket is missing, enabling Cloudinary fallback")
+    void googleCloudStorage_DisabledInProduction_WhenStorageBucketMissing() {
         FirebaseProperties properties = new FirebaseProperties();
         properties.setProjectId("farmconnectprices");
         properties.setUseEmulator(false);
@@ -80,17 +79,13 @@ public class FirebaseStorageConfigTest {
         FirebaseConfig config = new FirebaseConfig(properties, env);
         FirebaseApp mockApp = Mockito.mock(FirebaseApp.class);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            config.googleCloudStorage(mockApp);
-        });
-
-        assertTrue(ex.getMessage().contains("app.firebase.storage-bucket") ||
-                ex.getMessage().contains("CRITICAL CONFIGURATION ERROR"));
+        Storage storage = config.googleCloudStorage(mockApp);
+        assertNull(storage, "Google Cloud Storage client must be disabled in production in favor of Cloudinary");
     }
 
     @Test
-    @DisplayName("Storage client throws IllegalStateException in production profile if storage-bucket is blank")
-    void googleCloudStorage_RequiresNonBlankStorageBucketInProduction() {
+    @DisplayName("Storage client is disabled (null) in production profile when storage-bucket is blank, enabling Cloudinary fallback")
+    void googleCloudStorage_DisabledInProduction_WhenStorageBucketBlank() {
         FirebaseProperties properties = new FirebaseProperties();
         properties.setProjectId("farmconnectprices");
         properties.setUseEmulator(false);
@@ -102,12 +97,8 @@ public class FirebaseStorageConfigTest {
         FirebaseConfig config = new FirebaseConfig(properties, env);
         FirebaseApp mockApp = Mockito.mock(FirebaseApp.class);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            config.googleCloudStorage(mockApp);
-        });
-
-        assertTrue(ex.getMessage().contains("app.firebase.storage-bucket") ||
-                ex.getMessage().contains("CRITICAL CONFIGURATION ERROR"));
+        Storage storage = config.googleCloudStorage(mockApp);
+        assertNull(storage, "Google Cloud Storage client must be disabled in production in favor of Cloudinary");
     }
 
     @Test
@@ -119,8 +110,8 @@ public class FirebaseStorageConfigTest {
     }
 
     @Test
-    @DisplayName("Storage client in production initializes successfully when valid bucket is provided")
-    void googleCloudStorage_InitializesSuccessfully_WhenValidBucketInProduction() {
+    @DisplayName("Storage client remains disabled (null) in production profile even if storage-bucket is provided")
+    void googleCloudStorage_DisabledInProduction_WhenValidBucketProvided() {
         FirebaseProperties properties = new FirebaseProperties();
         properties.setProjectId("farmconnectprices");
         properties.setUseEmulator(false);
@@ -133,7 +124,6 @@ public class FirebaseStorageConfigTest {
         FirebaseApp mockApp = Mockito.mock(FirebaseApp.class);
 
         Storage storage = config.googleCloudStorage(mockApp);
-        assertNotNull(storage);
-        assertEquals("farmconnectprices", storage.getOptions().getProjectId());
+        assertNull(storage, "Google Cloud Storage client must remain disabled in production where Cloudinary is sole provider");
     }
 }

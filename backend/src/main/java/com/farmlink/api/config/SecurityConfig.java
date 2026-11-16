@@ -2,6 +2,8 @@ package com.farmlink.api.config;
 
 import com.farmlink.api.security.FirebaseAuthFilter;
 import com.google.firebase.FirebaseApp;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -13,23 +15,25 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.context.DeferredSecurityContext;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.context.HttpRequestResponseHolder;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -140,59 +144,35 @@ public class SecurityConfig {
 
     @Bean
     public SecurityContextRepository securityContextRepository() {
-        if (isProductionEnvironment(environment)) {
-            return new RequestAttributeSecurityContextRepository();
-        }
-
-        return new SecurityContextRepository() {
-            private final SecurityContextRepository delegate = new RequestAttributeSecurityContextRepository();
-
-            @Override
-            public SecurityContext loadContext(HttpRequestResponseHolder requestResponseHolder) {
-                SecurityContext current = SecurityContextHolder.getContext();
-                if (current != null && current.getAuthentication() != null && current.getAuthentication().isAuthenticated()) {
-                    return current;
-                }
-                return delegate.loadContext(requestResponseHolder);
-            }
-
-            @Override
-            public DeferredSecurityContext loadDeferredContext(HttpServletRequest request) {
-                SecurityContext current = SecurityContextHolder.getContext();
-                if (current != null && current.getAuthentication() != null && current.getAuthentication().isAuthenticated()) {
-                    return new DeferredSecurityContext() {
-                        @Override
-                        public SecurityContext get() {
-                            return current;
-                        }
-
-                        @Override
-                        public boolean isGenerated() {
-                            return false;
-                        }
-                    };
-                }
-                return delegate.loadDeferredContext(request);
-            }
-
-            @Override
-            public void saveContext(SecurityContext context, HttpServletRequest request, HttpServletResponse response) {
-                delegate.saveContext(context, request, response);
-            }
-
-            @Override
-            public boolean containsContext(HttpServletRequest request) {
-                SecurityContext current = SecurityContextHolder.getContext();
-                if (current != null && current.getAuthentication() != null && current.getAuthentication().isAuthenticated()) {
-                    return true;
-                }
-                return delegate.containsContext(request);
-            }
-        };
+        return new RequestAttributeSecurityContextRepository();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        if (!isProductionEnvironment(environment)) {
+            http.addFilterBefore(new OncePerRequestFilter() {
+                private static final String TEST_REPO_ATTR =
+                    "org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors$SecurityContextRequestPostProcessorSupport$TestSecurityContextRepository.REPO";
+
+                @Override
+                protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+                        throws ServletException, IOException {
+                    SecurityContext current = SecurityContextHolder.getContext();
+                    if (current != null && current.getAuthentication() != null
+                            && current.getAuthentication().isAuthenticated()
+                            && !(current.getAuthentication() instanceof AnonymousAuthenticationToken)) {
+                        request.setAttribute(RequestAttributeSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME, current);
+                        request.setAttribute(TEST_REPO_ATTR, current);
+                    } else {
+                        SecurityContext empty = SecurityContextHolder.createEmptyContext();
+                        request.setAttribute(RequestAttributeSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME, empty);
+                        request.setAttribute(TEST_REPO_ATTR, empty);
+                    }
+                    filterChain.doFilter(request, response);
+                }
+            }, SecurityContextHolderFilter.class);
+        }
+
         http
             .securityContext(context -> context.securityContextRepository(securityContextRepository()))
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
