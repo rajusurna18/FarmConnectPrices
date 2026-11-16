@@ -156,7 +156,7 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/v1/locations/**", "/api/v1/crops/**", "/api/v1/markets/**", "/api/v1/market-prices/**", "/api/v1/market-intelligence/**").permitAll()
                 .requestMatchers("/api/v1/marketplace/payments/webhook/**").permitAll()
-                .requestMatchers("/api/v1/users/**", "/api/v1/profile/**", "/api/v1/farms/**", "/api/v1/internal/**", "/api/v1/diagnostics/**", "/api/v1/marketplace/payments/**", "/api/v1/marketplace/deliveries/**", "/api/v1/marketplace/disputes/**").authenticated()
+                .requestMatchers("/api/v1/users/**", "/api/v1/profile/**", "/api/v1/farms/**", "/api/v1/internal/**", "/api/v1/diagnostics/**", "/api/v1/marketplace/payments/**", "/api/v1/marketplace/deliveries/**", "/api/v1/marketplace/disputes/**", "/api/v1/router/**", "/api/v1/images/**").authenticated()
                 .anyRequest().permitAll()
             )
             .addFilterBefore(new FirebaseAuthFilter(firebaseApp), UsernamePasswordAuthenticationFilter.class);

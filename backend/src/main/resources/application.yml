@@ -1,8 +1,18 @@
 spring:
   application:
     name: farmlink-api
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
   lifecycle:
     timeout-per-shutdown-phase: 20s
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
 
 server:
   port: ${PORT:8080}
@@ -32,6 +42,29 @@ app:
     storage-bucket: ${FIREBASE_STORAGE_BUCKET:}
     use-emulator: ${FIREBASE_USE_EMULATOR:false}
     emulator-host: ${FIRESTORE_EMULATOR_HOST:localhost:8081}
+  llm:
+    provider: ${APP_LLM_PROVIDER:NONE}
+    gemini:
+      enabled: ${APP_LLM_GEMINI_ENABLED:false}
+      model: ${APP_LLM_GEMINI_MODEL:}
+      api-key: ${GEMINI_API_KEY:}
+      timeout-seconds: ${APP_LLM_GEMINI_TIMEOUT_SECONDS:30}
+  router:
+    session-ttl-ms: 1800000
+    lock-lease-ms: 15000
+    heartbeat-interval-ms: 5000
+    result-ttl-seconds: 900
+    max-payload-bytes: 65536
+    max-query-code-points: 1000
+    max-normalized-query-bytes: 4096
+    min-turn-index: 1
+    max-valid-turn-index: 2147483646
+    terminal-sentinel-turn-index: 2147483647
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:dyp4rhbog}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
 
 firestore:
   quota:

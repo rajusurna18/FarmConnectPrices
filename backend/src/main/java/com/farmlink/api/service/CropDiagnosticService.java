@@ -69,19 +69,23 @@ public class CropDiagnosticService {
     private final String storageBucket;
     private final SecretKey cursorSigningKey;
 
+    private final CloudinaryService cloudinaryService;
+
     @Autowired
     public CropDiagnosticService(
             Firestore firestore,
-            Storage storage,
+            @Autowired(required = false) Storage storage,
             FirebaseProperties firebaseProperties,
             CropMasterService cropMasterService,
             FarmService farmService,
             @Autowired(required = false) FirestoreQuotaGuard quotaGuard,
             @Value("${app.diagnostics.cursor-signing-secret:${DIAGNOSTIC_CURSOR_SECRET:}}") String cursorSigningSecret,
-            @Autowired(required = false) Environment environment
+            @Autowired(required = false) Environment environment,
+            @Autowired(required = false) CloudinaryService cloudinaryService
     ) {
         this.firestore = firestore;
         this.storage = storage;
+        this.cloudinaryService = cloudinaryService;
         this.firebaseProperties = firebaseProperties;
         this.cropMasterService = cropMasterService;
         this.farmService = farmService;
@@ -90,15 +94,26 @@ public class CropDiagnosticService {
         this.cursorSigningKey = initializeCursorSigningKey(cursorSigningSecret, environment);
     }
 
+    public CropDiagnosticService(
+            Firestore firestore,
+            Storage storage,
+            FirebaseProperties firebaseProperties,
+            CropMasterService cropMasterService,
+            FarmService farmService,
+            FirestoreQuotaGuard quotaGuard,
+            String cursorSigningSecret,
+            Environment environment
+    ) {
+        this(firestore, storage, firebaseProperties, cropMasterService, farmService, quotaGuard, cursorSigningSecret, environment, null);
+    }
+
     private String initializeStorageBucket(FirebaseProperties properties) {
         String bucket = properties != null ? properties.getStorageBucket() : null;
-        if (bucket == null || bucket.trim().isEmpty()) {
-            String errorMsg = "CRITICAL CONFIGURATION ERROR: app.firebase.storage-bucket (or FIREBASE_STORAGE_BUCKET) " +
-                    "is required. An explicit Cloud Storage bucket must be configured in every environment.";
-            logger.error(errorMsg);
-            throw new IllegalStateException(errorMsg);
+        if (bucket != null && !bucket.trim().isEmpty()) {
+            return bucket.trim();
         }
-        return bucket.trim();
+        logger.info("Firebase Storage bucket not configured. Application is using Cloudinary as image storage provider.");
+        return "cloudinary";
     }
 
     private SecretKey initializeCursorSigningKey(String secret, Environment env) {
@@ -544,44 +559,65 @@ public class CropDiagnosticService {
             throw new IllegalArgumentException("Metadata fileName '" + meta.getFileName() + "' does not match path filename '" + fileName + "'.");
         }
 
-        // Object lookup in configured Storage
-        Blob blob;
-        try {
-            blob = storage.get(BlobId.of(bucketName, path));
-        } catch (Exception e) {
-            logger.error("Failed to query Storage for blob {}: {}", path, e.getMessage());
-            throw new RuntimeException("Cloud Storage lookup failure for " + path + ": " + e.getMessage(), e);
+        // Object lookup in configured Storage or Cloudinary
+        if (storage != null && bucketName != null && !"cloudinary".equalsIgnoreCase(bucketName)) {
+            Blob blob;
+            try {
+                blob = storage.get(BlobId.of(bucketName, path));
+            } catch (Exception e) {
+                logger.error("Failed to query Storage for blob {}: {}", path, e.getMessage());
+                throw new RuntimeException("Cloud Storage lookup failure for " + path + ": " + e.getMessage(), e);
+            }
+
+            if (blob == null || !blob.exists()) {
+                throw new IllegalArgumentException("Required diagnostic image file does not exist in storage: " + path);
+            }
+
+            long actualSize = blob.getSize();
+            if (actualSize > maxSizeAllowed) {
+                throw new IllegalArgumentException(expectedRole + " image size (" + actualSize + " bytes) exceeds maximum permitted limit (" + maxSizeAllowed + " bytes) at: " + path);
+            }
+
+            String storedContentType = blob.getContentType();
+            if (storedContentType == null || !allowedMimes.contains(storedContentType.toLowerCase(Locale.ROOT).trim())) {
+                throw new IllegalArgumentException("Invalid stored Content-Type '" + storedContentType + "' for " + expectedRole + " image at " + path + ". Allowed: " + allowedMimes);
+            }
+
+            // Bounded server-side image signature verification.
+            byte[] headerBytes;
+            try {
+                headerBytes = readHeaderBytes(blob, path);
+            } catch (IOException ioe) {
+                logger.error("I/O transport failure while reading header bytes from blob {}: {}", path, ioe.getMessage());
+                throw new RuntimeException("I/O failure while inspecting image header for " + path + ": " + ioe.getMessage(), ioe);
+            }
+
+            verifyImageSignature(headerBytes, storedContentType, path);
+            return blob;
+        } else if (cloudinaryService != null && cloudinaryService.isConfigured()) {
+            // Cloudinary image validation
+            String publicIdToLookup = (meta.getPublicId() != null && !meta.getPublicId().isBlank())
+                    ? meta.getPublicId()
+                    : path;
+            CloudinaryService.AssetInfo asset = cloudinaryService.getAssetInfo(publicIdToLookup);
+            long actualSize = asset != null ? asset.sizeBytes() : (meta.getSizeBytes() != null ? meta.getSizeBytes() : 0L);
+            if (actualSize > maxSizeAllowed) {
+                throw new IllegalArgumentException(expectedRole + " image size (" + actualSize + " bytes) exceeds maximum permitted limit (" + maxSizeAllowed + " bytes) at: " + path);
+            }
+
+            String contentType = asset != null ? asset.contentType() : meta.getMimeType();
+            if (contentType == null || !allowedMimes.contains(contentType.toLowerCase(Locale.ROOT).trim())) {
+                throw new IllegalArgumentException("Invalid stored Content-Type '" + contentType + "' for " + expectedRole + " image at " + path + ". Allowed: " + allowedMimes);
+            }
+            return null;
+        } else {
+            // Fallback when neither active GCS nor Cloudinary is available (e.g. metadata-only in mock env)
+            long actualSize = meta.getSizeBytes() != null ? meta.getSizeBytes() : 0L;
+            if (actualSize > maxSizeAllowed) {
+                throw new IllegalArgumentException(expectedRole + " image size (" + actualSize + " bytes) exceeds maximum permitted limit (" + maxSizeAllowed + " bytes) at: " + path);
+            }
+            return null;
         }
-
-        if (blob == null || !blob.exists()) {
-            throw new IllegalArgumentException("Required diagnostic image file does not exist in storage: " + path);
-        }
-
-        long actualSize = blob.getSize();
-        if (actualSize > maxSizeAllowed) {
-            throw new IllegalArgumentException(expectedRole + " image size (" + actualSize + " bytes) exceeds maximum permitted limit (" + maxSizeAllowed + " bytes) at: " + path);
-        }
-
-        String storedContentType = blob.getContentType();
-        if (storedContentType == null || !allowedMimes.contains(storedContentType.toLowerCase(Locale.ROOT).trim())) {
-            throw new IllegalArgumentException("Invalid stored Content-Type '" + storedContentType + "' for " + expectedRole + " image at " + path + ". Allowed: " + allowedMimes);
-        }
-
-        // Bounded server-side image signature verification.
-        // Inspects the initial 16-32 bytes for valid container magic numbers (JPEG, PNG, WebP).
-        // Note: This verifies container header signature consistency with declared MIME type;
-        // it does not perform full image decoding, pixel raster validation, or deep decompression.
-        byte[] headerBytes;
-        try {
-            headerBytes = readHeaderBytes(blob, path);
-        } catch (IOException ioe) {
-            logger.error("I/O transport failure while reading header bytes from blob {}: {}", path, ioe.getMessage());
-            throw new RuntimeException("I/O failure while inspecting image header for " + path + ": " + ioe.getMessage(), ioe);
-        }
-
-        verifyImageSignature(headerBytes, storedContentType, path);
-
-        return blob;
     }
 
     /**
@@ -749,31 +785,27 @@ public class CropDiagnosticService {
             Blob blobDisplay
     ) {
         Map<String, Object> map = new HashMap<>();
-        map.put("original", Map.of(
-                "storagePath", images.getOriginal().getStoragePath(),
-                "fileName", images.getOriginal().getFileName(),
-                "mimeType", blobOriginal.getContentType(),
-                "sizeBytes", blobOriginal.getSize(),
-                "width", images.getOriginal().getWidth() != null ? images.getOriginal().getWidth() : 0,
-                "height", images.getOriginal().getHeight() != null ? images.getOriginal().getHeight() : 0
-        ));
-        map.put("diagnostic", Map.of(
-                "storagePath", images.getDiagnostic().getStoragePath(),
-                "fileName", images.getDiagnostic().getFileName(),
-                "mimeType", blobDiagnostic.getContentType(),
-                "sizeBytes", blobDiagnostic.getSize(),
-                "width", images.getDiagnostic().getWidth() != null ? images.getDiagnostic().getWidth() : 0,
-                "height", images.getDiagnostic().getHeight() != null ? images.getDiagnostic().getHeight() : 0
-        ));
-        map.put("display", Map.of(
-                "storagePath", images.getDisplay().getStoragePath(),
-                "fileName", images.getDisplay().getFileName(),
-                "mimeType", blobDisplay.getContentType(),
-                "sizeBytes", blobDisplay.getSize(),
-                "width", images.getDisplay().getWidth() != null ? images.getDisplay().getWidth() : 0,
-                "height", images.getDisplay().getHeight() != null ? images.getDisplay().getHeight() : 0
-        ));
+        map.put("original", buildSingleImageFirestoreMap(images.getOriginal(), blobOriginal));
+        map.put("diagnostic", buildSingleImageFirestoreMap(images.getDiagnostic(), blobDiagnostic));
+        map.put("display", buildSingleImageFirestoreMap(images.getDisplay(), blobDisplay));
         return map;
+    }
+
+    private Map<String, Object> buildSingleImageFirestoreMap(DiagnosticImagesDto.ImageMetadataDto meta, Blob blob) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("storagePath", meta.getStoragePath());
+        data.put("fileName", meta.getFileName());
+        data.put("mimeType", blob != null ? blob.getContentType() : meta.getMimeType());
+        data.put("sizeBytes", blob != null ? blob.getSize() : (meta.getSizeBytes() != null ? meta.getSizeBytes() : 0L));
+        data.put("width", meta.getWidth() != null ? meta.getWidth() : 0);
+        data.put("height", meta.getHeight() != null ? meta.getHeight() : 0);
+        if (meta.getPublicId() != null && !meta.getPublicId().isBlank()) {
+            data.put("publicId", meta.getPublicId());
+        }
+        if (meta.getSecureUrl() != null && !meta.getSecureUrl().isBlank()) {
+            data.put("secureUrl", meta.getSecureUrl());
+        }
+        return data;
     }
 
     @SuppressWarnings("unchecked")
@@ -837,6 +869,8 @@ public class CropDiagnosticService {
         Number size = (Number) img.get("sizeBytes");
         Number w = (Number) img.get("width");
         Number h = (Number) img.get("height");
+        String publicId = (String) img.get("publicId");
+        String secureUrl = (String) img.get("secureUrl");
 
         return new DiagnosticImagesDto.ImageMetadataDto(
                 path,
@@ -844,7 +878,9 @@ public class CropDiagnosticService {
                 mime,
                 size != null ? size.longValue() : 0L,
                 w != null ? w.intValue() : 0,
-                h != null ? h.intValue() : 0
+                h != null ? h.intValue() : 0,
+                publicId,
+                secureUrl
         );
     }
 

@@ -68,6 +68,8 @@ public class DiagnosticImagesDto {
 
         private Integer width;
         private Integer height;
+        private String publicId;
+        private String secureUrl;
 
         public ImageMetadataDto() {
         }
@@ -81,12 +83,34 @@ public class DiagnosticImagesDto {
             this.height = height;
         }
 
+        public ImageMetadataDto(String storagePath, String fileName, String mimeType, Long sizeBytes, Integer width, Integer height, String publicId, String secureUrl) {
+            this(storagePath, fileName, mimeType, sizeBytes, width, height);
+            this.publicId = publicId;
+            this.secureUrl = secureUrl;
+        }
+
         public String getStoragePath() {
             return storagePath;
         }
 
         public void setStoragePath(String storagePath) {
             this.storagePath = storagePath;
+        }
+
+        public String getPublicId() {
+            return publicId;
+        }
+
+        public void setPublicId(String publicId) {
+            this.publicId = publicId;
+        }
+
+        public String getSecureUrl() {
+            return secureUrl;
+        }
+
+        public void setSecureUrl(String secureUrl) {
+            this.secureUrl = secureUrl;
         }
 
         public String getFileName() {

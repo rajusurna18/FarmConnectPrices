@@ -9,6 +9,7 @@ import { LoginPage } from './features/auth/pages/LoginPage';
 import { RegisterPage } from './features/auth/pages/RegisterPage';
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage';
 import { VerifyEmailPage } from './features/auth/pages/VerifyEmailPage';
+import { AgriChatWidget } from './features/chat';
 
 // Lazy-loaded protected & feature routes
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
@@ -173,6 +174,7 @@ export const App: React.FC = () => {
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
+          <AgriChatWidget />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

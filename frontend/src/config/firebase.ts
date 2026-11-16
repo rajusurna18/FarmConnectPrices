@@ -22,6 +22,7 @@ export const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseC
 
 export const db: Firestore = getFirestore(app);
 export const auth: Auth = getAuth(app);
+// Retained solely for emulator and legacy test compatibility; all active production image storage uses Cloudinary via backend
 export const storage: FirebaseStorage = getStorage(app);
 
 export interface EmulatorTarget {

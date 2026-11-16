@@ -17,8 +17,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
+import com.farmlink.api.dto.CloudinaryUploadResult;
+import com.farmlink.api.dto.DiagnosticImagesDto;
+import com.farmlink.api.service.CloudinaryService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -31,8 +37,66 @@ public class CropDiagnosticController {
 
     private final CropDiagnosticService diagnosticService;
 
-    public CropDiagnosticController(CropDiagnosticService diagnosticService) {
+    private final CloudinaryService cloudinaryService;
+
+    @Autowired
+    public CropDiagnosticController(
+            CropDiagnosticService diagnosticService,
+            @Autowired(required = false) CloudinaryService cloudinaryService
+    ) {
         this.diagnosticService = diagnosticService;
+        this.cloudinaryService = cloudinaryService;
+    }
+
+    public CropDiagnosticController(CropDiagnosticService diagnosticService) {
+        this(diagnosticService, null);
+    }
+
+    /**
+     * Upload a diagnostic image to Cloudinary.
+     * Returns ImageMetadataDto that can be embedded into CreateDiagnosticRequest.
+     */
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadDiagnosticImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("diagnosticId") String diagnosticId,
+            @RequestParam(value = "role", defaultValue = "original") String role
+    ) {
+        FirebaseAuthenticationToken token = getAuthenticatedToken();
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication token is required."));
+        }
+        if (cloudinaryService == null || !cloudinaryService.isConfigured()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", "Cloudinary image service is not configured."));
+        }
+
+        try {
+            String uid = token.getUid();
+            CloudinaryUploadResult result = cloudinaryService.uploadImage(file, "diagnostics", uid);
+            String fileName = file.getOriginalFilename() != null && !file.getOriginalFilename().isBlank()
+                    ? file.getOriginalFilename()
+                    : (role + "." + result.format());
+
+            DiagnosticImagesDto.ImageMetadataDto meta = new DiagnosticImagesDto.ImageMetadataDto(
+                    "users/" + uid + "/diagnostics/" + diagnosticId + "/" + fileName,
+                    fileName,
+                    "image/" + result.format(),
+                    result.sizeBytes(),
+                    result.width(),
+                    result.height(),
+                    result.publicId(),
+                    result.secureUrl()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(meta);
+        } catch (InvalidImageSignatureException e) {
+            logger.warn("Invalid diagnostic image signature: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Failed to upload diagnostic image: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to upload image: " + e.getMessage()));
+        }
     }
 
     /**

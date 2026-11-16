@@ -49,6 +49,27 @@ function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null 
   return win.SpeechRecognition || win.webkitSpeechRecognition || null;
 }
 
+// Module-scoped reference to the currently active recognition instance across all components
+let globalActiveRecognitionInstance: SpeechRecognitionInstance | null = null;
+
+/**
+ * Aborts any currently active global speech recognition instance across the application.
+ * Safely handles browser exceptions and protects against clearing newer instances.
+ */
+export function abortActiveSpeechRecognition(): void {
+  if (globalActiveRecognitionInstance) {
+    const instanceToAbort = globalActiveRecognitionInstance;
+    try {
+      instanceToAbort.abort();
+    } catch {
+      // Ignore abort errors
+    }
+    if (globalActiveRecognitionInstance === instanceToAbort) {
+      globalActiveRecognitionInstance = null;
+    }
+  }
+}
+
 export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeechToTextReturn {
   const {
     language: initialLanguage = 'en-IN',
@@ -73,6 +94,9 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
   // Cleanup handler
   const cleanupRecognition = useCallback(() => {
     if (recognitionRef.current) {
+      if (globalActiveRecognitionInstance === recognitionRef.current) {
+        globalActiveRecognitionInstance = null;
+      }
       try {
         recognitionRef.current.onstart = null;
         recognitionRef.current.onresult = null;
@@ -89,6 +113,9 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
   const stopListening = useCallback(() => {
     isExplicitStopRef.current = true;
     if (recognitionRef.current) {
+      if (globalActiveRecognitionInstance === recognitionRef.current) {
+        globalActiveRecognitionInstance = null;
+      }
       try {
         recognitionRef.current.stop();
       } catch {
@@ -107,7 +134,26 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
         return;
       }
 
-      // Prevent duplicate active sessions
+      // 1. Safely cancel any active text-to-speech narration to prevent audio feedback
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch {
+          // Ignore cancellation errors
+        }
+      }
+
+      // 2. Abort any previous active recognition instance across all components
+      if (globalActiveRecognitionInstance && globalActiveRecognitionInstance !== recognitionRef.current) {
+        try {
+          globalActiveRecognitionInstance.abort();
+        } catch {
+          // Ignore abort errors
+        }
+        globalActiveRecognitionInstance = null;
+      }
+
+      // Prevent duplicate active sessions on this same hook
       if (isListening && recognitionRef.current) {
         return;
       }
@@ -190,16 +236,23 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
               break;
           }
 
+          if (globalActiveRecognitionInstance === recognition) {
+            globalActiveRecognitionInstance = null;
+          }
           setError(errorMsg);
           onError?.(errorMsg);
           setIsListening(false);
         };
 
         recognition.onend = () => {
+          if (globalActiveRecognitionInstance === recognition) {
+            globalActiveRecognitionInstance = null;
+          }
           setIsListening(false);
           recognitionRef.current = null;
         };
 
+        globalActiveRecognitionInstance = recognition;
         recognitionRef.current = recognition;
         recognition.start();
       } catch (err: unknown) {

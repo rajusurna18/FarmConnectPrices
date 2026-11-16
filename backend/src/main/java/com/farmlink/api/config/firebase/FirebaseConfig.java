@@ -95,10 +95,7 @@ public class FirebaseConfig {
         // 2. Real Production / Development Credentials Mode
         if (isProd) {
             if (properties.getStorageBucket() == null || properties.getStorageBucket().trim().isEmpty()) {
-                String errorMsg = "CRITICAL CONFIGURATION ERROR: app.firebase.storage-bucket (or FIREBASE_STORAGE_BUCKET) " +
-                        "is required in production. A valid Google Cloud Storage bucket name must be configured.";
-                logger.error(errorMsg);
-                throw new IllegalStateException(errorMsg);
+                logger.info("Firebase storage-bucket not configured in production. Application will use Cloudinary for image storage.");
             }
         }
 
@@ -267,6 +264,11 @@ public class FirebaseConfig {
     @Bean
     public Storage googleCloudStorage(FirebaseApp firebaseApp) {
         boolean isProd = isProductionEnvironment(environment);
+        if (isProd) {
+            logger.info("Cloudinary is the sole active image-file storage provider. Google Cloud Storage client is disabled in production.");
+            return null;
+        }
+
         String storageEmulatorHost = System.getenv("STORAGE_EMULATOR_HOST");
         if (storageEmulatorHost == null || storageEmulatorHost.trim().isEmpty()) {
             storageEmulatorHost = System.getenv("FIREBASE_STORAGE_EMULATOR_HOST");
@@ -275,21 +277,6 @@ public class FirebaseConfig {
         boolean emulatorRequested = properties.isUseEmulator() ||
                 (storageEmulatorHost != null && !storageEmulatorHost.trim().isEmpty()) ||
                 System.getenv("FIRESTORE_EMULATOR_HOST") != null;
-
-        if (isProd && emulatorRequested) {
-            String errorMsg = "CRITICAL SECURITY ERROR: Storage emulator is configured in production profile. Application startup aborted.";
-            logger.error(errorMsg);
-            throw new IllegalStateException(errorMsg);
-        }
-
-        if (isProd) {
-            if (properties.getStorageBucket() == null || properties.getStorageBucket().trim().isEmpty()) {
-                String errorMsg = "CRITICAL CONFIGURATION ERROR: app.firebase.storage-bucket (or FIREBASE_STORAGE_BUCKET) " +
-                        "is required in production. A valid Google Cloud Storage bucket name must be configured.";
-                logger.error(errorMsg);
-                throw new IllegalStateException(errorMsg);
-            }
-        }
 
         String projectId = (properties.getProjectId() != null && !properties.getProjectId().trim().isEmpty())
                 ? properties.getProjectId()

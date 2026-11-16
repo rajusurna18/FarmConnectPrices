@@ -87,12 +87,40 @@ export const sendEmailVerificationMail = async (user?: User | null): Promise<voi
 };
 
 /**
- * Get current user's Firebase ID token for Authorization headers
+ * Get current user's Firebase ID token for Authorization headers.
+ * When expectedUid is supplied, asserts that:
+ * 1. An active user exists whose UID matches expectedUid.
+ * 2. Captures that User instance to obtain the token.
+ * 3. Re-verifies auth.currentUser still matches expectedUid after token acquisition.
+ * 4. Rejects (returns null) if identity diverges at any point.
  */
-export const getCurrentIdToken = async (forceRefresh = false): Promise<string | null> => {
+export const getCurrentIdToken = async (
+  forceRefresh = false,
+  expectedUid?: string
+): Promise<string | null> => {
   const currentUser = auth.currentUser;
   if (!currentUser) {
     return null;
   }
-  return await currentUser.getIdToken(forceRefresh);
+
+  // 1 & 2. Verify UID matches expected owner if specified
+  if (expectedUid && currentUser.uid !== expectedUid) {
+    return null;
+  }
+
+  // 3. Capture that specific Firebase User instance
+  const capturedUser = currentUser;
+
+  // 4. Obtain the ID token from that captured User instance
+  const token = await capturedUser.getIdToken(forceRefresh);
+
+  // 5 & 6. Verify that active Firebase user still has the expected UID after async resolution
+  if (expectedUid) {
+    const postResolutionUser = auth.currentUser;
+    if (!postResolutionUser || postResolutionUser.uid !== expectedUid) {
+      return null;
+    }
+  }
+
+  return token;
 };

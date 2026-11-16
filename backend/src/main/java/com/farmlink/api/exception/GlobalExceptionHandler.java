@@ -1,5 +1,6 @@
 package com.farmlink.api.exception;
 
+import com.farmlink.api.router.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -69,6 +70,78 @@ public class GlobalExceptionHandler {
         Map<String, String> response = new HashMap<>();
         response.put("error", "Live market telemetry service unavailable. Please retry.");
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
+    @ExceptionHandler(InvalidQueryException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidQueryException(InvalidQueryException ex) {
+        logger.warn("Invalid router query: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(UnauthorizedEconomicsAccessException.class)
+    public ResponseEntity<Map<String, String>> handleUnauthorizedEconomicsAccessException(UnauthorizedEconomicsAccessException ex) {
+        logger.warn("Unauthorized economics access: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    @ExceptionHandler(SessionNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleSessionNotFoundException(SessionNotFoundException ex) {
+        logger.warn("Session not found: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(TurnOutOfSequenceException.class)
+    public ResponseEntity<Map<String, String>> handleTurnOutOfSequenceException(TurnOutOfSequenceException ex) {
+        logger.warn("Turn out of sequence: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<Map<String, String>> handleIdempotencyConflictException(IdempotencyConflictException ex) {
+        logger.warn("Idempotency conflict: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(TurnResultExpiredException.class)
+    public ResponseEntity<Map<String, String>> handleTurnResultExpiredException(TurnResultExpiredException ex) {
+        logger.warn("Turn result expired: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.GONE).body(response);
+    }
+
+    @ExceptionHandler(SessionLockedException.class)
+    public ResponseEntity<Map<String, String>> handleSessionLockedException(SessionLockedException ex) {
+        logger.warn("Session locked: {}", ex.getMessage());
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.LOCKED).body(response);
+    }
+
+    @ExceptionHandler(RedisCoordinationException.class)
+    public ResponseEntity<Map<String, String>> handleRedisCoordinationException(RedisCoordinationException ex) {
+        logger.error("Redis coordination error: {}", ex.getMessage(), ex);
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Session coordination service is temporarily unavailable. Please retry.");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
+    @ExceptionHandler(SessionCorruptedException.class)
+    public ResponseEntity<Map<String, String>> handleSessionCorruptedException(SessionCorruptedException ex) {
+        logger.error("Session corrupted: {}", ex.getMessage(), ex);
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Session state corrupted. Please initialize a new session.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(Exception.class)

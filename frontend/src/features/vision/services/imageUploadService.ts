@@ -14,6 +14,7 @@ import {
 import type { FirebaseStorage, StorageReference, UploadTaskSnapshot } from 'firebase/storage';
 import type { Auth } from 'firebase/auth';
 import { storage as defaultStorage, auth as defaultAuth } from '../../../config/firebase';
+import { apiClient } from '../../../services/api';
 import type { ProcessedImage } from '../types';
 
 // ============================================================================
@@ -365,6 +366,47 @@ export async function uploadDiagnosticImage(
     );
   }
 
+  // Production image-file storage: Cloudinary via authenticated backend endpoint.
+  // When no test mocks are injected (deps?.uploadBytesResumableFn is undefined),
+  // images are uploaded to Cloudinary, completely bypassing Firebase Cloud Storage.
+  if (!deps?.uploadBytesResumableFn) {
+    const originalFile = processedImage.originalFile;
+    const originalFileName = resolveStorageFileName('original', originalFile.type);
+    const diagDerivative = processedImage.diagnosticSource;
+    const diagFileName = resolveStorageFileName('diagnostic', diagDerivative.mimeType);
+    const displayDerivative = processedImage.displayDerivative;
+    const displayFileName = resolveStorageFileName('display', displayDerivative.mimeType);
+
+    const origMeta = await uploadDiagnosticImageToBackend(originalFile, diagnosticId, 'original', originalFileName);
+    const diagMeta = await uploadDiagnosticImageToBackend(diagDerivative.blob, diagnosticId, 'diagnostic', diagFileName);
+    const dispMeta = await uploadDiagnosticImageToBackend(displayDerivative.blob, diagnosticId, 'display', displayFileName);
+
+    return {
+      diagnosticId,
+      original: {
+        storagePath: origMeta.storagePath,
+        fileName: origMeta.fileName,
+        mimeType: origMeta.mimeType,
+        sizeBytes: origMeta.sizeBytes,
+        clientUploadedAt: new Date().toISOString(),
+      },
+      diagnostic: {
+        storagePath: diagMeta.storagePath,
+        fileName: diagMeta.fileName,
+        mimeType: diagMeta.mimeType,
+        sizeBytes: diagMeta.sizeBytes,
+        clientUploadedAt: new Date().toISOString(),
+      },
+      display: {
+        storagePath: dispMeta.storagePath,
+        fileName: dispMeta.fileName,
+        mimeType: dispMeta.mimeType,
+        sizeBytes: dispMeta.sizeBytes,
+        clientUploadedAt: new Date().toISOString(),
+      },
+    };
+  }
+
   const authInstance = deps?.authInstance || defaultAuth;
   const storageInstance = deps?.storageInstance || defaultStorage;
   const uploadBytesResumableFn = deps?.uploadBytesResumableFn || defaultUploadBytesResumable;
@@ -454,6 +496,40 @@ export async function uploadListingStagingImage(
   validateEntityId(draftId, 'draftId');
   validateEntityId(imageId, 'imageId');
 
+  // Production image-file storage: Cloudinary via backend endpoint
+  if (!deps?.uploadBytesResumableFn) {
+    const displayDerivative = processedImage.displayDerivative;
+    const displayFileName = resolveStorageFileName('display', displayDerivative.mimeType);
+    const dispResult = await uploadImageToBackend(displayDerivative.blob, 'products', displayFileName);
+
+    let uploadedOriginal: UploadedFileReference | undefined;
+    if (options?.includeOriginal) {
+      const originalFile = processedImage.originalFile;
+      const originalFileName = resolveStorageFileName('original', originalFile.type);
+      const origResult = await uploadImageToBackend(originalFile, 'products', originalFileName);
+      uploadedOriginal = {
+        storagePath: origResult.publicId,
+        fileName: originalFileName,
+        mimeType: originalFile.type,
+        sizeBytes: origResult.sizeBytes,
+        clientUploadedAt: new Date().toISOString(),
+      };
+    }
+
+    return {
+      draftId,
+      imageId,
+      display: {
+        storagePath: dispResult.publicId,
+        fileName: displayFileName,
+        mimeType: displayDerivative.mimeType,
+        sizeBytes: dispResult.sizeBytes,
+        clientUploadedAt: new Date().toISOString(),
+      },
+      original: uploadedOriginal,
+    };
+  }
+
   const authInstance = deps?.authInstance || defaultAuth;
   const storageInstance = deps?.storageInstance || defaultStorage;
   const uploadBytesResumableFn = deps?.uploadBytesResumableFn || defaultUploadBytesResumable;
@@ -535,6 +611,36 @@ export async function uploadDisputeEvidenceImage(
   validateEntityId(disputeId, 'disputeId');
   validateEntityId(evidenceId, 'evidenceId');
 
+  // Production image-file storage: Cloudinary via backend endpoint
+  if (!deps?.uploadBytesResumableFn) {
+    const originalFile = processedImage.originalFile;
+    const originalFileName = resolveStorageFileName('original', originalFile.type);
+    const origResult = await uploadImageToBackend(originalFile, 'general', originalFileName);
+
+    const displayDerivative = processedImage.displayDerivative;
+    const displayFileName = resolveStorageFileName('display', displayDerivative.mimeType);
+    const dispResult = await uploadImageToBackend(displayDerivative.blob, 'general', displayFileName);
+
+    return {
+      disputeId,
+      evidenceId,
+      original: {
+        storagePath: origResult.publicId,
+        fileName: originalFileName,
+        mimeType: originalFile.type,
+        sizeBytes: origResult.sizeBytes,
+        clientUploadedAt: new Date().toISOString(),
+      },
+      display: {
+        storagePath: dispResult.publicId,
+        fileName: displayFileName,
+        mimeType: displayDerivative.mimeType,
+        sizeBytes: dispResult.sizeBytes,
+        clientUploadedAt: new Date().toISOString(),
+      },
+    };
+  }
+
   const authInstance = deps?.authInstance || defaultAuth;
   const storageInstance = deps?.storageInstance || defaultStorage;
   const uploadBytesResumableFn = deps?.uploadBytesResumableFn || defaultUploadBytesResumable;
@@ -580,4 +686,69 @@ export async function uploadDisputeEvidenceImage(
     display: uploadedDisplay,
   };
 }
+
+/**
+ * Uploads an image file to Cloudinary via the backend authenticated image upload endpoint.
+ * Keeps all Cloudinary API secrets secure on the server side.
+ */
+export async function uploadImageToBackend(
+  fileOrBlob: File | Blob,
+  folder: 'crops' | 'products' | 'profiles' | 'diagnostics' | 'general' = 'general',
+  fileName: string = 'image.jpg'
+): Promise<{
+  publicId: string;
+  secureUrl: string;
+  format: string;
+  sizeBytes: number;
+  width: number;
+  height: number;
+  folder: string;
+}> {
+  const formData = new FormData();
+  formData.append('file', fileOrBlob, fileName);
+  formData.append('folder', folder);
+
+  const response = await apiClient.post('/api/v1/images/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
+}
+
+/**
+ * Uploads diagnostic image derivative to backend Cloudinary service.
+ * Returns ImageMetadataDto compatible with CreateDiagnosticRequest.
+ */
+export async function uploadDiagnosticImageToBackend(
+  fileOrBlob: File | Blob,
+  diagnosticId: string,
+  role: 'original' | 'diagnostic' | 'display',
+  fileName: string
+): Promise<{
+  storagePath: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  width?: number;
+  height?: number;
+  publicId?: string;
+  secureUrl?: string;
+}> {
+  const formData = new FormData();
+  formData.append('file', fileOrBlob, fileName);
+  formData.append('diagnosticId', diagnosticId);
+  formData.append('role', role);
+
+  const response = await apiClient.post('/api/v1/diagnostics/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
+}
+
+
 
